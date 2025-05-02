@@ -36,27 +36,28 @@ export const withCache = async <T>(
   const cacheKey = cache.generateCacheKey(params);
 
   // If disable cache is set, skip cache lookup
+  console.log('opts.disableCache', opts.disableCache);
   if (opts.disableCache) {
     const result = await callback();
     return { data: result, isFromCache: false };
   }
-  
+
   // If bypass cache is set, skip cache lookup but save the result to cache
   if (opts.bypassCache) {
     const result = await callback();
-    
+
     // Only cache successful results (no error property)
     if (!hasErrorProperty(result)) {
       const metadata = await cache.writeCache(cacheKey, result);
       return { data: result, isFromCache: false, metadata };
     }
-    
+
     return { data: result, isFromCache: false };
   }
-  
+
   // Try to get from cache first
   const cached = await cache.readCache<T>(cacheKey);
-  
+
   if (cached) {
     return {
       data: cached.data,
@@ -64,10 +65,10 @@ export const withCache = async <T>(
       metadata: cached.metadata,
     };
   }
-  
+
   // Execute the function and cache the result
   const result = await callback();
-  
+
   // Only cache successful results (no error property)
   if (!hasErrorProperty(result)) {
     const metadata = await cache.writeCache(cacheKey, result);
@@ -77,7 +78,7 @@ export const withCache = async <T>(
       metadata,
     };
   }
-  
+
   return {
     data: result,
     isFromCache: false,

@@ -39,7 +39,7 @@ export const login = async (request: LoginRequest): Promise<CacheResult<LoginRes
  */
 export const fetchCurrentUser = async (): Promise<CacheResult<GetCurrentUserResponse>> => {
     // No request body needed for 'me' endpoint
-    return apiClient.call<CacheResult<GetCurrentUserResponse>, {}>(
+    return apiClient.call<CacheResult<GetCurrentUserResponse>, Record<string, never>>(
         getCurrentUserApiName,
         {}
     );
@@ -49,7 +49,7 @@ export const fetchCurrentUser = async (): Promise<CacheResult<GetCurrentUserResp
  * Client: Call logout API
  */
 export const logout = async (): Promise<CacheResult<{ success: boolean }>> => {
-    return apiClient.call<CacheResult<{ success: boolean }>, {}>(
+    return apiClient.call<CacheResult<{ success: boolean }>, Record<string, never>>(
         logoutApiName,
         {}
     );

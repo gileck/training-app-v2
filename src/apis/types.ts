@@ -1,4 +1,4 @@
-import { NextApiRequest } from 'next';
+// import { NextApiRequest } from 'next'; // Remove unused import
 import { SerializeOptions } from 'cookie';
 
 /**
@@ -20,7 +20,7 @@ export interface ApiHandlerContext {
  * and returns the data payload.
  */
 export interface ApiHandler {
-  process: (params: any, context: ApiHandlerContext) => Promise<any>; // Returns data payload directly
+  process: (params: unknown, context: ApiHandlerContext) => Promise<unknown>; // Use unknown for generic params/return
   // Add other potential handler properties here if needed (e.g., requiresAuth: true)
 }
 

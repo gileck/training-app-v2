@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { Db, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import { SerializeOptions } from 'cookie';
 import { name } from './index';
 import {
@@ -36,8 +36,9 @@ export const getCurrentUserApiName = `${name}/me`;
 export { name }; // Base name still exported if needed
 
 // --- Helper Function ---
-const sanitizeUser = (user: any): User | undefined => {
+const sanitizeUser = (user: User & { password_hash?: string }): User | undefined => {
     if (!user) return undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_hash, ...sanitized } = user;
     return sanitized as User;
 }
@@ -133,7 +134,7 @@ export const loginUser = async (request: LoginRequest, context: ApiHandlerContex
 /**
  * Task 14: API endpoint to get current user profile
  */
-export const getCurrentUser = async (_request: {}, context: ApiHandlerContext): Promise<GetCurrentUserResponse> => {
+export const getCurrentUser = async (_request: Record<string, never>, context: ApiHandlerContext): Promise<GetCurrentUserResponse> => {
     if (!context.userId) {
         return { error: "Unauthorized: Not logged in." };
     }
@@ -165,7 +166,7 @@ export const getCurrentUser = async (_request: {}, context: ApiHandlerContext): 
 /**
  * Logout handler
  */
-export const logoutUser = async (_request: {}, context: ApiHandlerContext): Promise<{ success: boolean }> => {
+export const logoutUser = async (_request: Record<string, never>, context: ApiHandlerContext): Promise<{ success: boolean }> => {
     // Clear cookie using context method
     context.clearCookie(COOKIE_NAME, { path: '/' }); // Use minimal options needed for clearing
 

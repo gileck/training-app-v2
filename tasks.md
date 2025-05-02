@@ -20,10 +20,10 @@ This document breaks down the tasks needed to implement the Training App based o
 ## Backend API (Node.js)
 
 ### User Authentication & Management
-- 11. [ ] Implement user registration endpoint (hash password).
-- 12. [ ] Implement user login endpoint (verify password, issue token/session).
-- 13. [ ] Implement middleware for protected routes (verify token/session).
-- 14. [ ] API endpoint to get current user profile.
+- 11. [x] Implement user registration endpoint (hash password).
+- 12. [x] Implement user login endpoint (verify password, issue token/session).
+- 13. [x] Implement middleware for protected routes (verify token/session - *partially done: token verification added to processApiCall*).
+- 14. [x] API endpoint to get current user profile.
 
 ### Training Plan Management
 - 15. [ ] API endpoint to get all training plans for the logged-in user.
@@ -33,7 +33,7 @@ This document breaks down the tasks needed to implement the Training App based o
 - 19. [ ] API endpoint to delete a training plan (and associated data like exercises, progress - needs careful handling).
 - 20. [ ] API endpoint to duplicate a training plan (including its exercises).
 
-### Exercise Definition Management (Optional - Admin/Internal)
+### Exercise Definition Management (Optional - Admin/Internal) - SKIP FOR NOW
 - 21. [ ] API endpoint(s) to manage `exerciseDefinitions` (add, edit, list - potentially internal use only).
 
 ### Exercise Management (within a Plan)
@@ -61,9 +61,12 @@ This document breaks down the tasks needed to implement the Training App based o
 
 ## Frontend UI (Next.js / React / TypeScript)
 
-
-- 37. [ ] Implement login and registration forms/views.
-- 38. [ ] Implement authentication state management (handling tokens/sessions).
+### Core Structure & Navigation
+- 34. [ ] Set up frontend project structure.
+- 35. [ ] Implement routing.
+- 36. [ ] Implement main navigation (e.g., bottom bar, side menu).
+- 37. [x] Implement login and registration forms/views.
+- 38. [x] Implement authentication state management (handling tokens/sessions - *initial context setup done*).
 
 ### Training Plans View
 - 39. [ ] Implement view to list user's training plans.

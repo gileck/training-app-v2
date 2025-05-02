@@ -4,6 +4,7 @@ import * as clearCache from "./settings/clearCache/server";
 import * as fileManagement from "./fileManagement/server";
 import * as aiUsage from "./monitoring/aiUsage/server";
 import * as auth from "./auth/server";
+import * as trainingPlans from "./trainingPlans/server";
 
 export const apiHandlers: ApiHandlers = {
   [chat.name]: { process: chat.process as ApiHandler['process'] },
@@ -15,4 +16,10 @@ export const apiHandlers: ApiHandlers = {
   [auth.loginApiName]: { process: auth.loginUser as ApiHandler['process'] },
   [auth.logoutApiName]: { process: auth.logoutUser as ApiHandler['process'] },
   [auth.getCurrentUserApiName]: { process: auth.getCurrentUser as ApiHandler['process'] },
+  [trainingPlans.getAllApiName]: { process: trainingPlans.getAllTrainingPlans as ApiHandler['process'] },
+  [trainingPlans.getByIdApiName]: { process: trainingPlans.getTrainingPlanById as ApiHandler['process'] },
+  [trainingPlans.createApiName]: { process: trainingPlans.createTrainingPlan as ApiHandler['process'] },
+  [trainingPlans.updateApiName]: { process: trainingPlans.updateTrainingPlan as ApiHandler['process'] },
+  [trainingPlans.deleteApiName]: { process: trainingPlans.deleteTrainingPlan as ApiHandler['process'] },
+  [trainingPlans.duplicateApiName]: { process: trainingPlans.duplicateTrainingPlan as ApiHandler['process'] },
 };

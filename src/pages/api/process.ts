@@ -13,12 +13,14 @@ export default async function handler(
     // It returns the CacheResult containing the data payload
     return res.status(200).json(response);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("API Processing Error:", error);
+    // Type check error
+    const errorMessage = error instanceof Error ? error.message : "An internal server error occurred.";
     // Return a generic error response (don't expose internal details)
     // Ensure CacheResult structure is consistent if client expects it even for errors
     return res.status(200).json({
-      data: { error: "An internal server error occurred." },
+      data: { error: errorMessage },
       isFromCache: false,
       metadata: undefined
     });

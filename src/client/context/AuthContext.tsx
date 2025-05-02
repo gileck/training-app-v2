@@ -73,9 +73,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 setIsLoading(false);
                 return false;
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Login error:", err);
-            setError(err.message || 'An unexpected error occurred during login.');
+            const message = err instanceof Error ? err.message : 'An unexpected error occurred during login.';
+            setError(message);
             setUser(null);
             setIsLoading(false);
             return false;
@@ -101,9 +102,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 setIsLoading(false);
                 return false;
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Registration error:", err);
-            setError(err.message || 'An unexpected error occurred during registration.');
+            const message = err instanceof Error ? err.message : 'An unexpected error occurred during registration.';
+            setError(message);
             setUser(null);
             setIsLoading(false);
             return false;

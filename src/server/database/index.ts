@@ -9,67 +9,72 @@ const DB_NAME = process.env.DB_NAME || 'trainingPlanDb'; // Use the same default
 // --- Connection Management (Singleton Pattern) ---
 let client: MongoClient | null = null;
 let dbInstance: Db | null = null;
-let connectionPromise: Promise<Db> | null = null;
+let clientPromise: Promise<MongoClient> | null = null;
 
-/**
- * Establishes a connection to the MongoDB database.
- * Uses a singleton pattern to ensure only one connection is made.
- * @returns {Promise<Db>} A promise that resolves with the Db instance.
- */
-async function connectToDatabase(): Promise<Db> {
-    if (dbInstance) {
-        return dbInstance;
+// Internal function returning the client
+async function connectClient(): Promise<MongoClient> {
+    if (client) {
+        return client;
     }
-
     if (!MONGO_URI) {
         throw new Error('MONGO_URI environment variable is not set.');
     }
-
-    if (!client) {
-        client = new MongoClient(MONGO_URI);
-        console.log('Connecting to MongoDB...');
-        try {
-            await client.connect();
-            console.log('MongoDB connected successfully.');
-            dbInstance = client.db(DB_NAME);
-            // Add listeners for connection events (optional but recommended)
-            client.on('close', () => {
-                console.log('MongoDB connection closed.');
-                client = null;
-                dbInstance = null;
-                connectionPromise = null; // Allow reconnection attempt
-            });
-            client.on('error', (err) => {
-                console.error('MongoDB connection error:', err);
-                client = null;
-                dbInstance = null;
-                connectionPromise = null;
-            });
-        } catch (error) {
-            console.error('Failed to connect to MongoDB:', error);
-            client = null; // Ensure client is nullified on error
-            throw error; // Re-throw error to indicate connection failure
-        }
+    client = new MongoClient(MONGO_URI);
+    console.log('Connecting client to MongoDB...');
+    try {
+        await client.connect();
+        console.log('MongoDB client connected successfully.');
+        // Setup listeners
+        client.on('close', () => {
+            console.log('MongoDB connection closed.');
+            client = null;
+            dbInstance = null;
+            clientPromise = null; // Allow reconnection attempt
+        });
+        client.on('error', (err) => {
+            console.error('MongoDB connection error:', err);
+            client = null;
+            dbInstance = null;
+            clientPromise = null;
+        });
+        return client;
+    } catch (error) {
+        console.error('Failed to connect client to MongoDB:', error);
+        client = null;
+        throw error;
     }
+}
 
-    // This check should ideally be redundant if connect succeeded
-    if (!dbInstance) {
-        throw new Error("Database instance not available after connection attempt.")
+/**
+ * Gets the singleton MongoClient instance.
+ */
+function getClient(): Promise<MongoClient> {
+    if (!clientPromise) {
+        clientPromise = connectClient();
     }
-
-    return dbInstance;
+    return clientPromise;
 }
 
 /**
  * Gets the singleton Db instance.
- * Handles the initial connection promise.
  * @returns {Promise<Db>} A promise that resolves with the Db instance.
  */
-export function getDb(): Promise<Db> {
-    if (!connectionPromise) {
-        connectionPromise = connectToDatabase();
+export async function getDb(): Promise<Db> {
+    if (dbInstance) {
+        return dbInstance;
     }
-    return connectionPromise;
+    // Ensure client is connected first
+    const connectedClient = await getClient();
+    dbInstance = connectedClient.db(DB_NAME);
+    return dbInstance;
+}
+
+/**
+ * Gets the singleton MongoClient instance, primarily for session management.
+ * @returns {Promise<MongoClient>} A promise that resolves with the MongoClient instance.
+ */
+export function getMongoClient(): Promise<MongoClient> {
+    return getClient(); // Reuse the internal getClient logic
 }
 
 // Optional: Graceful shutdown function (call this on app termination)
