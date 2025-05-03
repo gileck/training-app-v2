@@ -30,7 +30,6 @@ export const processApiCall = async (
   const name = req.body.name as keyof typeof apiHandlers;
   const params = req.body.params;
   const options = req.body.options as ApiOptions;
-  console.log('options', options);
 
   const apiHandler = apiHandlers[name];
 
@@ -104,3 +103,4 @@ export const processApiCall = async (
 
   return resultPayload;
 };
+

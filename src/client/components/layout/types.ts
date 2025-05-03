@@ -4,6 +4,7 @@ export interface NavItem {
   path: string;
   label: string;
   icon: ReactNode;
+  requiresAuth?: boolean;
 }
 
 export interface NavigatorStandalone {

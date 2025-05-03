@@ -15,6 +15,9 @@ const nextConfig: NextConfig = withPWA({
   typescript: {
     ignoreBuildErrors: true,
   },
+  images: {
+    domains: ['zdllzsw6qffmlxhs.public.blob.vercel-storage.com'],
+  },
   webpack(config) {
     // Enable WebAssembly
     config.experiments = {

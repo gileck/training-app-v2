@@ -4,6 +4,13 @@ This document breaks down the tasks needed to implement the Training App based o
 
 *General Guideline: Always consult and follow the rules defined in the `app-guildelines` directory.*
 
+After finishing each task:
+* Run `yarn checks` and fix all the project issues
+* Mark the completed tasks as done
+* plan the next tasks and let me know whats you plan to implement them (do not implement them until I tell you too.)
+
+
+
 ## Database Setup [DONE]
 
 - 1. [x] Choose and set up a document database (e.g., MongoDB Atlas, self-hosted MongoDB).
@@ -26,29 +33,31 @@ This document breaks down the tasks needed to implement the Training App based o
 - 14. [x] API endpoint to get current user profile.
 
 ### Training Plan Management
-- 15. [ ] API endpoint to get all training plans for the logged-in user.
-- 16. [ ] API endpoint to get a specific training plan by ID (ensure ownership).
-- 17. [ ] API endpoint to create a new training plan.
-- 18. [ ] API endpoint to update an existing training plan (name, duration).
-- 19. [ ] API endpoint to delete a training plan (and associated data like exercises, progress - needs careful handling).
-- 20. [ ] API endpoint to duplicate a training plan (including its exercises).
+- 15. [x] API endpoint to get all training plans for the logged-in user (including `isActive` status).
+- 16. [x] API endpoint to get a specific training plan by ID (ensure ownership).
+- 17. [x] API endpoint to create a new training plan (sets `isActive: true` if first plan).
+- 18. [x] API endpoint to update an existing training plan (name, duration).
+- 19. [x] API endpoint to delete a training plan (and associated data).
+- 20. [x] API endpoint to duplicate a training plan (including its exercises, ensures `isActive: false`).
+- 20a. [x] API endpoint to set a specific training plan as active (`setActiveTrainingPlan`).
+- 20b. [x] API endpoint to get the currently active training plan (`getActiveTrainingPlan`).
 
 ### Exercise Definition Management (Optional - Admin/Internal) - SKIP FOR NOW
 - 21. [ ] API endpoint(s) to manage `exerciseDefinitions` (add, edit, list - potentially internal use only).
 
-### Exercise Management (within a Plan)
-- 22. [ ] API endpoint to get all exercises for a specific training plan.
-- 23. [ ] API endpoint to add a new exercise instance to a plan (linking to an `exerciseDefinition`).
-- 24. [ ] API endpoint to update an exercise instance within a plan (sets, reps, weight, comments, order, etc.).
-- 25. [ ] API endpoint to remove an exercise instance from a plan.
+### Exercise Management (within a Plan) [DONE]
+- 22. [x] API endpoint to get all exercises for a specific training plan. [DONE]
+- 23. [x] API endpoint to add a new exercise instance to a plan (linking to an `exerciseDefinition`). [DONE]
+- 24. [x] API endpoint to update an exercise instance within a plan (sets, reps, weight, comments, order, etc.). [DONE]
+- 25. [x] API endpoint to remove an exercise instance from a plan. [DONE]
 
-### Weekly Progress & Logging
-- 26. [ ] API endpoint to get `weeklyProgress` for a specific exercise in a specific week.
-- 27. [ ] API endpoint to update exercise completion status (mark set/exercise done):
+### Weekly Progress & Logging [DONE]
+- 26. [x] API endpoint to get `weeklyProgress` for a specific exercise in a specific week. [DONE]
+- 27. [x] API endpoint to update exercise completion status (mark set/exercise done): [DONE]
     - **Crucially, use transactions** to update both:
         - `weeklyProgress` (increment `setsCompleted`, check `isExerciseDone`).
         - `exerciseActivityLog` (upsert/increment `setsCompleted` for the day).
-- 28. [ ] API endpoint to add/edit/delete a `weeklyNote` within a `weeklyProgress` document.
+- 28. [x] API endpoint to add/edit/delete a `weeklyNote` within a `weeklyProgress` document. [DONE]
 
 ### Saved Workouts
 - 29. [ ] API endpoint to get all saved workouts for the user.
@@ -62,41 +71,39 @@ This document breaks down the tasks needed to implement the Training App based o
 ## Frontend UI (Next.js / React / TypeScript)
 
 ### Core Structure & Navigation
-- 34. [ ] Set up frontend project structure.
-- 35. [ ] Implement routing.
-- 36. [ ] Implement main navigation (e.g., bottom bar, side menu).
 - 37. [x] Implement login and registration forms/views.
 - 38. [x] Implement authentication state management (handling tokens/sessions - *initial context setup done*).
 
 ### Training Plans View
-- 39. [ ] Implement view to list user's training plans.
-- 40. [ ] Display plan name, duration, status.
-- 41. [ ] Implement 'Add Plan' button and associated form/modal.
-- 42. [ ] Implement 'Edit Plan' functionality.
-- 43. [ ] Implement 'Delete Plan' confirmation and action.
-- 44. [ ] Implement 'Duplicate Plan' action.
+- 39. [x] Implement view to list user's training plans.
+- 40. [x] Display plan name, duration, status (including indicator for active plan).
+- 41. [x] Implement 'Add Plan' button and associated form/modal.
+- 42. [x] Implement 'Edit Plan' functionality.
+- 43. [x] Implement 'Delete Plan' confirmation and action.
+- 44. [x] Implement 'Duplicate Plan' action.
+- 44a. [x] Implement 'Set Active' button/action.
 
-### Exercise Management View (within a plan)
-- 45. [ ] Implement view to list exercises within a selected plan.
-- 46. [ ] Implement 'Add Exercise' flow (potentially searching/selecting from `exerciseDefinitions`).
-- 47. [ ] Implement editing exercise details (sets, reps, weight, comments).
-- 48. [ ] Implement deleting exercises.
+### Exercise Management View (within a plan) [DONE]
+- 45. [x] Implement view to list exercises within a selected plan. [DONE]
+- 46. [x] Implement 'Add Exercise' flow (potentially searching/selecting from `exerciseDefinitions`). [DONE]
+- 47. [x] Implement editing exercise details (sets, reps, weight, comments). [DONE]
+- 48. [x] Implement deleting exercises. [DONE]
 
-### Exercises View (Workout Execution)
-- 49. [ ] Implement the main workout view for the current week.
-- 50. [ ] Display header with week navigation, progress info.
-- 51. [ ] Display list of exercises for the week.
-- 52. [ ] Implement controls to mark sets/exercises as complete (calling backend API).
-- 53. [ ] Implement visual feedback for completion.
-- 54. [ ] Implement opening the 'Exercise Detail View' modal.
+### Exercises View (Workout Execution) [DONE]
+- 49. [x] Implement the main workout view for the current week. [DONE]
+- 50. [x] Display header with week navigation, progress info. [DONE]
+- 51. [x] Display list of exercises for the week. [DONE]
+- 52. [x] Implement controls to mark sets/exercises as complete (calling backend API). [DONE]
+- 53. [x] Implement visual feedback for completion. [DONE]
+- 54. [x] Implement opening the 'Exercise Detail View' modal. [PLANNED]
 
 ### Exercise Detail View (Modal)
-- 55. [ ] Implement modal component.
-- 56. [ ] Display detailed exercise info (fetched from backend).
-- 57. [ ] Display larger image.
-- 58. [ ] Display general comments (`exercises.comments`).
-- 59. [ ] Display/manage Weekly Notes (`weeklyProgress.weeklyNotes`).
-- 60. [ ] Display exercise history log (fetching/aggregating data).
+- 55. [x] Implement modal component.
+- 56. [x] Display detailed exercise info (fetched from backend).
+- 57. [x] Display larger image.
+- 58. [x] Display general comments (`exercises.comments`).
+- 59. [x] Display/manage Weekly Notes (`weeklyProgress.weeklyNotes`).
+- 60. [x] Display exercise history log (fetching/aggregating data).
 
 ### Workout Feature
 - 61. [ ] Implement selecting exercises from 'Exercises View' to start a workout.

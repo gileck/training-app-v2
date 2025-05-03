@@ -6,6 +6,7 @@ export interface TrainingPlan {
     userId: ObjectId; // Reference to the user
     name: string;
     durationWeeks: number;
+    isActive?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -41,10 +42,39 @@ export type UpdateTrainingPlanResponse = TrainingPlan | { error?: string };
 export interface DeleteTrainingPlanRequest {
     planId: string;
 }
-export type DeleteTrainingPlanResponse = { success: boolean; message?: string; error?: string };
+export type DeleteTrainingPlanResponse = {
+    success: boolean;
+    message?: string;
+};
 
 // POST /trainingPlans/:planId/duplicate (Duplicate plan)
 export interface DuplicateTrainingPlanRequest {
     planId: string;
 }
 export type DuplicateTrainingPlanResponse = TrainingPlan | { error?: string }; // Returns the new plan 
+
+// --- Set Active Training Plan ---
+
+export const nameSetActive = 'trainingPlans.setActive';
+
+export type SetActiveTrainingPlanRequest = {
+    planId: string;
+};
+
+export type SetActiveTrainingPlanResponse = {
+    success: boolean;
+    message?: string;
+};
+
+// --- Get Active Training Plan ---
+
+export const nameGetActive = 'trainingPlans.getActive';
+
+// No specific request params needed, just uses context.userId
+export type GetActiveTrainingPlanRequest = Record<string, never>; // Empty object
+
+// Response is either the active TrainingPlan or an error/null indicator
+export type GetActiveTrainingPlanResponse = TrainingPlan | { error?: string; plan?: null };
+
+// --- Duplicate Training Plan ---
+// ... existing code ... 

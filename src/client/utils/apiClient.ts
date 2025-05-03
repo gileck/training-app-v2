@@ -17,11 +17,14 @@ export const apiClient = {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
-        name, 
+      body: JSON.stringify({
+        name,
         params,
-        options
-       }),
+        options: {
+          disableCache: options?.disableCache || window.location.hostname.includes('localhost'),
+          bypassCache: options?.bypassCache || false,
+        }
+      }),
     });
 
     if (!response.ok) {

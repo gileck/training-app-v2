@@ -16,7 +16,7 @@ const RouterContext = createContext<RouterContextType>({
   currentPath: '/',
   routeParams: {},
   queryParams: {},
-  navigate: () => {},
+  navigate: () => { },
 });
 
 // Custom hook to use router
@@ -31,46 +31,46 @@ const parseRouteParams = (currentPath: string, routePattern: string): RouteParam
     paramNames.push(match.substring(1)); // Store param name without the colon
     return '([^/]+)';
   });
-  
+
   const regex = new RegExp(`^${patternRegex.replace(/\//g, '\\/')}$`);
   const match = currentPath.match(regex);
-  
+
   if (!match) return {};
-  
+
   // Create params object from matched groups
   const params: RouteParams = {};
   paramNames.forEach((name, index) => {
     params[name] = match[index + 1]; // +1 because match[0] is the full match
   });
-  
+
   return params;
 };
 
 // Helper function to parse query parameters
 const parseQueryParams = (): QueryParams => {
   if (typeof window === 'undefined') return {};
-  
+
   const params = new URLSearchParams(window.location.search);
   const queryParams: QueryParams = {};
-  
+
   params.forEach((value, key) => {
     queryParams[key] = value;
   });
-  
+
   return queryParams;
 };
 
 // Router provider component
-export const RouterProvider = ({ children, routes }: { 
-  children?: (Component: React.ComponentType) => React.ReactNode, 
-  routes: Record<string, React.ComponentType> 
+export const RouterProvider = ({ children, routes }: {
+  children?: (Component: React.ComponentType) => React.ReactNode,
+  routes: Record<string, React.ComponentType>
 }) => {
   // Initialize with current path or default to '/'
   const [currentPath, setCurrentPath] = useState<string>(() => {
     // Use the pathname part of the URL without the leading slash
-    return typeof window !== 'undefined' 
-      ? window.location.pathname === '/' 
-        ? '/' 
+    return typeof window !== 'undefined'
+      ? window.location.pathname === '/'
+        ? '/'
         : window.location.pathname
       : '/';
   });
@@ -85,7 +85,7 @@ export const RouterProvider = ({ children, routes }: {
     if (routes[pathWithoutQuery]) {
       return { RouteComponent: routes[pathWithoutQuery], routeParams: {} };
     }
-    
+
     // Then check for parameterized routes
     for (const pattern in routes) {
       if (pattern.includes(':')) {
@@ -95,11 +95,11 @@ export const RouterProvider = ({ children, routes }: {
         }
       }
     }
-    
+
     // Fallback to not-found or home
-    return { 
-      RouteComponent: routes['/not-found'] || routes['/'], 
-      routeParams: {} 
+    return {
+      RouteComponent: routes['/not-found'] || routes['/'],
+      routeParams: {}
     };
   }, [currentPath, routes]);
 
@@ -111,10 +111,10 @@ export const RouterProvider = ({ children, routes }: {
     } else {
       window.history.pushState(null, '', path);
     }
-    
+
     // Update current path state
     setCurrentPath(path);
-    
+
     // Update query params
     setQueryParams(parseQueryParams());
   };
@@ -130,9 +130,6 @@ export const RouterProvider = ({ children, routes }: {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Provide router context and render current route
-  console.log('currentPath', currentPath);
-  
   // Provide router context and render current route
   return (
     <RouterContext.Provider value={{ currentPath, routeParams, queryParams, navigate }}>

@@ -6,7 +6,9 @@ import {
     createApiName,
     updateApiName,
     deleteApiName,
-    duplicateApiName
+    duplicateApiName,
+    setActiveApiName,
+    getActiveApiName
 } from "./index"; // Import names from index
 import type {
     GetAllTrainingPlansRequest,
@@ -20,7 +22,10 @@ import type {
     DeleteTrainingPlanRequest,
     DeleteTrainingPlanResponse,
     DuplicateTrainingPlanRequest,
-    DuplicateTrainingPlanResponse
+    DuplicateTrainingPlanResponse,
+    SetActiveTrainingPlanRequest,
+    SetActiveTrainingPlanResponse,
+    GetActiveTrainingPlanResponse
 } from "./types";
 
 /**
@@ -84,5 +89,25 @@ export const duplicateTrainingPlan = async (params: DuplicateTrainingPlanRequest
         duplicateApiName,
         params,
         { bypassCache: true } // Bypass cache on duplicate
+    );
+};
+
+/**
+ * Task X (Client): Set Active Training Plan
+ */
+export const setActiveTrainingPlan = async (params: SetActiveTrainingPlanRequest): Promise<CacheResult<SetActiveTrainingPlanResponse>> => {
+    return apiClient.call<CacheResult<SetActiveTrainingPlanResponse>, SetActiveTrainingPlanRequest>(
+        setActiveApiName,
+        params,
+        { bypassCache: true } // Bypass cache on set active
+    );
+};
+
+// Task X: Get Active Training Plan
+export const getActiveTrainingPlan = async (): Promise<CacheResult<GetActiveTrainingPlanResponse>> => {
+    // No params needed for the request body
+    return apiClient.call<CacheResult<GetActiveTrainingPlanResponse>, Record<string, never>>(
+        getActiveApiName,
+        {}
     );
 }; 

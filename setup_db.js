@@ -89,17 +89,17 @@ try {
     // 3. Seed Data (Optional)
     print('\n--- Seeding Data (Exercise Definitions) ---');
     const commonExercises = [
-        { name: "Bench Press", imageUrl: null, defaultTargetMuscles: ["Chest", "Triceps", "Shoulders"] },
-        { name: "Squat", imageUrl: null, defaultTargetMuscles: ["Quadriceps", "Glutes", "Hamstrings"] },
-        { name: "Deadlift", imageUrl: null, defaultTargetMuscles: ["Back", "Glutes", "Hamstrings", "Quadriceps"] },
-        { name: "Overhead Press", imageUrl: null, defaultTargetMuscles: ["Shoulders", "Triceps"] },
-        { name: "Barbell Row", imageUrl: null, defaultTargetMuscles: ["Back", "Biceps"] },
-        { name: "Pull-up", imageUrl: null, defaultTargetMuscles: ["Back", "Biceps"] },
-        { name: "Push-up", imageUrl: null, defaultTargetMuscles: ["Chest", "Triceps", "Shoulders"] },
-        { name: "Bicep Curl", imageUrl: null, defaultTargetMuscles: ["Biceps"] },
-        { name: "Triceps Extension", imageUrl: null, defaultTargetMuscles: ["Triceps"] },
-        { name: "Running", imageUrl: null, defaultTargetMuscles: ["Cardio", "Legs"] },
-        { name: "Cycling", imageUrl: null, defaultTargetMuscles: ["Cardio", "Legs"] },
+        { name: "Bench Press", imageUrl: null, primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders"], bodyWeight: false, type: "Upper body" },
+        { name: "Squat", imageUrl: null, primaryMuscle: "Quadriceps", secondaryMuscles: ["Glutes", "Hamstrings"], bodyWeight: false, type: "Legs" },
+        { name: "Deadlift", imageUrl: null, primaryMuscle: "Back", secondaryMuscles: ["Glutes", "Hamstrings", "Quadriceps"], bodyWeight: false, type: "Legs" },
+        { name: "Overhead Press", imageUrl: null, primaryMuscle: "Shoulders", secondaryMuscles: ["Triceps"], bodyWeight: false, type: "Upper body" },
+        { name: "Barbell Row", imageUrl: null, primaryMuscle: "Back", secondaryMuscles: ["Biceps"], bodyWeight: false, type: "Upper body" },
+        { name: "Pull-up", imageUrl: null, primaryMuscle: "Back", secondaryMuscles: ["Biceps"], bodyWeight: true, type: "Upper body" },
+        { name: "Push-up", imageUrl: null, primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders"], bodyWeight: true, type: "Upper body" },
+        { name: "Bicep Curl", imageUrl: null, primaryMuscle: "Biceps", secondaryMuscles: [], bodyWeight: false, type: "Upper body" },
+        { name: "Triceps Extension", imageUrl: null, primaryMuscle: "Triceps", secondaryMuscles: [], bodyWeight: false, type: "Upper body" },
+        { name: "Running", imageUrl: null, primaryMuscle: "Cardio", secondaryMuscles: ["Legs"], bodyWeight: true, type: "Cardio" },
+        { name: "Cycling", imageUrl: null, primaryMuscle: "Cardio", secondaryMuscles: ["Legs"], bodyWeight: false, type: "Cardio" },
     ];
 
     let seededCount = 0;
@@ -108,7 +108,18 @@ try {
     commonExercises.forEach(ex => {
         const result = db.exerciseDefinitions.updateOne(
             { name: ex.name }, // Filter by name
-            { $setOnInsert: { name: ex.name, imageUrl: ex.imageUrl, defaultTargetMuscles: ex.defaultTargetMuscles, createdAt: new Date(), updatedAt: new Date() } }, // Fields to set only on insert
+            {
+                $setOnInsert: {
+                    name: ex.name,
+                    imageUrl: ex.imageUrl,
+                    primaryMuscle: ex.primaryMuscle,
+                    secondaryMuscles: ex.secondaryMuscles,
+                    bodyWeight: ex.bodyWeight,
+                    type: ex.type,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            }, // Fields to set only on insert
             { upsert: true } // Options: insert if not found
         );
 

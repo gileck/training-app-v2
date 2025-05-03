@@ -28,6 +28,7 @@ We primarily use referencing (storing ObjectIds) for relationships, but embeddin
   "userId": ObjectId(),     // Reference to users._id, Indexed
   "name": "String",
   "durationWeeks": "Number", // Integer
+  "isActive": "Boolean",    // Default: false, Indexed (with partial unique index)
   "createdAt": "Date",
   "updatedAt": "Date"
   // Optionally, exerciseIds could be embedded here if a plan's exercises
@@ -35,6 +36,7 @@ We primarily use referencing (storing ObjectIds) for relationships, but embeddin
 }
 ```
 *Relationship:* One User document relates to Many TrainingPlan documents via `userId`.
+*Indexes:* A compound index on (`userId`, `isActive`) with a partial filter `{ isActive: true }` and `unique: true` should be created to enforce that only one plan can be active per user.
 
 ### 3. `exerciseDefinitions`
 (Stores the canonical definition of an exercise type)
@@ -42,9 +44,12 @@ We primarily use referencing (storing ObjectIds) for relationships, but embeddin
 ```json
 {
   "_id": ObjectId(),
-  "name": "String",                 // Indexed, Unique (e.g., "Bench Press")
+  "name": "String",                // Indexed, Unique (e.g., "Bench Press")
   "imageUrl": "String",            // Optional
-  "defaultTargetMuscles": ["String"], // Optional Array of Strings
+  "primaryMuscle": "String",       // Primary muscle targeted
+  "secondaryMuscles": ["String"],  // Array of secondary muscles targeted
+  "bodyWeight": "Boolean",         // Whether it's a bodyweight exercise
+  "type": "String",                // Exercise category/type 
   "createdAt": "Date",
   "updatedAt": "Date"
 }

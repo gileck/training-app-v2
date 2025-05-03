@@ -36,7 +36,6 @@ export const withCache = async <T>(
   const cacheKey = cache.generateCacheKey(params);
 
   // If disable cache is set, skip cache lookup
-  console.log('opts.disableCache', opts.disableCache);
   if (opts.disableCache) {
     const result = await callback();
     return { data: result, isFromCache: false };
