@@ -1,5 +1,4 @@
 import { NavItem } from './layout/types';
-import HomeIcon from '@mui/icons-material/Home';
 import ChatIcon from '@mui/icons-material/Chat';
 import FolderIcon from '@mui/icons-material/Folder';
 import SettingsIcon from '@mui/icons-material/Settings';

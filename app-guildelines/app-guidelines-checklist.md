@@ -80,5 +80,5 @@ Run the Project checks (typscript and lint)
 yarn check
 ```
 
-The application is not compliant with guidelines until `yarn check` completes with 0 errors. All TypeScript and linting errors must be fixed before considering the guidelines check complete.
-Finish the task by making sure `yarn check` is not reporting any issues.
+The application is not compliant with guidelines until `yarn checks` completes with 0 errors. All TypeScript and linting errors must be fixed before considering the guidelines check complete.
+Finish the task by making sure `yarn checks` is not reporting any issues.
