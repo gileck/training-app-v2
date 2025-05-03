@@ -77,7 +77,7 @@ Review code in the `server` folder:
 
 Run the Project checks (typscript and lint)
 ```bash
-yarn check
+yarn checks
 ```
 
 The application is not compliant with guidelines until `yarn checks` completes with 0 errors. All TypeScript and linting errors must be fixed before considering the guidelines check complete.
