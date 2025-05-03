@@ -1,3 +1,6 @@
+
+DO THE FOLLOWING:
+
 # Application Guidelines Compliance Checklist
 
 This checklist helps ensure that your application follows all established guidelines. Use this as a systematic approach to verifying compliance throughout the codebase.

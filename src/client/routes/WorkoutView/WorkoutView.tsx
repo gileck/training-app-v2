@@ -366,7 +366,8 @@ export const WorkoutView = () => {
             if (!planId) {
                 try {
                     const response = await getActiveTrainingPlan();
-                    if (response.data && !('error' in response.data) && response.data._id) {
+                    // Check if response.data is a TrainingPlan (not the error object)
+                    if (response.data && !('plan' in response.data) && 'name' in response.data) {
                         const activePlanId = response.data._id.toString();
                         setPlanId(activePlanId);
                     } else {
