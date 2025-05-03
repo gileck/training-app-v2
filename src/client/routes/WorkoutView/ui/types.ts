@@ -43,6 +43,7 @@ export interface WeekNavigatorProps {
     currentWeek: number;
     maxWeeks: number;
     onNavigate: (week: number) => void;
+    isWeekLoading?: boolean;
 }
 
 export interface LoadingErrorDisplayProps {

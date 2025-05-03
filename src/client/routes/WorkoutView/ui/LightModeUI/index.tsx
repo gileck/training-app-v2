@@ -67,7 +67,7 @@ const LoadingErrorDisplay = ({ isLoading, error }: LoadingErrorDisplayProps) => 
     return null;
 };
 
-const WeekNavigator: React.FC<WeekNavigatorProps> = ({ currentWeek, maxWeeks, onNavigate }) => {
+const WeekNavigator: React.FC<WeekNavigatorProps> = ({ currentWeek, maxWeeks, onNavigate, isWeekLoading = false }) => {
     return (
         <Paper
             elevation={2}
@@ -83,7 +83,7 @@ const WeekNavigator: React.FC<WeekNavigatorProps> = ({ currentWeek, maxWeeks, on
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ p: 1.5 }}>
                 <IconButton
                     onClick={() => onNavigate(currentWeek - 1)}
-                    disabled={currentWeek <= 1}
+                    disabled={currentWeek <= 1 || isWeekLoading}
                     sx={{
                         color: NEON_PURPLE,
                         '&.Mui-disabled': {
@@ -93,19 +93,32 @@ const WeekNavigator: React.FC<WeekNavigatorProps> = ({ currentWeek, maxWeeks, on
                 >
                     <ArrowBackIcon />
                 </IconButton>
-                <Typography
-                    variant="h6"
-                    sx={{
-                        fontWeight: 700,
-                        color: '#333',
-                        textShadow: `0 0 1px ${alpha(NEON_PURPLE, 0.3)}`
-                    }}
-                >
-                    WEEK {currentWeek} / {maxWeeks}
-                </Typography>
+                <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    {isWeekLoading ? (
+                        <CircularProgress
+                            size={24}
+                            sx={{
+                                color: NEON_BLUE,
+                                position: 'absolute',
+                                left: -36,
+                                mx: 'auto'
+                            }}
+                        />
+                    ) : null}
+                    <Typography
+                        variant="h6"
+                        sx={{
+                            fontWeight: 700,
+                            color: '#333',
+                            textShadow: `0 0 1px ${alpha(NEON_PURPLE, 0.3)}`
+                        }}
+                    >
+                        WEEK {currentWeek} / {maxWeeks}
+                    </Typography>
+                </Box>
                 <IconButton
                     onClick={() => onNavigate(currentWeek + 1)}
-                    disabled={currentWeek >= maxWeeks}
+                    disabled={currentWeek >= maxWeeks || isWeekLoading}
                     sx={{
                         color: NEON_PURPLE,
                         '&.Mui-disabled': {
@@ -427,9 +440,21 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     toggleShowCompleted,
     handleNavigateWeek
 }) => {
-    if (isLoading) {
-        return <LoadingErrorDisplay isLoading={true} error={null} />;
-    }
+    // State to track loading of week data
+    const [isWeekLoading, setIsWeekLoading] = React.useState(false);
+
+    // Modified navigate handler to show loading state
+    const handleWeekNavigate = (week: number) => {
+        setIsWeekLoading(true);
+        handleNavigateWeek(week);
+    };
+
+    // Reset loading state when data arrives or week number changes
+    React.useEffect(() => {
+        if (!isLoading) {
+            setIsWeekLoading(false);
+        }
+    }, [isLoading, weekNumber]);
 
     if (!planId) {
         return (
@@ -457,7 +482,7 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
         );
     }
 
-    if (error) {
+    if (error && !isWeekLoading) {
         return (
             <Box sx={{ p: 3, bgcolor: LIGHT_BG, color: '#333', minHeight: '100vh' }}>
                 <Typography variant="h5" sx={{ mb: 2, color: NEON_PURPLE, fontWeight: 'bold' }}>
@@ -480,6 +505,11 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                 </Button>
             </Box>
         );
+    }
+
+    // Show full page loading only for initial load, not for week changes
+    if (isLoading && !isWeekLoading && !planDetails) {
+        return <LoadingErrorDisplay isLoading={true} error={null} />;
     }
 
     if (!planDetails) {
@@ -529,7 +559,8 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
             <WeekNavigator
                 currentWeek={weekNumber}
                 maxWeeks={planDetails.durationWeeks}
-                onNavigate={handleNavigateWeek}
+                onNavigate={handleWeekNavigate}
+                isWeekLoading={isWeekLoading}
             />
 
             {/* Weekly Progress */}
@@ -584,175 +615,139 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                 </Typography>
             </Paper>
 
-            {/* Actions */}
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography
-                    variant="h6"
-                    sx={{
-                        fontSize: { xs: '1.1rem', sm: '1.25rem' },
-                        fontWeight: 'bold',
-                        color: '#333',
-                        position: 'relative',
-                        '&:after': {
-                            content: '""',
-                            position: 'absolute',
-                            bottom: -8,
-                            left: 0,
-                            width: 40,
-                            height: 2,
-                            bgcolor: NEON_PURPLE
-                        }
-                    }}
-                >
-                    Exercises
-                </Typography>
-
-                {!showSelectionMode ? (
-                    <Button
-                        variant="contained"
-                        onClick={handleStartSelectionMode}
-                        startIcon={<FlashOnIcon />}
-                        sx={{
-                            bgcolor: NEON_PINK,
-                            color: 'white',
-                            borderRadius: 8,
-                            textTransform: 'none',
-                            boxShadow: `0 4px 12px ${alpha(NEON_PINK, 0.3)}`,
-                            '&:hover': {
-                                bgcolor: alpha(NEON_PINK, 0.9),
-                                boxShadow: `0 6px 14px ${alpha(NEON_PINK, 0.4)}`
-                            }
-                        }}
-                    >
-                        Create Workout
-                    </Button>
-                ) : (
-                    <Stack direction="row" spacing={1.5}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleStartWorkout}
-                            disabled={selectedExercises.length === 0}
-                            startIcon={<FlashOnIcon />}
-                            sx={{
-                                bgcolor: NEON_GREEN,
-                                color: 'white',
-                                borderRadius: 8,
-                                textTransform: 'none',
-                                fontWeight: 'bold',
-                                boxShadow: `0 4px 12px ${alpha(NEON_GREEN, 0.3)}`,
-                                '&:hover': {
-                                    bgcolor: alpha(NEON_GREEN, 0.9),
-                                    boxShadow: `0 6px 14px ${alpha(NEON_GREEN, 0.4)}`
-                                },
-                                '&.Mui-disabled': {
-                                    color: alpha('#FFFFFF', 0.7),
-                                    bgcolor: alpha(NEON_GREEN, 0.5)
-                                }
-                            }}
-                        >
-                            Start ({selectedExercises.length})
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            onClick={handleCancelSelectionMode}
-                            sx={{
-                                color: '#555',
-                                borderColor: alpha('#000000', 0.2),
-                                borderRadius: 8,
-                                textTransform: 'none',
-                                '&:hover': {
-                                    borderColor: '#000000',
-                                    bgcolor: alpha('#000000', 0.02)
-                                }
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                    </Stack>
-                )}
-            </Box>
-
-            {/* Exercises list */}
-            {activeExercises.length === 0 && completedExercises.length === 0 ? (
-                <Paper
-                    elevation={2}
-                    sx={{
-                        textAlign: 'center',
-                        mt: 6,
-                        p: 4,
-                        borderRadius: 3,
-                        bgcolor: LIGHT_PAPER,
-                        border: `1px dashed ${alpha('#000000', 0.1)}`
-                    }}
-                >
-                    <Typography variant="h6" color={alpha('#000000', 0.4)}>
-                        No exercises found for this plan
-                    </Typography>
-                </Paper>
+            {/* Display content area loading state during week changes */}
+            {(isLoading || isWeekLoading) ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', my: 8 }}>
+                    <CircularProgress sx={{ color: NEON_PURPLE }} />
+                </Box>
             ) : (
-                <Box>
-                    {/* Active Exercises */}
-                    <Box sx={{ mb: 4 }}>
-                        {activeExercises.length > 0 && (
-                            <Typography
-                                variant="subtitle1"
-                                sx={{
-                                    mb: 2,
-                                    color: NEON_BLUE,
-                                    fontWeight: 'medium',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: 1,
-                                    fontSize: '0.875rem'
-                                }}
-                            >
-                                Active Exercises
-                            </Typography>
-                        )}
-                        {activeExercises.map((exercise) => (
-                            <WorkoutExerciseItem
-                                key={exercise._id.toString()}
-                                exercise={exercise}
-                                planId={planId}
-                                weekNumber={weekNumber}
-                                onSetComplete={handleSetCompletionUpdate}
-                                showSelectionMode={showSelectionMode}
-                                selectedExercises={selectedExercises}
-                                handleExerciseSelect={handleExerciseSelect}
-                            />
-                        ))}
-                    </Box>
+                <>
+                    {/* Actions */}
+                    <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                                fontWeight: 'bold',
+                                color: '#333',
+                                position: 'relative',
+                                '&:after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: -8,
+                                    left: 0,
+                                    width: 40,
+                                    height: 2,
+                                    bgcolor: NEON_PURPLE
+                                }
+                            }}
+                        >
+                            Exercises
+                        </Typography>
 
-                    {/* Completed Exercises */}
-                    {completedExercises.length > 0 && (
-                        <Box sx={{ mt: 3 }}>
+                        {!showSelectionMode ? (
                             <Button
-                                onClick={toggleShowCompleted}
-                                variant="outlined"
-                                fullWidth
+                                variant="contained"
+                                onClick={handleStartSelectionMode}
+                                startIcon={<FlashOnIcon />}
                                 sx={{
-                                    justifyContent: 'space-between',
-                                    py: 1.5,
-                                    px: 3,
-                                    mb: 2,
+                                    bgcolor: NEON_PINK,
+                                    color: 'white',
                                     borderRadius: 8,
-                                    color: alpha('#000000', 0.7),
-                                    borderColor: alpha('#000000', 0.1),
                                     textTransform: 'none',
+                                    boxShadow: `0 4px 12px ${alpha(NEON_PINK, 0.3)}`,
                                     '&:hover': {
-                                        borderColor: alpha('#000000', 0.3),
-                                        bgcolor: alpha('#000000', 0.01)
+                                        bgcolor: alpha(NEON_PINK, 0.9),
+                                        boxShadow: `0 6px 14px ${alpha(NEON_PINK, 0.4)}`
                                     }
                                 }}
-                                endIcon={showCompleted ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                             >
-                                <Box component="span">
-                                    Completed Exercises ({completedExercises.length})
-                                </Box>
+                                Create Workout
                             </Button>
+                        ) : (
+                            <Stack direction="row" spacing={1.5}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={handleStartWorkout}
+                                    disabled={selectedExercises.length === 0}
+                                    startIcon={<FlashOnIcon />}
+                                    sx={{
+                                        bgcolor: NEON_GREEN,
+                                        color: 'white',
+                                        borderRadius: 8,
+                                        textTransform: 'none',
+                                        fontWeight: 'bold',
+                                        boxShadow: `0 4px 12px ${alpha(NEON_GREEN, 0.3)}`,
+                                        '&:hover': {
+                                            bgcolor: alpha(NEON_GREEN, 0.9),
+                                            boxShadow: `0 6px 14px ${alpha(NEON_GREEN, 0.4)}`
+                                        },
+                                        '&.Mui-disabled': {
+                                            color: alpha('#FFFFFF', 0.4),
+                                            bgcolor: alpha(NEON_GREEN, 0.3)
+                                        }
+                                    }}
+                                >
+                                    Start ({selectedExercises.length})
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    onClick={handleCancelSelectionMode}
+                                    sx={{
+                                        color: '#333',
+                                        borderColor: alpha('#000000', 0.3),
+                                        borderRadius: 8,
+                                        textTransform: 'none',
+                                        '&:hover': {
+                                            borderColor: '#000000',
+                                            bgcolor: alpha('#000000', 0.05)
+                                        }
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                            </Stack>
+                        )}
+                    </Box>
 
-                            <Box sx={{ display: showCompleted ? 'block' : 'none' }}>
-                                {completedExercises.map((exercise) => (
+                    {/* Exercises list */}
+                    {activeExercises.length === 0 && completedExercises.length === 0 ? (
+                        <Paper
+                            elevation={2}
+                            sx={{
+                                textAlign: 'center',
+                                mt: 6,
+                                p: 4,
+                                borderRadius: 3,
+                                bgcolor: LIGHT_PAPER,
+                                border: `1px dashed ${alpha('#000000', 0.2)}`
+                            }}
+                        >
+                            <Typography variant="h6" color={alpha('#000000', 0.5)}>
+                                No exercises found for this plan
+                            </Typography>
+                        </Paper>
+                    ) : (
+                        <Box>
+                            {/* Active Exercises */}
+                            <Box sx={{ mb: 4 }}>
+                                {activeExercises.length > 0 && (
+                                    <Typography
+                                        variant="subtitle1"
+                                        sx={{
+                                            mb: 2,
+                                            color: NEON_BLUE,
+                                            fontWeight: 'medium',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: 1,
+                                            fontSize: '0.875rem'
+                                        }}
+                                    >
+                                        Active Exercises
+                                    </Typography>
+                                )}
+                                {activeExercises.map((exercise) => (
                                     <WorkoutExerciseItem
                                         key={exercise._id.toString()}
                                         exercise={exercise}
@@ -765,15 +760,60 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                                     />
                                 ))}
                             </Box>
+
+                            {/* Completed Exercises */}
+                            {completedExercises.length > 0 && (
+                                <Box sx={{ mt: 3 }}>
+                                    <Button
+                                        onClick={toggleShowCompleted}
+                                        variant="outlined"
+                                        fullWidth
+                                        sx={{
+                                            justifyContent: 'space-between',
+                                            py: 1.5,
+                                            px: 3,
+                                            mb: 2,
+                                            borderRadius: 8,
+                                            color: alpha('#000000', 0.8),
+                                            borderColor: alpha('#000000', 0.2),
+                                            textTransform: 'none',
+                                            '&:hover': {
+                                                borderColor: alpha('#000000', 0.4),
+                                                bgcolor: alpha('#000000', 0.03)
+                                            }
+                                        }}
+                                        endIcon={showCompleted ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                    >
+                                        <Box component="span">
+                                            Completed Exercises ({completedExercises.length})
+                                        </Box>
+                                    </Button>
+
+                                    <Box sx={{ display: showCompleted ? 'block' : 'none' }}>
+                                        {completedExercises.map((exercise) => (
+                                            <WorkoutExerciseItem
+                                                key={exercise._id.toString()}
+                                                exercise={exercise}
+                                                planId={planId}
+                                                weekNumber={weekNumber}
+                                                onSetComplete={handleSetCompletionUpdate}
+                                                showSelectionMode={showSelectionMode}
+                                                selectedExercises={selectedExercises}
+                                                handleExerciseSelect={handleExerciseSelect}
+                                            />
+                                        ))}
+                                    </Box>
+                                </Box>
+                            )}
                         </Box>
                     )}
-                </Box>
+                </>
             )}
 
             {/* Selected exercises summary */}
             {showSelectionMode && selectedExercises.length > 0 && (
                 <Paper
-                    elevation={3}
+                    elevation={4}
                     sx={{
                         position: 'fixed',
                         bottom: 16,
@@ -785,9 +825,9 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                         borderRadius: 3,
                         zIndex: 100,
                         bgcolor: alpha(LIGHT_PAPER, 0.95),
-                        border: `1px solid ${alpha(NEON_PURPLE, 0.2)}`,
+                        border: `1px solid ${alpha(NEON_PURPLE, 0.3)}`,
                         backdropFilter: 'blur(10px)',
-                        boxShadow: `0 8px 20px ${alpha(NEON_PURPLE, 0.2)}`
+                        boxShadow: `0 5px 15px ${alpha(NEON_PURPLE, 0.2)}`
                     }}
                 >
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, color: '#333' }}>
@@ -843,4 +883,4 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
             )}
         </Box>
     );
-}; 
+};

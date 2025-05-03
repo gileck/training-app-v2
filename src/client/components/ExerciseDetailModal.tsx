@@ -21,7 +21,9 @@ import {
     TableRow,
     TextField,
     IconButton,
-    Stack
+    Stack,
+    alpha,
+    useTheme
 } from '@mui/material';
 import Image from 'next/image';
 import EditIcon from '@mui/icons-material/Edit';
@@ -29,6 +31,11 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
+import CloseIcon from '@mui/icons-material/Close';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import HistoryIcon from '@mui/icons-material/History';
+import CommentIcon from '@mui/icons-material/Comment';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 
 import type { ExerciseDefinition } from '@/apis/exerciseDefinitions/types';
 import type { WeeklyNote } from '@/apis/weeklyProgress/types';
@@ -37,6 +44,15 @@ import { getExerciseDefinitionById } from '@/apis/exerciseDefinitions/client';
 import { getExerciseHistory } from '@/apis/exerciseHistory/client';
 import { addWeeklyNote, editWeeklyNote, deleteWeeklyNote } from '@/apis/weeklyProgress/client';
 import { WorkoutExercise } from '@/client/types/workout';
+
+// Neon Light Theme colors
+const NEON_PURPLE = '#9C27B0';
+const NEON_BLUE = '#3D5AFE';
+const NEON_GREEN = '#00C853';
+const NEON_PINK = '#D500F9';
+const LIGHT_BG = '#FFFFFF';
+const LIGHT_PAPER = '#F5F5F7';
+const LIGHT_CARD = '#FFFFFF';
 
 interface ExerciseDetailModalProps {
     isOpen: boolean;
@@ -70,188 +86,147 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
     const [isProcessingNote, setIsProcessingNote] = useState(false);
 
     useEffect(() => {
-        if (isOpen && exercise?.exerciseDefinitionId) {
-            const fetchDefinition = async () => {
-                setIsLoading(true);
-                setError(null);
-                setDefinition(null);
-                try {
-                    const response = await getExerciseDefinitionById({ definitionId: exercise.exerciseDefinitionId.toString() });
-                    if (response.data) {
-                        setDefinition(response.data);
-                    } else {
-                        throw new Error('Failed to fetch exercise definition');
-                    }
-                } catch (err) {
-                    const error = err as Error;
-                    console.error("Error fetching definition:", err);
-                    setError(error.message || 'Could not load exercise details.');
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-            fetchDefinition();
-        } else {
-            setDefinition(null);
+        const fetchExerciseDefinition = async () => {
+            if (!exercise || !exercise.definitionId) return;
+
+            setIsLoading(true);
             setError(null);
-            setIsLoading(false);
-        }
-    }, [isOpen, exercise]);
 
-    useEffect(() => {
-        if (isOpen && exercise?._id) {
-            const fetchHistory = async () => {
-                setIsLoadingHistory(true);
-                setHistoryError(null);
-                setHistoryData([]);
-                try {
-                    const response = await getExerciseHistory({
-                        exerciseId: exercise._id.toString(),
-                        limit: 10
-                    });
-                    if (response.data) {
-                        setHistoryData(response.data.activityEntries);
-                    } else {
-                        throw new Error('Failed to fetch exercise history');
-                    }
-                } catch (err) {
-                    const error = err as Error;
-                    console.error("Error fetching history:", err);
-                    setHistoryError(error.message || 'Could not load exercise history.');
-                } finally {
-                    setIsLoadingHistory(false);
+            try {
+                const result = await getExerciseDefinitionById(exercise.definitionId);
+
+                if (!result.isSuccess) {
+                    setError(result.error || 'Failed to fetch exercise details');
+                    return;
                 }
-            };
-            fetchHistory();
-        } else {
-            setHistoryData([]);
-            setHistoryError(null);
-            setIsLoadingHistory(false);
-        }
-    }, [isOpen, exercise]);
 
-    // Update weekly notes when exercise changes
+                setDefinition(result.data);
+            } catch (err) {
+                setError('An error occurred while fetching exercise details');
+                console.error(err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (isOpen) {
+            fetchExerciseDefinition();
+        }
+    }, [exercise, isOpen]);
+
     useEffect(() => {
-        if (exercise?.progress?.weeklyNotes) {
-            setWeeklyNotes(exercise.progress.weeklyNotes);
+        const fetchExerciseHistory = async () => {
+            if (!exercise || !exercise.definitionId) return;
+
+            setIsLoadingHistory(true);
+            setHistoryError(null);
+
+            try {
+                const result = await getExerciseHistory(exercise.definitionId);
+
+                if (!result.isSuccess) {
+                    setHistoryError(result.error || 'Failed to fetch exercise history');
+                    return;
+                }
+
+                setHistoryData(result.data || []);
+            } catch (err) {
+                setHistoryError('An error occurred while fetching exercise history');
+                console.error(err);
+            } finally {
+                setIsLoadingHistory(false);
+            }
+        };
+
+        if (isOpen && exercise?.definitionId) {
+            fetchExerciseHistory();
+        }
+    }, [exercise, isOpen]);
+
+    useEffect(() => {
+        if (exercise?.progress?.notes) {
+            setWeeklyNotes(exercise.progress.notes);
         } else {
             setWeeklyNotes([]);
         }
     }, [exercise]);
 
     const handleAddNote = async () => {
-        if (!exercise || !exercise._id || !planId || !weekNumber || !newNote.trim()) {
-            setNotesError('Cannot add empty note');
-            return;
-        }
+        if (!newNote.trim() || !planId || !weekNumber || !exercise) return;
 
         setIsProcessingNote(true);
         setNotesError(null);
 
         try {
-            const response = await addWeeklyNote({
-                planId,
-                exerciseId: exercise._id.toString(),
-                weekNumber,
-                note: newNote.trim()
-            });
+            const result = await addWeeklyNote(planId, weekNumber, exercise._id.toString(), newNote);
 
-            if (response.data) {
-                // Add the new note to the local state
-                setWeeklyNotes(prev => [...prev, response.data]);
-                setNewNote('');
-                setIsAddingNote(false);
-            } else {
-                throw new Error('Failed to add note');
+            if (!result.isSuccess) {
+                setNotesError(result.error || 'Failed to add note');
+                return;
             }
+
+            setWeeklyNotes(result.data || []);
+            setNewNote('');
+            setIsAddingNote(false);
         } catch (err) {
-            const error = err as Error;
-            console.error('Error adding note:', err);
-            setNotesError(error.message || 'Failed to add note');
+            setNotesError('An error occurred while adding note');
+            console.error(err);
         } finally {
             setIsProcessingNote(false);
         }
     };
 
     const handleEditNote = async (noteId: string) => {
-        if (!exercise || !exercise._id || !planId || !weekNumber || !editedNoteText.trim()) {
-            setNotesError('Cannot save empty note');
-            return;
-        }
+        if (!editedNoteText.trim() || !planId || !weekNumber || !exercise) return;
 
         setIsProcessingNote(true);
         setNotesError(null);
 
         try {
-            const response = await editWeeklyNote({
-                planId,
-                exerciseId: exercise._id.toString(),
-                weekNumber,
-                noteId,
-                updatedNote: editedNoteText.trim()
-            });
+            const result = await editWeeklyNote(planId, weekNumber, exercise._id.toString(), noteId, editedNoteText);
 
-            if (response.data) {
-                // Update the note in the local state
-                setWeeklyNotes(prev =>
-                    prev.map(note =>
-                        note.noteId.toString() === noteId
-                            ? { ...note, note: editedNoteText.trim() }
-                            : note
-                    )
-                );
-                setEditingNoteId(null);
-                setEditedNoteText('');
-            } else {
-                throw new Error('Failed to update note');
+            if (!result.isSuccess) {
+                setNotesError(result.error || 'Failed to edit note');
+                return;
             }
+
+            setWeeklyNotes(result.data || []);
+            setEditingNoteId(null);
+            setEditedNoteText('');
         } catch (err) {
-            const error = err as Error;
-            console.error('Error updating note:', err);
-            setNotesError(error.message || 'Failed to update note');
+            setNotesError('An error occurred while editing note');
+            console.error(err);
         } finally {
             setIsProcessingNote(false);
         }
     };
 
     const handleDeleteNote = async (noteId: string) => {
-        if (!exercise || !exercise._id || !planId || !weekNumber) {
-            return;
-        }
-
-        if (!window.confirm('Are you sure you want to delete this note?')) {
-            return;
-        }
+        if (!planId || !weekNumber || !exercise) return;
 
         setIsProcessingNote(true);
         setNotesError(null);
 
         try {
-            const response = await deleteWeeklyNote({
-                planId,
-                exerciseId: exercise._id.toString(),
-                weekNumber,
-                noteId
-            });
+            const result = await deleteWeeklyNote(planId, weekNumber, exercise._id.toString(), noteId);
 
-            if (response.data?.success) {
-                // Remove the note from the local state
-                setWeeklyNotes(prev => prev.filter(note => note.noteId.toString() !== noteId));
-            } else {
-                throw new Error('Failed to delete note');
+            if (!result.isSuccess) {
+                setNotesError(result.error || 'Failed to delete note');
+                return;
             }
+
+            setWeeklyNotes(result.data || []);
         } catch (err) {
-            const error = err as Error;
-            console.error('Error deleting note:', err);
-            setNotesError(error.message || 'Failed to delete note');
+            setNotesError('An error occurred while deleting note');
+            console.error(err);
         } finally {
             setIsProcessingNote(false);
         }
     };
 
-    const startEditingNote = (note: WeeklyNote) => {
-        setEditingNoteId(note.noteId.toString());
-        setEditedNoteText(note.note);
+    const startEditingNote = (noteId: string, noteText: string) => {
+        setEditingNoteId(noteId);
+        setEditedNoteText(noteText);
     };
 
     const cancelEditing = () => {
@@ -264,11 +239,19 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
         setNewNote('');
     };
 
-    if (!isOpen || !exercise) {
-        return null;
-    }
+    // Format the date
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(date);
+    };
 
-    const exerciseName = definition?.name || exercise.name || `Exercise ID: ${exercise._id.toString()}`;
+    const exerciseName = exercise?.name || definition?.name || 'Exercise Details';
 
     return (
         <Dialog
@@ -276,239 +259,617 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
             onClose={onClose}
             maxWidth="md"
             fullWidth
+            PaperProps={{
+                sx: {
+                    bgcolor: LIGHT_PAPER,
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                    boxShadow: `0 8px 32px ${alpha(NEON_PURPLE, 0.2)}`,
+                    border: `1px solid ${alpha(NEON_PURPLE, 0.15)}`
+                }
+            }}
         >
-            <DialogTitle>
-                <Typography variant="h5">{exerciseName}</Typography>
+            <DialogTitle sx={{
+                position: 'relative',
+                borderBottom: `1px solid ${alpha(NEON_PURPLE, 0.1)}`,
+                bgcolor: LIGHT_CARD,
+                px: 3,
+                py: 2
+            }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FitnessCenterIcon sx={{ mr: 1.5, color: NEON_PURPLE }} />
+                    <Typography
+                        variant="h5"
+                        component="div"
+                        sx={{
+                            fontWeight: 'bold',
+                            color: '#333',
+                            textShadow: `0 0 1px ${alpha(NEON_PURPLE, 0.2)}`
+                        }}
+                    >
+                        {exerciseName}
+                    </Typography>
+                </Box>
+
                 {definition?.description && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    <Typography variant="body2" sx={{ mt: 1, color: alpha('#000000', 0.6) }}>
                         {definition.description}
                     </Typography>
                 )}
+
+                <IconButton
+                    onClick={onClose}
+                    sx={{
+                        position: 'absolute',
+                        right: 8,
+                        top: 8,
+                        color: alpha('#000000', 0.5),
+                        '&:hover': {
+                            color: NEON_PURPLE,
+                            bgcolor: alpha(NEON_PURPLE, 0.05)
+                        }
+                    }}
+                >
+                    <CloseIcon />
+                </IconButton>
             </DialogTitle>
 
-            <DialogContent>
+            <DialogContent sx={{ bgcolor: LIGHT_PAPER, p: 0 }}>
                 {isLoading && (
                     <Box display="flex" justifyContent="center" my={4}>
-                        <CircularProgress />
+                        <CircularProgress sx={{ color: NEON_PURPLE }} />
                     </Box>
                 )}
 
-                {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
+                {error && (
+                    <Alert
+                        severity="error"
+                        sx={{
+                            m: 3,
+                            bgcolor: alpha('#FF0000', 0.05),
+                            color: '#D32F2F',
+                            border: `1px solid ${alpha('#FF0000', 0.1)}`,
+                        }}
+                    >
+                        {error}
+                    </Alert>
+                )}
 
                 {!isLoading && !error && definition && (
-                    <>
-                        {definition.imageUrl && (
-                            <Box sx={{ position: 'relative', width: '100%', height: 300, my: 2 }}>
-                                <Image
-                                    src={definition.imageUrl}
-                                    alt={definition.name}
-                                    layout="fill"
-                                    objectFit="contain"
-                                />
-                            </Box>
-                        )}
-
-                        <Box sx={{ mb: 2 }}>
-                            <Typography variant="h6">Exercise Details</Typography>
-                            <Typography variant="body1">
-                                <strong>Sets:</strong> {exercise.sets}
-                            </Typography>
-                            <Typography variant="body1">
-                                <strong>Reps:</strong> {exercise.reps}
-                            </Typography>
-                            {exercise.weight !== undefined && (
-                                <Typography variant="body1">
-                                    <strong>Weight:</strong> {exercise.weight}kg
-                                </Typography>
+                    <Box>
+                        {/* Image and details section */}
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: { xs: 'column', sm: 'row' },
+                            bgcolor: LIGHT_CARD,
+                            p: 3
+                        }}>
+                            {/* Image */}
+                            {definition.imageUrl && (
+                                <Box sx={{
+                                    position: 'relative',
+                                    width: { xs: '100%', sm: 250 },
+                                    height: 200,
+                                    mb: { xs: 2, sm: 0 },
+                                    mr: { xs: 0, sm: 3 },
+                                    borderRadius: 2,
+                                    overflow: 'hidden',
+                                    border: `1px solid ${alpha(NEON_BLUE, 0.15)}`,
+                                    boxShadow: `0 4px 12px ${alpha(NEON_BLUE, 0.1)}`,
+                                    flexShrink: 0
+                                }}>
+                                    <Image
+                                        src={definition.imageUrl}
+                                        alt={definition.name}
+                                        fill
+                                        style={{ objectFit: 'cover' }}
+                                    />
+                                </Box>
                             )}
+
+                            {/* Details */}
+                            <Box sx={{ flex: 1 }}>
+                                <Paper
+                                    elevation={0}
+                                    sx={{
+                                        p: 2.5,
+                                        bgcolor: alpha(NEON_BLUE, 0.05),
+                                        border: `1px solid ${alpha(NEON_BLUE, 0.1)}`,
+                                        borderRadius: 2
+                                    }}
+                                >
+                                    <Typography
+                                        variant="subtitle1"
+                                        sx={{
+                                            fontWeight: 'bold',
+                                            mb: 2,
+                                            color: NEON_BLUE,
+                                            display: 'flex',
+                                            alignItems: 'center'
+                                        }}
+                                    >
+                                        <ListAltIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
+                                        Exercise Details
+                                    </Typography>
+
+                                    <Stack spacing={1}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography variant="body2" sx={{ color: alpha('#000', 0.6) }}>Sets:</Typography>
+                                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>{exercise.sets}</Typography>
+                                        </Box>
+
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography variant="body2" sx={{ color: alpha('#000', 0.6) }}>Reps:</Typography>
+                                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>{exercise.reps}</Typography>
+                                        </Box>
+
+                                        {exercise.weight !== undefined && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <Typography variant="body2" sx={{ color: alpha('#000', 0.6) }}>Weight:</Typography>
+                                                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>{exercise.weight}kg</Typography>
+                                            </Box>
+                                        )}
+
+                                        {definition.bodyWeight && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <Typography variant="body2" sx={{ color: alpha('#000', 0.6) }}>Type:</Typography>
+                                                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>Bodyweight</Typography>
+                                            </Box>
+                                        )}
+
+                                        {definition.primaryMuscle && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <Typography variant="body2" sx={{ color: alpha('#000', 0.6) }}>Primary Muscle:</Typography>
+                                                <Chip
+                                                    label={definition.primaryMuscle}
+                                                    size="small"
+                                                    sx={{
+                                                        height: 22,
+                                                        bgcolor: alpha(NEON_BLUE, 0.1),
+                                                        color: NEON_BLUE,
+                                                        border: `1px solid ${alpha(NEON_BLUE, 0.2)}`,
+                                                        fontWeight: 'medium',
+                                                        fontSize: '0.7rem'
+                                                    }}
+                                                />
+                                            </Box>
+                                        )}
+                                    </Stack>
+                                </Paper>
+                            </Box>
                         </Box>
 
+                        {/* Comments/Instructions Section */}
                         {exercise.comments && (
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant="h6">Instructions/Comments</Typography>
-                                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.paper' }}>
-                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                            <Box sx={{ px: 3, py: 2.5, bgcolor: alpha(LIGHT_PAPER, 0.5) }}>
+                                <Paper
+                                    elevation={0}
+                                    sx={{
+                                        p: 2.5,
+                                        bgcolor: alpha(NEON_GREEN, 0.05),
+                                        border: `1px solid ${alpha(NEON_GREEN, 0.15)}`,
+                                        borderRadius: 2
+                                    }}
+                                >
+                                    <Typography
+                                        variant="subtitle1"
+                                        sx={{
+                                            fontWeight: 'bold',
+                                            mb: 1.5,
+                                            color: NEON_GREEN,
+                                            display: 'flex',
+                                            alignItems: 'center'
+                                        }}
+                                    >
+                                        <CommentIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
+                                        Instructions/Comments
+                                    </Typography>
+
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            whiteSpace: 'pre-wrap',
+                                            color: alpha('#000', 0.75),
+                                            lineHeight: 1.6
+                                        }}
+                                    >
                                         {exercise.comments}
                                     </Typography>
                                 </Paper>
                             </Box>
                         )}
 
-                        <Divider sx={{ my: 2 }} />
-
-                        <Box sx={{ mb: 2 }}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                                <Typography variant="h6">Weekly Notes</Typography>
-                                <Button
-                                    startIcon={isAddingNote ? <CancelIcon /> : <AddIcon />}
-                                    onClick={toggleAddNote}
-                                    size="small"
-                                    variant="outlined"
-                                    disabled={isProcessingNote}
+                        {/* History Section */}
+                        {historyData.length > 0 && (
+                            <Box sx={{ px: 3, py: 2.5, bgcolor: LIGHT_PAPER }}>
+                                <Paper
+                                    elevation={0}
+                                    sx={{
+                                        p: 0,
+                                        borderRadius: 2,
+                                        overflow: 'hidden',
+                                        border: `1px solid ${alpha('#000', 0.1)}`
+                                    }}
                                 >
-                                    {isAddingNote ? 'Cancel' : 'Add Note'}
-                                </Button>
-                            </Stack>
+                                    <Box sx={{
+                                        p: 2,
+                                        bgcolor: alpha(NEON_PURPLE, 0.05),
+                                        borderBottom: `1px solid ${alpha('#000', 0.05)}`,
+                                        display: 'flex',
+                                        alignItems: 'center'
+                                    }}>
+                                        <HistoryIcon sx={{ mr: 1, color: NEON_PURPLE, fontSize: '1.2rem' }} />
+                                        <Typography
+                                            variant="subtitle1"
+                                            sx={{
+                                                fontWeight: 'bold',
+                                                color: NEON_PURPLE
+                                            }}
+                                        >
+                                            Exercise History
+                                        </Typography>
+                                    </Box>
 
-                            {notesError && (
-                                <Alert severity="error" sx={{ mb: 2 }}>{notesError}</Alert>
-                            )}
-
-                            {isAddingNote && (
-                                <Box sx={{ mb: 2 }}>
-                                    <TextField
-                                        fullWidth
-                                        multiline
-                                        rows={3}
-                                        placeholder="Enter your note..."
-                                        value={newNote}
-                                        onChange={(e) => setNewNote(e.target.value)}
-                                        disabled={isProcessingNote}
-                                        sx={{ mb: 1 }}
-                                    />
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<SaveIcon />}
-                                        onClick={handleAddNote}
-                                        disabled={isProcessingNote || !newNote.trim()}
-                                    >
-                                        Save Note
-                                    </Button>
-                                </Box>
-                            )}
-
-                            {isProcessingNote && (
-                                <Box display="flex" justifyContent="center" my={1}>
-                                    <CircularProgress size={24} />
-                                </Box>
-                            )}
-
-                            {weeklyNotes.length > 0 ? (
-                                weeklyNotes.map((note: WeeklyNote) => (
-                                    <Paper
-                                        key={note.noteId.toString()}
-                                        variant="outlined"
-                                        sx={{ p: 2, mb: 1 }}
-                                    >
-                                        {editingNoteId === note.noteId.toString() ? (
-                                            <>
-                                                <TextField
-                                                    fullWidth
-                                                    multiline
-                                                    rows={3}
-                                                    value={editedNoteText}
-                                                    onChange={(e) => setEditedNoteText(e.target.value)}
-                                                    disabled={isProcessingNote}
-                                                    sx={{ mb: 1 }}
-                                                />
-                                                <Stack direction="row" spacing={1}>
-                                                    <Button
-                                                        variant="contained"
-                                                        startIcon={<SaveIcon />}
-                                                        onClick={() => handleEditNote(note.noteId.toString())}
-                                                        disabled={isProcessingNote || !editedNoteText.trim()}
-                                                        size="small"
-                                                    >
-                                                        Save
-                                                    </Button>
-                                                    <Button
-                                                        variant="outlined"
-                                                        startIcon={<CancelIcon />}
-                                                        onClick={cancelEditing}
-                                                        disabled={isProcessingNote}
-                                                        size="small"
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                </Stack>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                                                    {note.note}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                                                    {new Date(note.date).toLocaleString()}
-                                                </Typography>
-                                                <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1 }}>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => startEditingNote(note)}
-                                                        disabled={isProcessingNote || !!editingNoteId}
-                                                    >
-                                                        <EditIcon fontSize="small" />
-                                                    </IconButton>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => handleDeleteNote(note.noteId.toString())}
-                                                        disabled={isProcessingNote || !!editingNoteId}
-                                                    >
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Stack>
-                                            </>
-                                        )}
-                                    </Paper>
-                                ))
-                            ) : (
-                                <Typography variant="body2" color="text.secondary">
-                                    No notes for this week.
-                                </Typography>
-                            )}
-                        </Box>
-
-                        <Divider sx={{ my: 2 }} />
-
-                        <Box sx={{ mb: 2 }}>
-                            <Typography variant="h6">History</Typography>
-
-                            {isLoadingHistory && (
-                                <Box display="flex" justifyContent="center" my={2}>
-                                    <CircularProgress size={24} />
-                                </Box>
-                            )}
-
-                            {historyError && (
-                                <Alert severity="error" sx={{ my: 1 }}>{historyError}</Alert>
-                            )}
-
-                            {!isLoadingHistory && !historyError && (
-                                historyData.length > 0 ? (
-                                    <TableContainer component={Paper} variant="outlined">
-                                        <Table size="small">
+                                    <TableContainer sx={{ maxHeight: 200 }}>
+                                        <Table stickyHeader size="small">
                                             <TableHead>
                                                 <TableRow>
-                                                    <TableCell><strong>Date</strong></TableCell>
-                                                    <TableCell><strong>Sets Completed</strong></TableCell>
+                                                    <TableCell
+                                                        sx={{
+                                                            fontWeight: 'bold',
+                                                            bgcolor: LIGHT_CARD
+                                                        }}
+                                                    >
+                                                        Date
+                                                    </TableCell>
+                                                    <TableCell
+                                                        sx={{
+                                                            fontWeight: 'bold',
+                                                            bgcolor: LIGHT_CARD
+                                                        }}
+                                                    >
+                                                        Sets
+                                                    </TableCell>
+                                                    <TableCell
+                                                        sx={{
+                                                            fontWeight: 'bold',
+                                                            bgcolor: LIGHT_CARD
+                                                        }}
+                                                    >
+                                                        Reps
+                                                    </TableCell>
+                                                    <TableCell
+                                                        sx={{
+                                                            fontWeight: 'bold',
+                                                            bgcolor: LIGHT_CARD
+                                                        }}
+                                                    >
+                                                        Weight
+                                                    </TableCell>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {historyData.map((entry, index) => (
-                                                    <TableRow key={index}>
-                                                        <TableCell>{entry.date}</TableCell>
-                                                        <TableCell>{entry.setsCompleted}</TableCell>
+                                                {historyData.map((entry) => (
+                                                    <TableRow
+                                                        key={entry._id.toString()}
+                                                        sx={{
+                                                            '&:nth-of-type(odd)': {
+                                                                bgcolor: alpha('#f5f5f5', 0.5),
+                                                            },
+                                                            '&:hover': {
+                                                                bgcolor: alpha(NEON_PURPLE, 0.05)
+                                                            },
+                                                        }}
+                                                    >
+                                                        <TableCell sx={{ fontSize: '0.825rem' }}>
+                                                            {formatDate(entry.timestamp)}
+                                                        </TableCell>
+                                                        <TableCell sx={{ fontSize: '0.825rem' }}>
+                                                            {entry.sets}
+                                                        </TableCell>
+                                                        <TableCell sx={{ fontSize: '0.825rem' }}>
+                                                            {entry.reps}
+                                                        </TableCell>
+                                                        <TableCell sx={{ fontSize: '0.825rem' }}>
+                                                            {entry.weight !== undefined ? `${entry.weight}kg` : 'N/A'}
+                                                        </TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
-                                ) : (
-                                    <Typography variant="body2" color="text.secondary">
-                                        No history data available.
-                                    </Typography>
-                                )
-                            )}
-                        </Box>
-                    </>
-                )}
+                                </Paper>
+                            </Box>
+                        )}
 
-                {!isLoading && !error && !definition && (
-                    <Alert severity="info">Could not load exercise definition details.</Alert>
+                        {/* Workout Notes Section */}
+                        <Box sx={{ px: 3, py: 2.5, bgcolor: LIGHT_PAPER }}>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 0,
+                                    borderRadius: 2,
+                                    overflow: 'hidden',
+                                    border: `1px solid ${alpha('#000', 0.1)}`
+                                }}
+                            >
+                                <Box sx={{
+                                    p: 2,
+                                    bgcolor: alpha(NEON_PINK, 0.05),
+                                    borderBottom: `1px solid ${alpha('#000', 0.05)}`,
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <CommentIcon sx={{ mr: 1, color: NEON_PINK, fontSize: '1.2rem' }} />
+                                        <Typography
+                                            variant="subtitle1"
+                                            sx={{
+                                                fontWeight: 'bold',
+                                                color: NEON_PINK
+                                            }}
+                                        >
+                                            Workout Notes
+                                        </Typography>
+                                    </Box>
+
+                                    {!isAddingNote && (
+                                        <Button
+                                            startIcon={<AddIcon />}
+                                            onClick={toggleAddNote}
+                                            size="small"
+                                            sx={{
+                                                color: NEON_PINK,
+                                                textTransform: 'none',
+                                                '&:hover': {
+                                                    bgcolor: alpha(NEON_PINK, 0.05)
+                                                }
+                                            }}
+                                        >
+                                            Add Note
+                                        </Button>
+                                    )}
+                                </Box>
+
+                                <Box sx={{ p: 2 }}>
+                                    {notesError && (
+                                        <Alert
+                                            severity="error"
+                                            sx={{
+                                                mb: 2,
+                                                bgcolor: alpha('#FF0000', 0.05),
+                                                color: '#D32F2F',
+                                                border: `1px solid ${alpha('#FF0000', 0.1)}`,
+                                            }}
+                                        >
+                                            {notesError}
+                                        </Alert>
+                                    )}
+
+                                    {isAddingNote && (
+                                        <Box sx={{ mb: 2 }}>
+                                            <TextField
+                                                value={newNote}
+                                                onChange={(e) => setNewNote(e.target.value)}
+                                                label="New Note"
+                                                multiline
+                                                rows={2}
+                                                fullWidth
+                                                variant="outlined"
+                                                size="small"
+                                                sx={{
+                                                    mb: 1,
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '&.Mui-focused fieldset': {
+                                                            borderColor: NEON_PINK
+                                                        }
+                                                    },
+                                                    '& .MuiInputLabel-root.Mui-focused': {
+                                                        color: NEON_PINK
+                                                    }
+                                                }}
+                                            />
+                                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                                <Button
+                                                    size="small"
+                                                    startIcon={<CancelIcon />}
+                                                    onClick={toggleAddNote}
+                                                    sx={{
+                                                        color: alpha('#000', 0.6),
+                                                        textTransform: 'none',
+                                                        '&:hover': {
+                                                            bgcolor: alpha('#000', 0.05)
+                                                        }
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    size="small"
+                                                    variant="contained"
+                                                    startIcon={<SaveIcon />}
+                                                    onClick={handleAddNote}
+                                                    disabled={!newNote.trim() || isProcessingNote}
+                                                    sx={{
+                                                        bgcolor: NEON_PINK,
+                                                        color: 'white',
+                                                        textTransform: 'none',
+                                                        '&:hover': {
+                                                            bgcolor: alpha(NEON_PINK, 0.8)
+                                                        },
+                                                        '&.Mui-disabled': {
+                                                            bgcolor: alpha(NEON_PINK, 0.4),
+                                                            color: 'white'
+                                                        }
+                                                    }}
+                                                >
+                                                    {isProcessingNote ? 'Saving...' : 'Save Note'}
+                                                </Button>
+                                            </Stack>
+                                        </Box>
+                                    )}
+
+                                    {weeklyNotes.length === 0 ? (
+                                        <Typography variant="body2" sx={{ color: alpha('#000', 0.5), textAlign: 'center', py: 2 }}>
+                                            No notes yet. Add your first note to keep track of your progress.
+                                        </Typography>
+                                    ) : (
+                                        <Stack spacing={2}>
+                                            {weeklyNotes.map((note) => (
+                                                <Paper
+                                                    key={note._id}
+                                                    elevation={0}
+                                                    sx={{
+                                                        p: 2,
+                                                        bgcolor: alpha(NEON_PINK, 0.03),
+                                                        border: `1px solid ${alpha(NEON_PINK, 0.1)}`,
+                                                        borderRadius: 2
+                                                    }}
+                                                >
+                                                    {editingNoteId === note._id ? (
+                                                        <>
+                                                            <TextField
+                                                                value={editedNoteText}
+                                                                onChange={(e) => setEditedNoteText(e.target.value)}
+                                                                multiline
+                                                                rows={2}
+                                                                fullWidth
+                                                                variant="outlined"
+                                                                size="small"
+                                                                sx={{
+                                                                    mb: 1,
+                                                                    '& .MuiOutlinedInput-root': {
+                                                                        '&.Mui-focused fieldset': {
+                                                                            borderColor: NEON_PINK
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                                                <Button
+                                                                    size="small"
+                                                                    startIcon={<CancelIcon />}
+                                                                    onClick={cancelEditing}
+                                                                    sx={{
+                                                                        color: alpha('#000', 0.6),
+                                                                        textTransform: 'none'
+                                                                    }}
+                                                                >
+                                                                    Cancel
+                                                                </Button>
+                                                                <Button
+                                                                    size="small"
+                                                                    variant="contained"
+                                                                    startIcon={<SaveIcon />}
+                                                                    onClick={() => handleEditNote(note._id)}
+                                                                    disabled={!editedNoteText.trim() || isProcessingNote}
+                                                                    sx={{
+                                                                        bgcolor: NEON_PINK,
+                                                                        color: 'white',
+                                                                        textTransform: 'none',
+                                                                        '&:hover': {
+                                                                            bgcolor: alpha(NEON_PINK, 0.8)
+                                                                        },
+                                                                        '&.Mui-disabled': {
+                                                                            bgcolor: alpha(NEON_PINK, 0.4),
+                                                                            color: 'white'
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {isProcessingNote ? 'Saving...' : 'Save'}
+                                                                </Button>
+                                                            </Stack>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                                                <Typography
+                                                                    variant="body2"
+                                                                    sx={{
+                                                                        fontWeight: 'medium',
+                                                                        color: NEON_PINK
+                                                                    }}
+                                                                >
+                                                                    {new Date(note.date).toLocaleDateString()}
+                                                                </Typography>
+                                                                <Box>
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        onClick={() => startEditingNote(note._id, note.text)}
+                                                                        disabled={isProcessingNote}
+                                                                        sx={{
+                                                                            color: alpha('#000', 0.5),
+                                                                            '&:hover': {
+                                                                                color: NEON_BLUE,
+                                                                                bgcolor: alpha(NEON_BLUE, 0.05)
+                                                                            },
+                                                                            p: 0.5,
+                                                                            mr: 0.5
+                                                                        }}
+                                                                    >
+                                                                        <EditIcon fontSize="small" />
+                                                                    </IconButton>
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        onClick={() => handleDeleteNote(note._id)}
+                                                                        disabled={isProcessingNote}
+                                                                        sx={{
+                                                                            color: alpha('#000', 0.5),
+                                                                            '&:hover': {
+                                                                                color: '#f44336',
+                                                                                bgcolor: alpha('#f44336', 0.05)
+                                                                            },
+                                                                            p: 0.5
+                                                                        }}
+                                                                    >
+                                                                        <DeleteIcon fontSize="small" />
+                                                                    </IconButton>
+                                                                </Box>
+                                                            </Box>
+                                                            <Typography
+                                                                variant="body2"
+                                                                sx={{
+                                                                    whiteSpace: 'pre-wrap',
+                                                                    color: alpha('#000', 0.75)
+                                                                }}
+                                                            >
+                                                                {note.text}
+                                                            </Typography>
+                                                        </>
+                                                    )}
+                                                </Paper>
+                                            ))}
+                                        </Stack>
+                                    )}
+                                </Box>
+                            </Paper>
+                        </Box>
+                    </Box>
                 )}
             </DialogContent>
 
-            <DialogActions>
-                <Button onClick={onClose} variant="contained">Close</Button>
+            <DialogActions sx={{
+                p: 2,
+                bgcolor: LIGHT_CARD,
+                borderTop: `1px solid ${alpha(NEON_PURPLE, 0.1)}`
+            }}>
+                <Button
+                    onClick={onClose}
+                    variant="contained"
+                    sx={{
+                        bgcolor: NEON_PURPLE,
+                        color: 'white',
+                        borderRadius: 8,
+                        textTransform: 'none',
+                        px: 3,
+                        '&:hover': {
+                            bgcolor: alpha(NEON_PURPLE, 0.9)
+                        }
+                    }}
+                >
+                    Close
+                </Button>
             </DialogActions>
         </Dialog>
     );
