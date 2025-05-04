@@ -1,4 +1,3 @@
-
 DO THE FOLLOWING:
 
 # Application Guidelines Compliance Checklist
@@ -70,6 +69,12 @@ Review code in the `server` folder:
 - [ ] Verify error handling approaches
 - [ ] Ensure no circular dependencies
 - [ ] Ensure no types duplications across the project
+- [ ] Check for improper type handling in API calls:
+  - [ ] Never cast parameters or return values of API calls
+  - [ ] Never create custom types that duplicate API types
+  - [ ] Always import and use the exact types from the API's types.ts files
+  - [ ] No `as any` or similar type assertions when calling API functions
+  - [ ] Use proper type imports rather than recreating similar interfaces
 
 **Reference**: See `Typescript-guildelines.md` for TypeScript best practices
 

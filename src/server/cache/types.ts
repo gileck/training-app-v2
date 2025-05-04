@@ -22,7 +22,7 @@ export interface CacheMetadata {
 
 export interface CacheResult<T> { 
   /** The result of the cached function */
-  data: T;
+  data: T
   /** Whether the result was retrieved from cache */
   isFromCache: boolean;
   /** Metadata about the cache entry */

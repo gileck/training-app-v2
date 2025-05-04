@@ -314,7 +314,30 @@ const handleSubmit = async () => {
    - **ALWAYS import client functions directly from client.ts, not from index.ts**
    - This ensures proper typing and consistent error handling
 
-4. **Caching**:
+4. **API Type Safety**:
+   - **NEVER create custom types when making API calls**
+   - **NEVER use type casting (`as SomeType`) with API parameters**
+   - **ALWAYS import and use the exact parameter and return types defined in the API's types.ts file**
+   - Example:
+     ```typescript
+     // CORRECT: Import and use the exact type
+     import { GetExerciseDefinitionByIdRequestParams } from '@/apis/exerciseDefinitions/types';
+     
+     const params: GetExerciseDefinitionByIdRequestParams = {
+       definitionId: id
+     };
+     const result = await getExerciseDefinitionById(params);
+     
+     // INCORRECT: Creating custom types and casting
+     interface CustomParams { /* similar but not identical */ }
+     const result = await getExerciseDefinitionById({ definitionId: id } as CustomParams);
+     
+     // INCORRECT: Type casting with 'as any' or similar
+     const result = await getExerciseDefinitionById({ /* params */ } as any);
+     ```
+   - This ensures complete type safety across the API boundary
+
+5. **Caching**:
    - Caching is automatically applied at the processApiCall.ts level
    - **ALWAYS wrap response types with CacheResult<T> in client functions**
    - The CacheResult type includes:
@@ -326,12 +349,12 @@ const handleSubmit = async () => {
      };
      ```
 
-5. **Error Handling**:
+6. **Error Handling**:
    - Never return non-200 status codes from API routes
    - Always return status code 200 with proper error fields in the response
    - Handle all errors gracefully in the process function
 
-6. **Type Safety**:
+7. **Type Safety**:
    - **CRITICAL: Ensure perfect type consistency across the entire API flow**
    - The client.ts function MUST use the exact same parameter types as server.ts
    - The return type in client.ts should be CacheResult<ResponseType>
@@ -340,7 +363,7 @@ const handleSubmit = async () => {
    - **NEVER duplicate types in components or other files**
    - **NEVER create similar but slightly different versions of the same type**
 
-7. **Separation of Concerns**:
+8. **Separation of Concerns**:
    - **NEVER import server.ts in client-side code**
    - **NEVER import client.ts in server-side code**
    - **NEVER export process function from index.ts**

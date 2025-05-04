@@ -11,7 +11,6 @@ import {
     Box,
     CircularProgress,
     Alert,
-    Divider,
     Paper,
     Table,
     TableBody,
@@ -22,8 +21,8 @@ import {
     TextField,
     IconButton,
     Stack,
-    alpha,
-    useTheme
+    Chip,
+    alpha
 } from '@mui/material';
 import Image from 'next/image';
 import EditIcon from '@mui/icons-material/Edit';
@@ -37,11 +36,16 @@ import HistoryIcon from '@mui/icons-material/History';
 import CommentIcon from '@mui/icons-material/Comment';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 
-import type { ExerciseDefinition } from '@/apis/exerciseDefinitions/types';
-import type { WeeklyNote } from '@/apis/weeklyProgress/types';
-import type { ExerciseActivityEntry } from '@/apis/exerciseHistory/types';
+import type { ExerciseDefinition, GetExerciseDefinitionByIdRequestParams } from '@/apis/exerciseDefinitions/types';
 import { getExerciseDefinitionById } from '@/apis/exerciseDefinitions/client';
 import { getExerciseHistory } from '@/apis/exerciseHistory/client';
+import { GetExerciseHistoryRequest, ExerciseActivityEntry } from '@/apis/exerciseHistory/types';
+import { 
+    AddWeeklyNoteRequest, 
+    EditWeeklyNoteRequest, 
+    DeleteWeeklyNoteRequest, 
+    WeeklyNote
+} from '@/apis/weeklyProgress/types';
 import { addWeeklyNote, editWeeklyNote, deleteWeeklyNote } from '@/apis/weeklyProgress/client';
 import { WorkoutExercise } from '@/client/types/workout';
 
@@ -50,7 +54,6 @@ const NEON_PURPLE = '#9C27B0';
 const NEON_BLUE = '#3D5AFE';
 const NEON_GREEN = '#00C853';
 const NEON_PINK = '#D500F9';
-const LIGHT_BG = '#FFFFFF';
 const LIGHT_PAPER = '#F5F5F7';
 const LIGHT_CARD = '#FFFFFF';
 
@@ -60,6 +63,23 @@ interface ExerciseDetailModalProps {
     exercise: WorkoutExercise | null;
     planId?: string;
     weekNumber?: number;
+}
+
+// UI adaptation of the WeeklyNote type for use in the component
+interface FormattedWeeklyNote {
+    _id: string; // string representation of noteId
+    text: string; // note content
+    timestamp: string; // string representation of date
+    date: string; // string representation of date
+}
+
+// UI adaptation of the ExerciseActivityEntry for use in the component
+interface FormattedExerciseActivityEntry extends Partial<ExerciseActivityEntry> {
+    _id: string;
+    sets: number;
+    reps: number;
+    weight?: number;
+    timestamp: string;
 }
 
 export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
@@ -72,12 +92,14 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
     const [definition, setDefinition] = useState<ExerciseDefinition | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [historyData, setHistoryData] = useState<ExerciseActivityEntry[]>([]);
+    const [historyData, setHistoryData] = useState<FormattedExerciseActivityEntry[]>([]);
+    
+    // Only initialize state variables without setters to suppress unused variable warnings
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const [historyError, setHistoryError] = useState<string | null>(null);
 
     // Weekly notes state
-    const [weeklyNotes, setWeeklyNotes] = useState<WeeklyNote[]>([]);
+    const [weeklyNotes, setWeeklyNotes] = useState<FormattedWeeklyNote[]>([]);
     const [newNote, setNewNote] = useState('');
     const [isAddingNote, setIsAddingNote] = useState(false);
     const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -87,20 +109,29 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
 
     useEffect(() => {
         const fetchExerciseDefinition = async () => {
-            if (!exercise || !exercise.definitionId) return;
+            if (!exercise || !exercise.definition) return;
+
+            // Use the exercise definitionId if it exists
+            const definitionId = exercise._id.toString();
 
             setIsLoading(true);
             setError(null);
 
             try {
-                const result = await getExerciseDefinitionById(exercise.definitionId);
+                const params: GetExerciseDefinitionByIdRequestParams = {
+                    definitionId: definitionId
+                };
+                
+                const result = await getExerciseDefinitionById(params);
+                
+                const apiResult = result.data as ExerciseDefinition;
 
-                if (!result.isSuccess) {
-                    setError(result.error || 'Failed to fetch exercise details');
+                if (!apiResult) {
+                    setError('Failed to fetch exercise details');
                     return;
                 }
 
-                setDefinition(result.data);
+                setDefinition(apiResult);
             } catch (err) {
                 setError('An error occurred while fetching exercise details');
                 console.error(err);
@@ -116,20 +147,50 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
 
     useEffect(() => {
         const fetchExerciseHistory = async () => {
-            if (!exercise || !exercise.definitionId) return;
+            if (!exercise || !exercise.definition) return;
+
+            // Use the exercise ID for the history lookup
+            const exerciseId = exercise._id.toString();
 
             setIsLoadingHistory(true);
             setHistoryError(null);
 
             try {
-                const result = await getExerciseHistory(exercise.definitionId);
+                const params: GetExerciseHistoryRequest = {
+                    exerciseId: exerciseId
+                };
+                
+                const result = await getExerciseHistory(params);
+                
+                const apiResult = result.data;
 
-                if (!result.isSuccess) {
-                    setHistoryError(result.error || 'Failed to fetch exercise history');
+                if (!apiResult) {
+                    setHistoryError('Failed to fetch exercise history');
                     return;
                 }
 
-                setHistoryData(result.data || []);
+                // Transform API entries to the format needed by the UI
+                const formattedEntries = apiResult.activityEntries.map(entry => {
+                    // Ensure we have a valid date string - use ISO format if possible
+                    let formattedDate = entry.date;
+                    try {
+                        // Try to format as a more standard ISO date if it's just a date string (YYYY-MM-DD)
+                        if (entry.date.length === 10 && entry.date.includes('-')) {
+                            formattedDate = new Date(entry.date).toISOString();
+                        }
+                    } catch (e) {
+                        console.error('Error formatting activity date:', e);
+                    }
+                    
+                    return {
+                        _id: entry.date, // Using date as ID
+                        sets: entry.setsCompleted,
+                        reps: 0, // Default value since API doesn't provide reps
+                        timestamp: formattedDate,
+                    };
+                });
+
+                setHistoryData(formattedEntries);
             } catch (err) {
                 setHistoryError('An error occurred while fetching exercise history');
                 console.error(err);
@@ -138,14 +199,22 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
             }
         };
 
-        if (isOpen && exercise?.definitionId) {
+        if (isOpen && exercise) {
             fetchExerciseHistory();
         }
     }, [exercise, isOpen]);
 
     useEffect(() => {
-        if (exercise?.progress?.notes) {
-            setWeeklyNotes(exercise.progress.notes);
+        // Based on the type definition, progress.weeklyNotes should be used instead of notes
+        if (exercise?.progress?.weeklyNotes) {
+            // Transform WeeklyNote[] from API to FormattedWeeklyNote[] for UI
+            const formattedNotes = exercise.progress.weeklyNotes.map(note => ({
+                _id: note.noteId.toString(),
+                text: note.note,
+                timestamp: note.date.toString(),
+                date: note.date.toString()
+            }));
+            setWeeklyNotes(formattedNotes);
         } else {
             setWeeklyNotes([]);
         }
@@ -158,14 +227,29 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
         setNotesError(null);
 
         try {
-            const result = await addWeeklyNote(planId, weekNumber, exercise._id.toString(), newNote);
+            const params: AddWeeklyNoteRequest = {
+                planId,
+                exerciseId: exercise._id.toString(),
+                weekNumber,
+                note: newNote
+            };
+            
+            const result = await addWeeklyNote(params);
 
-            if (!result.isSuccess) {
-                setNotesError(result.error || 'Failed to add note');
+            if (!result.data || result.data.error) {
+                setNotesError(`Failed to add note: ${result.data?.error}`);
                 return;
             }
 
-            setWeeklyNotes(result.data || []);
+            // Update the weekly notes with the newly added note
+            const newFormattedNote: FormattedWeeklyNote = {
+                _id: result.data.noteId ? result.data.noteId.toString() : new Date().getTime().toString(),
+                text: result.data.note || newNote,
+                timestamp: result.data.date ? result.data.date.toString() : new Date().toISOString(),
+                date: result.data.date ? result.data.date.toString() : new Date().toISOString()
+            };
+            
+            setWeeklyNotes(prev => [...prev, newFormattedNote]);
             setNewNote('');
             setIsAddingNote(false);
         } catch (err) {
@@ -183,14 +267,31 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
         setNotesError(null);
 
         try {
-            const result = await editWeeklyNote(planId, weekNumber, exercise._id.toString(), noteId, editedNoteText);
+            const params: EditWeeklyNoteRequest = {
+                planId,
+                exerciseId: exercise._id.toString(),
+                weekNumber,
+                noteId,
+                updatedNote: editedNoteText
+            };
+            
+            const result = await editWeeklyNote(params);
+            
+            const apiResult = result.data as WeeklyNote;
 
-            if (!result.isSuccess) {
-                setNotesError(result.error || 'Failed to edit note');
+            if (!apiResult) {
+                setNotesError('Failed to edit note');
                 return;
             }
 
-            setWeeklyNotes(result.data || []);
+            // Update the local state with the edited note
+            const updatedNotes = weeklyNotes.map(note => 
+                note._id === noteId 
+                    ? { ...note, text: editedNoteText } 
+                    : note
+            );
+            setWeeklyNotes(updatedNotes);
+            
             setEditingNoteId(null);
             setEditedNoteText('');
         } catch (err) {
@@ -208,14 +309,23 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
         setNotesError(null);
 
         try {
-            const result = await deleteWeeklyNote(planId, weekNumber, exercise._id.toString(), noteId);
-
-            if (!result.isSuccess) {
-                setNotesError(result.error || 'Failed to delete note');
+            const params: DeleteWeeklyNoteRequest = {
+                planId,
+                exerciseId: exercise._id.toString(),
+                weekNumber,
+                noteId
+            };
+            
+            const result = await deleteWeeklyNote(params);
+            
+            if (!result.data.success) {
+                setNotesError('Failed to delete note');
                 return;
             }
 
-            setWeeklyNotes(result.data || []);
+            // Remove the deleted note from the local state
+            const filteredNotes = weeklyNotes.filter(note => note._id !== noteId);
+            setWeeklyNotes(filteredNotes);
         } catch (err) {
             setNotesError('An error occurred while deleting note');
             console.error(err);
@@ -241,14 +351,26 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
 
     // Format the date
     const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        }).format(date);
+        try {
+            // Safely handle potentially invalid date strings
+            const date = new Date(dateString);
+            
+            // Check if date is valid before formatting
+            if (isNaN(date.getTime())) {
+                return 'Invalid date';
+            }
+            
+            return new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(date);
+        } catch (err) {
+            console.error('Error formatting date:', err);
+            return 'Invalid date';
+        }
     };
 
     const exerciseName = exercise?.name || definition?.name || 'Exercise Details';
@@ -335,7 +457,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                     </Alert>
                 )}
 
-                {!isLoading && !error && definition && (
+                {!isLoading && !error && definition && exercise && (
                     <Box>
                         {/* Image and details section */}
                         <Box sx={{
@@ -480,7 +602,25 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                         )}
 
                         {/* History Section */}
-                        {historyData.length > 0 && (
+                        {isLoadingHistory ? (
+                            <Box sx={{ px: 3, py: 2.5, bgcolor: LIGHT_PAPER, display: 'flex', justifyContent: 'center' }}>
+                                <CircularProgress size={24} sx={{ color: NEON_PURPLE }} />
+                            </Box>
+                        ) : historyError ? (
+                            <Box sx={{ px: 3, py: 2.5, bgcolor: LIGHT_PAPER }}>
+                                <Alert
+                                    severity="error"
+                                    sx={{
+                                        mb: 2,
+                                        bgcolor: alpha('#FF0000', 0.05),
+                                        color: '#D32F2F',
+                                        border: `1px solid ${alpha('#FF0000', 0.1)}`,
+                                    }}
+                                >
+                                    {historyError}
+                                </Alert>
+                            </Box>
+                        ) : historyData.length > 0 && (
                             <Box sx={{ px: 3, py: 2.5, bgcolor: LIGHT_PAPER }}>
                                 <Paper
                                     elevation={0}

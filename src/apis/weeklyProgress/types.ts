@@ -71,7 +71,7 @@ export type AddWeeklyNoteRequest = {
     note: string; // The text of the note
 };
 // Returns the newly added note or the updated progress doc
-export type AddWeeklyNoteResponse = WeeklyNote; // Or WeeklyProgressBase
+export type AddWeeklyNoteResponse = WeeklyNote & {error?: string}; // Or WeeklyProgressBase
 
 // PUT /weekly-progress/notes/:noteId (Edit Note)
 export type EditWeeklyNoteRequest = {

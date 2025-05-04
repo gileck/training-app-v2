@@ -9,7 +9,6 @@ import {
     Stack,
     Paper,
     Chip,
-    Checkbox,
     alpha,
     Divider,
     LinearProgress,
@@ -138,15 +137,16 @@ const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
     planId,
     weekNumber,
     onSetComplete,
-    showSelectionMode,
     selectedExercises,
-    handleExerciseSelect
+    handleExerciseSelect,
+    showSelectionMode
 }) => {
     const [isDetailModalOpen, setIsDetailModalOpen] = React.useState(false);
     const setsDone = exercise.progress?.setsCompleted || 0;
     const totalSets = exercise.sets;
     const isExerciseComplete = setsDone >= totalSets;
     const exerciseId = exercise._id.toString();
+    const isSelected = selectedExercises.includes(exerciseId);
 
     const { isUpdating, handleSetCheckboxClick, handleCompleteAllSets } = useExerciseSetCompletion(
         planId,
@@ -169,6 +169,15 @@ const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
 
     const accentColor = getAccentColor();
 
+    // Handle header click to select the exercise
+    const handleHeaderClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        // Only handle exercise selection if selection mode is active
+        if (showSelectionMode) {
+            handleExerciseSelect(exerciseId);
+        }
+    };
+
     return (
         <>
             <Paper
@@ -178,51 +187,52 @@ const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                     bgcolor: LIGHT_CARD,
                     borderRadius: 3,
                     overflow: 'hidden',
-                    border: `1px solid ${alpha(accentColor, 0.2)}`,
+                    border: `1px solid ${isSelected ? alpha(NEON_PINK, 0.5) : alpha(accentColor, 0.2)}`,
                     transition: 'all 0.3s ease',
-                    boxShadow: `0 4px 12px ${alpha(accentColor, 0.1)}`,
+                    boxShadow: isSelected 
+                        ? `0 4px 12px ${alpha(NEON_PINK, 0.2)}`
+                        : `0 4px 12px ${alpha(accentColor, 0.1)}`,
                     '&:hover': {
-                        boxShadow: `0 8px 16px ${alpha(accentColor, 0.15)}`,
+                        boxShadow: isSelected 
+                            ? `0 8px 16px ${alpha(NEON_PINK, 0.25)}`
+                            : `0 8px 16px ${alpha(accentColor, 0.15)}`,
                         transform: 'translateY(-3px)'
                     }
                 }}
             >
-                {/* Header */}
-                <Box sx={{
-                    p: 1.5,
-                    bgcolor: alpha(accentColor, 0.05),
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    borderBottom: `1px solid ${alpha(accentColor, 0.1)}`
-                }}>
+                {/* Header - now clickable for selection */}
+                <Box 
+                    onClick={handleHeaderClick}
+                    sx={{
+                        p: 1.5,
+                        bgcolor: isSelected ? alpha(NEON_PINK, 0.1) : alpha(accentColor, 0.05),
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        borderBottom: `1px solid ${isSelected ? alpha(NEON_PINK, 0.3) : alpha(accentColor, 0.1)}`,
+                        cursor: 'pointer'
+                    }}
+                >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {isSelected && (
+                            <CheckCircleIcon sx={{ color: NEON_PINK }} />
+                        )}
                         <Typography
                             variant="subtitle1"
                             sx={{
                                 fontWeight: 'bold',
-                                color: '#333',
-                                textShadow: `0 0 1px ${alpha(accentColor, 0.3)}`
+                                color: isSelected ? NEON_PINK : '#333',
+                                textShadow: isSelected 
+                                    ? `0 0 1px ${alpha(NEON_PINK, 0.3)}` 
+                                    : `0 0 1px ${alpha(accentColor, 0.3)}`
                             }}
                         >
                             {exercise.name || `Exercise: ${exercise._id}`}
                         </Typography>
-                        {isExerciseComplete && (
+                        {isExerciseComplete && !isSelected && (
                             <CheckCircleIcon sx={{ color: NEON_GREEN }} />
                         )}
                     </Box>
-                    {showSelectionMode && (
-                        <Checkbox
-                            checked={selectedExercises.includes(exerciseId)}
-                            onChange={() => handleExerciseSelect(exerciseId)}
-                            sx={{
-                                color: alpha(NEON_PINK, 0.5),
-                                '&.Mui-checked': {
-                                    color: NEON_PINK
-                                }
-                            }}
-                        />
-                    )}
                 </Box>
 
                 {/* Progress bar */}
@@ -231,9 +241,9 @@ const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                     value={progressPercent}
                     sx={{
                         height: 4,
-                        bgcolor: alpha(accentColor, 0.1),
+                        bgcolor: alpha(isSelected ? NEON_PINK : accentColor, 0.1),
                         '& .MuiLinearProgress-bar': {
-                            bgcolor: accentColor
+                            bgcolor: isSelected ? NEON_PINK : accentColor
                         }
                     }}
                 />
@@ -435,13 +445,19 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     handleSetCompletionUpdate,
     handleExerciseSelect,
     handleStartSelectionMode,
-    handleCancelSelectionMode,
     handleStartWorkout,
     toggleShowCompleted,
     handleNavigateWeek
 }) => {
     // State to track loading of week data
     const [isWeekLoading, setIsWeekLoading] = React.useState(false);
+    
+    // Start selection mode by default
+    React.useEffect(() => {
+        if (!showSelectionMode) {
+            handleStartSelectionMode();
+        }
+    }, [showSelectionMode, handleStartSelectionMode]);
 
     // Modified navigate handler to show loading state
     const handleWeekNavigate = (week: number) => {
@@ -644,70 +660,27 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                         >
                             Exercises
                         </Typography>
-
-                        {!showSelectionMode ? (
-                            <Button
-                                variant="contained"
-                                onClick={handleStartSelectionMode}
-                                startIcon={<FlashOnIcon />}
+                        
+                        {selectedExercises.length > 0 && (
+                            <Chip
+                                label={`${selectedExercises.length} Selected`}
+                                onDelete={() => {
+                                    // Clear all selections
+                                    selectedExercises.forEach(id => handleExerciseSelect(id));
+                                }}
                                 sx={{
-                                    bgcolor: NEON_PINK,
-                                    color: 'white',
-                                    borderRadius: 8,
-                                    textTransform: 'none',
-                                    boxShadow: `0 4px 12px ${alpha(NEON_PINK, 0.3)}`,
-                                    '&:hover': {
-                                        bgcolor: alpha(NEON_PINK, 0.9),
-                                        boxShadow: `0 6px 14px ${alpha(NEON_PINK, 0.4)}`
+                                    bgcolor: alpha(NEON_PINK, 0.1),
+                                    color: NEON_PINK,
+                                    fontWeight: 'bold',
+                                    border: `1px solid ${alpha(NEON_PINK, 0.2)}`,
+                                    '& .MuiChip-deleteIcon': {
+                                        color: alpha(NEON_PINK, 0.7),
+                                        '&:hover': {
+                                            color: NEON_PINK
+                                        }
                                     }
                                 }}
-                            >
-                                Create Workout
-                            </Button>
-                        ) : (
-                            <Stack direction="row" spacing={1.5}>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    onClick={handleStartWorkout}
-                                    disabled={selectedExercises.length === 0}
-                                    startIcon={<FlashOnIcon />}
-                                    sx={{
-                                        bgcolor: NEON_GREEN,
-                                        color: 'white',
-                                        borderRadius: 8,
-                                        textTransform: 'none',
-                                        fontWeight: 'bold',
-                                        boxShadow: `0 4px 12px ${alpha(NEON_GREEN, 0.3)}`,
-                                        '&:hover': {
-                                            bgcolor: alpha(NEON_GREEN, 0.9),
-                                            boxShadow: `0 6px 14px ${alpha(NEON_GREEN, 0.4)}`
-                                        },
-                                        '&.Mui-disabled': {
-                                            color: alpha('#FFFFFF', 0.4),
-                                            bgcolor: alpha(NEON_GREEN, 0.3)
-                                        }
-                                    }}
-                                >
-                                    Start ({selectedExercises.length})
-                                </Button>
-                                <Button
-                                    variant="outlined"
-                                    onClick={handleCancelSelectionMode}
-                                    sx={{
-                                        color: '#333',
-                                        borderColor: alpha('#000000', 0.3),
-                                        borderRadius: 8,
-                                        textTransform: 'none',
-                                        '&:hover': {
-                                            borderColor: '#000000',
-                                            bgcolor: alpha('#000000', 0.05)
-                                        }
-                                    }}
-                                >
-                                    Cancel
-                                </Button>
-                            </Stack>
+                            />
                         )}
                     </Box>
 
@@ -754,9 +727,9 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                                         planId={planId}
                                         weekNumber={weekNumber}
                                         onSetComplete={handleSetCompletionUpdate}
-                                        showSelectionMode={showSelectionMode}
                                         selectedExercises={selectedExercises}
                                         handleExerciseSelect={handleExerciseSelect}
+                                        showSelectionMode={showSelectionMode}
                                     />
                                 ))}
                             </Box>
@@ -797,9 +770,9 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                                                 planId={planId}
                                                 weekNumber={weekNumber}
                                                 onSetComplete={handleSetCompletionUpdate}
-                                                showSelectionMode={showSelectionMode}
                                                 selectedExercises={selectedExercises}
                                                 handleExerciseSelect={handleExerciseSelect}
+                                                showSelectionMode={showSelectionMode}
                                             />
                                         ))}
                                     </Box>
@@ -811,12 +784,12 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
             )}
 
             {/* Selected exercises summary */}
-            {showSelectionMode && selectedExercises.length > 0 && (
+            {selectedExercises.length > 0 && (
                 <Paper
                     elevation={4}
                     sx={{
                         position: 'fixed',
-                        bottom: 16,
+                        bottom: 72, // Increased to position above bottom navbar
                         left: '50%',
                         transform: 'translateX(-50%)',
                         width: 'calc(100% - 32px)',
@@ -831,33 +804,8 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                     }}
                 >
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, color: '#333' }}>
-                        Selected: {selectedExercises.length}
+                        {selectedExercises.length} {selectedExercises.length === 1 ? 'Exercise' : 'Exercises'} Selected
                     </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                        {selectedExercises.map((exerciseId) => {
-                            const exercise = [...activeExercises, ...completedExercises].find(e =>
-                                e._id.toString() === exerciseId
-                            );
-                            return (
-                                <Chip
-                                    key={exerciseId}
-                                    label={exercise?.name || exerciseId}
-                                    onDelete={() => handleExerciseSelect(exerciseId)}
-                                    sx={{
-                                        bgcolor: alpha(NEON_PURPLE, 0.1),
-                                        color: NEON_PURPLE,
-                                        border: `1px solid ${alpha(NEON_PURPLE, 0.2)}`,
-                                        '& .MuiChip-deleteIcon': {
-                                            color: alpha(NEON_PURPLE, 0.7),
-                                            '&:hover': {
-                                                color: NEON_PURPLE
-                                            }
-                                        }
-                                    }}
-                                />
-                            );
-                        })}
-                    </Box>
                     <Button
                         variant="contained"
                         onClick={handleStartWorkout}
