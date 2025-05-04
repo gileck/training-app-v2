@@ -9,7 +9,7 @@ import { WorkoutView } from './WorkoutView';
 import { WorkoutPage } from './WorkoutPage';
 import { SavedWorkouts } from './SavedWorkouts';
 import { createRoutes } from '../router';
-
+import { ProgressView } from './ProgressView';
 // Define routes
 export const routes = createRoutes({
   '/': WorkoutView,
@@ -24,4 +24,5 @@ export const routes = createRoutes({
   '/training-plans/:planId/weeks/:weekNumber/workout': WorkoutPage,
   '/workout-page': WorkoutPage,
   '/saved-workouts': SavedWorkouts,
+  '/progress-view': ProgressView
 });

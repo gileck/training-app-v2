@@ -19,10 +19,12 @@
     "@google/generative-ai": "^0.24.0",
     "@mui/icons-material": "^7.0.0",
     "@mui/material": "^7.0.0",
+    "@mui/x-date-pickers": "^8.2.0",
     "@types/mongoose": "^5.11.97",
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^5.1.1",
     "cookie": "^1.0.2",
+    "date-fns": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.16.0",
     "mongoose": "^8.14.1",
@@ -32,7 +34,7 @@
     "openai": "^4.90.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "recharts": "^2.15.1",
+    "recharts": "^2.15.3",
     "tiktoken": "^1.0.20"
   },
   "devDependencies": {

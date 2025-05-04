@@ -59,11 +59,11 @@ After finishing each task:
         - `exerciseActivityLog` (upsert/increment `setsCompleted` for the day).
 - 28. [x] API endpoint to add/edit/delete a `weeklyNote` within a `weeklyProgress` document. [DONE]
 
-### Saved Workouts
-- 29. [ ] API endpoint to get all saved workouts for the user.
-- 30. [ ] API endpoint to create a saved workout from selected exercise IDs.
-- 31. [ ] API endpoint to delete a saved workout.
-- 32. [ ] API endpoint to get details of a saved workout (including exercise details).
+### Saved Workouts [DONE]
+- 29. [x] API endpoint to get all saved workouts for the user.
+- 30. [x] API endpoint to create a saved workout from selected exercise IDs.
+- 31. [x] API endpoint to delete a saved workout.
+- 32. [x] API endpoint to get details of a saved workout (including exercise details).
 
 ### Progress View Data
 - 33. [ ] API endpoint to get aggregated daily activity from `exerciseActivityLog` for a user within a date range.
@@ -97,7 +97,7 @@ After finishing each task:
 - 53. [x] Implement visual feedback for completion. [DONE]
 - 54. [x] Implement opening the 'Exercise Detail View' modal. [PLANNED]
 
-### Exercise Detail View (Modal)
+### Exercise Detail View (Modal) [DONE]
 - 55. [x] Implement modal component.
 - 56. [x] Display detailed exercise info (fetched from backend).
 - 57. [x] Display larger image.
@@ -106,19 +106,19 @@ After finishing each task:
 - 60. [x] Display exercise history log (fetching/aggregating data).
 
 ### Workout Feature
-- 61. [ ] Implement selecting exercises from 'Exercises View' to start a workout.
-- 62. [ ] Implement dedicated 'Workout View' displaying only selected exercises.
-- 63. [ ] Implement client-side Timer tool.
-- 64. [ ] Implement saving the current selection as a 'Saved Workout'.
-- 65. [ ] Implement view/flow to launch a saved workout.
+- 61. [x] Implement selecting exercises from 'Exercises View' to start a workout.
+- 62. [x] Implement dedicated 'Workout View' displaying only selected exercises.
+- 63. [ ] Implement client-side Timer tool. [LATER]
+- 64. [x] Implement saving the current selection as a 'Saved Workout'.
+- 65. [x] Implement view/flow to launch a saved workout.
 
 ### Progress View
-- 66. [ ] Implement view to display historical daily activity.
-- 67. [ ] Fetch and display aggregated data from the backend API.
+- 66. [x] Implement view to display historical daily activity.
+- 67. [x] Fetch and display aggregated data from the backend API.
 
 ### General UI/UX
-- 68. [ ] Implement consistent styling and layout according to modern design principles.
-- 69. [ ] Ensure responsiveness across target devices/screen sizes.
-- 70. [ ] Implement loading states and error handling.
+- 68. [x] Implement consistent styling and layout according to modern design principles.
+- 69. [x] Ensure responsiveness across target devices/screen sizes.
+- 70. [x] Implement loading states and error handling.
 
 

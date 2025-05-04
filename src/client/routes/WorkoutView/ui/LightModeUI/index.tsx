@@ -544,34 +544,6 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
             minHeight: '100vh',
             pb: 8
         }}>
-            {/* Header */}
-            <Box sx={{ mb: 4, textAlign: 'center' }}>
-                <Typography
-                    variant="h4"
-                    component="h1"
-                    sx={{
-                        fontSize: { xs: '1.75rem', md: '2.25rem' },
-                        fontWeight: 'bold',
-                        color: '#333',
-                        textShadow: `0 0 1px ${alpha(NEON_PURPLE, 0.3)}`,
-                        letterSpacing: 1,
-                        mb: 1
-                    }}
-                >
-                    {planDetails.name}
-                </Typography>
-                <Typography
-                    variant="subtitle1"
-                    sx={{
-                        color: alpha('#000000', 0.6),
-                        textTransform: 'uppercase',
-                        letterSpacing: 2
-                    }}
-                >
-                    Training Program
-                </Typography>
-            </Box>
-
             <WeekNavigator
                 currentWeek={weekNumber}
                 maxWeeks={planDetails.durationWeeks}

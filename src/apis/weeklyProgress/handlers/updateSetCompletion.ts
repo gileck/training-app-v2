@@ -100,10 +100,19 @@ export const updateSetCompletion = async (
 
         // 5. Still update activity log separately (no transaction)
         const todayDate = new Date();
-        todayDate.setHours(0, 0, 0, 0);
         await db.collection('exerciseActivityLog').updateOne(
             { userId: userIdObj, exerciseId: exerciseIdObj, date: todayDate },
-            { $inc: { setsCompleted: effectiveIncrement } },
+            { 
+                $inc: { setsCompleted: effectiveIncrement },
+                $setOnInsert: {
+                    userId: userIdObj, 
+                    planId: planIdObj, 
+                    exerciseId: exerciseIdObj,
+                    exerciseDefinitionId: exerciseId,
+                    weekNumber: weekNumber,
+                    date: todayDate  // Preserves the exact timestamp
+                }
+            },
             { upsert: true }
         );
 

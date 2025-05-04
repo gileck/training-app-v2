@@ -5,7 +5,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import InsightsIcon from '@mui/icons-material/Insights';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import PlayCircleFilledIcon from '@mui/icons-material/PlayCircleFilled';
-
+import BarChartIcon from '@mui/icons-material/BarChart';
 export const navItems: NavItem[] = [
   { path: '/workout', label: 'Workout', icon: <PlayCircleFilledIcon />, requiresAuth: true },
   { path: '/training-plans', label: 'Training Plans', icon: <FitnessCenterIcon />, requiresAuth: true }
@@ -18,4 +18,5 @@ export const menuItems: NavItem[] = [
   { path: '/settings', label: 'Settings', icon: <SettingsIcon /> },
   { path: '/ai-monitoring', label: 'AI Monitoring', icon: <InsightsIcon /> },
   { path: '/saved-workouts', label: 'Saved Workouts', icon: <FolderIcon /> },
+  { path: '/progress-view', label: 'Progress View', icon: <BarChartIcon /> },
 ];

@@ -10,6 +10,7 @@ import * as exerciseDefinitionsServer from "./exerciseDefinitions/server";
 import * as weeklyProgressServer from "./weeklyProgress/server";
 import * as progressViewServer from "./progressView/server";
 import * as exerciseHistoryServer from './exerciseHistory/server';
+import * as exerciseActivityLogServer from './exerciseActivityLog/server';
 import {
   getAllApiName as savedWorkoutsGetAllApiName,
   createApiName as savedWorkoutsCreateApiName,
@@ -49,6 +50,10 @@ export const apiHandlers: ApiHandlers = {
   [weeklyProgressServer.deleteWeeklyNoteApiName]: { process: weeklyProgressServer.deleteWeeklyNote as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [progressViewServer.getDailyActivityApiName]: { process: progressViewServer.getDailyActivity as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [exerciseHistoryServer.getHistoryApiName]: { process: exerciseHistoryServer.getExerciseHistory as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [exerciseActivityLogServer.getActivityLogsApiName]: { process: exerciseActivityLogServer.getActivityLogs as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [exerciseActivityLogServer.updateActivityLogApiName]: { process: exerciseActivityLogServer.updateActivityLog as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [exerciseActivityLogServer.deleteActivityLogApiName]: { process: exerciseActivityLogServer.deleteActivityLog as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [exerciseActivityLogServer.getActivitySummaryApiName]: { process: exerciseActivityLogServer.getActivitySummary as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [savedWorkoutsGetAllApiName]: { process: savedWorkoutsServer.getAllSavedWorkouts as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [savedWorkoutsCreateApiName]: { process: savedWorkoutsServer.createSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [savedWorkoutsDeleteApiName]: { process: savedWorkoutsServer.deleteSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
