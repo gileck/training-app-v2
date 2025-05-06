@@ -1,0 +1,214 @@
+import React from 'react';
+import {
+    Box,
+    Typography,
+    Button,
+    Paper,
+    CircularProgress,
+    alpha,
+    IconButton,
+    LinearProgress,
+    Alert
+} from '@mui/material';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
+import { WorkoutTabContentProps, EnhancedWorkout } from './types';
+import { WeeklyProgressBase } from '../../../../apis/weeklyProgress/types';
+// import { WorkoutExercise } from '../../../types/workout'; // Removed unused import
+
+import { WorkoutExerciseItem } from './WorkoutExerciseItem';
+
+// --- Color constants ---
+const LIGHT_PAPER = '#F5F5F7';
+const NEON_BLUE = '#3D5AFE';
+const NEON_GREEN = '#00C853';
+
+interface WorkoutItemProps {
+    workout: EnhancedWorkout;
+    planId: string;
+    weekNumber: number;
+    onSavedWorkoutExerciseSetComplete: (workoutId: string, exerciseId: string, updatedProgress: WeeklyProgressBase) => void;
+    onToggleExpand: (workoutId: string) => void;
+}
+
+const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, onSavedWorkoutExerciseSetComplete, onToggleExpand }) => {
+    const workoutId = typeof workout._id === 'string' ? workout._id : workout._id.toString();
+    const exercises = workout.enhancedExercises || [];
+    const totalSetsInWorkout = exercises.reduce((sum, ex) => sum + (ex.sets || 0), 0);
+    const completedSetsInWorkout = exercises.reduce((sum, ex) => sum + (ex.progress?.setsCompleted || 0), 0);
+    const progressPercent = totalSetsInWorkout > 0 ? (completedSetsInWorkout / totalSetsInWorkout) * 100 : 0;
+
+    const getStatusText = () => {
+        if (exercises.length === 0 && !workout.error) return "No exercises";
+        if (totalSetsInWorkout === 0) return "No sets defined";
+        return `${completedSetsInWorkout} / ${totalSetsInWorkout} sets completed`;
+    };
+
+    return (
+        <Paper
+            elevation={2}
+            sx={{
+                mb: 2,
+                borderRadius: 3,
+                bgcolor: LIGHT_PAPER,
+                border: `1px solid ${alpha(NEON_BLUE, 0.2)}`,
+                boxShadow: `0 4px 12px ${alpha(NEON_BLUE, 0.1)}`,
+                transition: 'all 0.2s ease',
+                '&:hover': { boxShadow: `0 6px 14px ${alpha(NEON_BLUE, 0.2)}` }
+            }}
+        >
+            <Box onClick={() => onToggleExpand(workoutId)} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: alpha('#000000', 0.8) }}>
+                        {workout.name}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                        <Typography variant="body2" sx={{ color: alpha('#000000', 0.6), fontSize: '0.8rem' }}>
+                            {getStatusText()}
+                        </Typography>
+                    </Box>
+                </Box>
+                <IconButton size="small" sx={{ color: alpha('#000000', 0.6) }}>
+                    {workout.isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+            </Box>
+            <LinearProgress
+                variant="determinate"
+                value={progressPercent}
+                sx={{
+                    height: 4,
+                    bgcolor: alpha(NEON_BLUE, 0.1),
+                    '& .MuiLinearProgress-bar': { bgcolor: progressPercent >= 100 ? NEON_GREEN : NEON_BLUE }
+                }}
+            />
+            {workout.isExpanded && (
+                <Box sx={{ p: 2, pt: 1, borderTop: `1px solid ${alpha('#000000', 0.05)}` }}>
+                    {workout.error ? (
+                        <Alert severity="error" sx={{ py: 0, bgcolor: alpha('#FF0000', 0.1), color: '#D32F2F', border: `1px solid ${alpha('#FF0000', 0.2)}`, '& .MuiAlert-icon': { color: '#D32F2F' } }}>
+                            {workout.error}
+                        </Alert>
+                    ) : exercises.length === 0 ? (
+                        <Box sx={{ textAlign: 'center', py: 1 }}>
+                            <Typography variant="body2" sx={{ color: alpha('#000000', 0.5) }}>No exercises in this workout</Typography>
+                        </Box>
+                    ) : (
+                        <Box sx={{ pt: 1 }}>
+                            {exercises.map((exercise) => (
+                                <WorkoutExerciseItem
+                                    key={exercise._id.toString()}
+                                    exercise={exercise}
+                                    planId={planId}
+                                    weekNumber={weekNumber}
+                                    onSetComplete={(exerciseIdFromItem, updatedProgress) =>
+                                        onSavedWorkoutExerciseSetComplete(workoutId, exerciseIdFromItem, updatedProgress)
+                                    }
+                                    selectedExercises={[]}
+                                    showSelectionMode={false}
+                                />
+                            ))}
+                        </Box>
+                    )}
+                </Box>
+            )}
+        </Paper>
+    );
+};
+
+export const WorkoutTabContent: React.FC<WorkoutTabContentProps> = ({
+    planId,
+    weekNumber,
+    savedWorkouts,
+    isWorkoutsLoading,
+    toggleWorkoutExpanded,
+    handleSavedWorkoutExerciseSetCompletionUpdate
+}) => {
+    return (
+        <Box>
+            {/* Workouts header */}
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography
+                    variant="h6"
+                    sx={{
+                        fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                        fontWeight: 'bold',
+                        color: '#333'
+                    }}
+                >
+                    Saved Workouts
+                </Typography>
+
+                <Button
+                    variant="contained"
+                    size="small"
+                    sx={{
+                        bgcolor: NEON_BLUE,
+                        textTransform: 'none',
+                        fontWeight: 'bold',
+                        borderRadius: 8,
+                        px: 2,
+                        '&:hover': {
+                            bgcolor: alpha(NEON_BLUE, 0.9)
+                        }
+                    }}
+                // onClick={() => navigate('/create-workout')} // Or handle via callback
+                >
+                    Create New
+                </Button>
+            </Box>
+
+            {/* Workouts list */}
+            {isWorkoutsLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', my: 8 }}>
+                    <CircularProgress sx={{ color: NEON_BLUE }} />
+                </Box>
+            ) : savedWorkouts.length === 0 ? (
+                <Paper
+                    elevation={2}
+                    sx={{
+                        textAlign: 'center',
+                        mt: 6,
+                        p: 4,
+                        borderRadius: 3,
+                        bgcolor: LIGHT_PAPER,
+                        border: `1px dashed ${alpha('#000000', 0.2)}`
+                    }}
+                >
+                    <Typography variant="h6" color={alpha('#000000', 0.5)}>
+                        No saved workouts found
+                    </Typography>
+                    <Button
+                        variant="contained"
+                        sx={{
+                            mt: 2,
+                            bgcolor: NEON_BLUE,
+                            textTransform: 'none',
+                            fontWeight: 'bold',
+                            borderRadius: 8,
+                            px: 3,
+                            '&:hover': {
+                                bgcolor: alpha(NEON_BLUE, 0.9)
+                            }
+                        }}
+                    // onClick={() => navigate('/create-workout')} // Or handle via callback
+                    >
+                        Create Your First Workout
+                    </Button>
+                </Paper>
+            ) : (
+                <Box>
+                    {savedWorkouts.map((workout) => (
+                        <WorkoutItem
+                            key={typeof workout._id === 'string' ? workout._id : workout._id.toString()}
+                            workout={workout}
+                            planId={planId}
+                            weekNumber={weekNumber}
+                            onSavedWorkoutExerciseSetComplete={handleSavedWorkoutExerciseSetCompletionUpdate}
+                            onToggleExpand={toggleWorkoutExpanded}
+                        />
+                    ))}
+                </Box>
+            )}
+        </Box>
+    );
+}; 
