@@ -5,11 +5,14 @@ import { getTrainingPlanById, getActiveTrainingPlan } from '@/apis/trainingPlans
 import { getAllExerciseDefinitionOptions } from '@/apis/exerciseDefinitions/client';
 import { getWeeklyProgress } from '@/apis/weeklyProgress/client';
 import { getExerciseDefinitionById } from '@/apis/exerciseDefinitions/client';
+import { getAllSavedWorkouts, getSavedWorkoutDetails } from '@/apis/savedWorkouts/client';
 import type { ExerciseBase } from '@/apis/exercises/types';
 import type { TrainingPlan } from '@/apis/trainingPlans/types';
 import type { ExerciseDefinitionOption } from '@/apis/exerciseDefinitions/types';
 import type { WeeklyProgressBase } from '@/apis/weeklyProgress/types';
+import type { SavedWorkout } from '@/apis/savedWorkouts/types';
 import { WorkoutExercise } from '@/client/types/workout';
+import { EnhancedWorkout } from '../ui/types';
 
 // Helper function to create the definition map
 const createDefinitionMap = (defs: ExerciseDefinitionOption[]): Record<string, string> => {
@@ -29,6 +32,10 @@ export const useWorkoutView = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showCompleted, setShowCompleted] = useState(false);
+
+    // State for saved workouts
+    const [savedWorkouts, setSavedWorkouts] = useState<EnhancedWorkout[]>([]);
+    const [isWorkoutsLoading, setIsWorkoutsLoading] = useState(false);
 
     // State for exercise selection
     const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
@@ -159,6 +166,155 @@ export const useWorkoutView = () => {
         }
     }, [fetchData, planId]);
 
+    // Enhanced function to fetch saved workouts with their exercises
+    const fetchSavedWorkouts = useCallback(async () => {
+        setIsWorkoutsLoading(true);
+        try {
+            // 1. Get all saved workouts
+            const response = await getAllSavedWorkouts();
+            
+            if (!response.data || !Array.isArray(response.data)) {
+                throw new Error('Failed to fetch saved workouts');
+            }
+            
+            // 2. Fetch all exercises for the current plan to get sets/reps data
+            const planExercisesResponse = await getExercises({ trainingPlanId: planId || '' });
+            
+            if (!planExercisesResponse.data || !Array.isArray(planExercisesResponse.data)) {
+                throw new Error('Failed to fetch plan exercises');
+            }
+            
+            // Create a map of exercise definition IDs to their complete data
+            const planExercisesMap = planExercisesResponse.data.reduce((map, exercise) => {
+                const defId = exercise.exerciseDefinitionId.toString();
+                map[defId] = exercise;
+                return map;
+            }, {} as Record<string, ExerciseBase>);
+            
+            // 3. Enhance each workout with its exercises
+            const enhancedWorkoutsPromises = response.data.map(async (workout) => {
+                try {
+                    // Get workout details with exercises
+                    const workoutDetailsResponse = await getSavedWorkoutDetails({ 
+                        workoutId: workout._id.toString() 
+                    });
+                    
+                    if (!workoutDetailsResponse.data || !workoutDetailsResponse.data.exercises) {
+                        return {
+                            ...workout,
+                            enhancedExercises: [],
+                            isExpanded: false,
+                            error: 'Failed to fetch workout details'
+                        };
+                    }
+                    
+                    const rawExercises = workoutDetailsResponse.data.exercises;
+                    
+                    // Process each exercise in the workout
+                    const exercisePromises = rawExercises.map(async (exercise) => {
+                        // Get the exercise definition ID
+                        const defId = exercise.exerciseDefinitionId.toString();
+                        
+                        // Find the corresponding exercise in the plan
+                        const planExercise = planExercisesMap[defId];
+                        
+                        if (!planExercise) {
+                            throw new Error(`Exercise not found in training plan: ${defId}`);
+                        }
+                        
+                        // Fetch progress data for this exercise
+                        const progressResponse = await getWeeklyProgress({
+                            planId: planId || '',
+                            exerciseId: exercise._id.toString(),
+                            weekNumber
+                        });
+                        
+                        // Fetch definition data
+                        const definitionResponse = await getExerciseDefinitionById({
+                            definitionId: defId
+                        });
+                        
+                        // Use the sets and reps from the plan exercise
+                        return {
+                            ...exercise,
+                            sets: planExercise.sets,
+                            reps: planExercise.reps,
+                            name: definitionResponse.data?.name || 'Unknown Exercise',
+                            progress: progressResponse.data,
+                            definition: definitionResponse.data ? {
+                                primaryMuscle: definitionResponse.data.primaryMuscle,
+                                secondaryMuscles: definitionResponse.data.secondaryMuscles,
+                                bodyWeight: definitionResponse.data.bodyWeight,
+                                type: definitionResponse.data.type,
+                                imageUrl: definitionResponse.data.imageUrl,
+                                hasComments: !!(progressResponse.data?.weeklyNotes?.length)
+                            } : undefined
+                        } as WorkoutExercise;
+                    });
+                    
+                    // Use Promise.allSettled to handle errors for individual exercises
+                    const exerciseResults = await Promise.allSettled(exercisePromises);
+                    
+                    // Check for errors
+                    const rejectedExercises = exerciseResults.filter(
+                        result => result.status === 'rejected'
+                    );
+                    
+                    // If any exercises failed, add an error to the workout
+                    let workoutError = undefined;
+                    if (rejectedExercises.length > 0) {
+                        const firstError = rejectedExercises[0] as PromiseRejectedResult;
+                        workoutError = `Failed to load some exercises: ${firstError.reason.message || 'Unknown error'}`;
+                    }
+                    
+                    // Get the successful exercise results
+                    const enhancedExercises = exerciseResults
+                        .filter((result): result is PromiseFulfilledResult<WorkoutExercise> => 
+                            result.status === 'fulfilled'
+                        )
+                        .map(result => result.value);
+                    
+                    // Return enhanced workout with exercises
+                    return {
+                        ...workout,
+                        enhancedExercises,
+                        isExpanded: false,
+                        error: workoutError
+                    };
+                } catch (error) {
+                    // Handle errors for entire workout
+                    return {
+                        ...workout,
+                        enhancedExercises: [],
+                        isExpanded: false,
+                        error: error instanceof Error ? error.message : 'Unknown error'
+                    };
+                }
+            });
+            
+            // Wait for all workouts to be processed
+            const enhancedWorkouts = await Promise.all(enhancedWorkoutsPromises);
+            setSavedWorkouts(enhancedWorkouts);
+            
+        } catch (error) {
+            console.error('Failed to fetch saved workouts:', error);
+            // Don't set global error as this is just for one tab
+        } finally {
+            setIsWorkoutsLoading(false);
+        }
+    }, [planId, weekNumber]);
+
+    // Function to toggle workout expanded state
+    const toggleWorkoutExpanded = useCallback((workoutId: string) => {
+        setSavedWorkouts(prevWorkouts => 
+            prevWorkouts.map(workout => 
+                workout._id.toString() === workoutId
+                    ? { ...workout, isExpanded: !workout.isExpanded }
+                    : workout
+            )
+        );
+    }, []);
+
     // Handler to update local state when a set is completed via API
     const handleSetCompletionUpdate = (exerciseId: string, updatedProgress: WeeklyProgressBase) => {
         setWorkoutExercises(prevExercises =>
@@ -246,6 +402,9 @@ export const useWorkoutView = () => {
         progressPercentage,
         totalExercises,
         completedExercisesCount,
+        savedWorkouts,
+        isWorkoutsLoading,
+        toggleWorkoutExpanded,
 
         // Actions
         navigate,
@@ -255,6 +414,7 @@ export const useWorkoutView = () => {
         handleCancelSelectionMode,
         handleStartWorkout,
         toggleShowCompleted,
-        handleNavigateWeek
+        handleNavigateWeek,
+        fetchSavedWorkouts
     };
 }; 

@@ -12,6 +12,8 @@ import {
     alpha,
     Divider,
     LinearProgress,
+    Tabs,
+    Tab
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -23,11 +25,14 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import Image from 'next/image';
 
-import { WorkoutViewProps, WorkoutExerciseItemProps, WeekNavigatorProps, LoadingErrorDisplayProps } from '../types';
+import { WorkoutViewProps, WorkoutExerciseItemProps, WeekNavigatorProps, LoadingErrorDisplayProps } from './types';
 import { ExerciseDetailModal } from '@/client/components/ExerciseDetailModal';
-import { useExerciseSetCompletion } from '../../hooks/useExerciseSetCompletion';
+import { useExerciseSetCompletion } from '../hooks/useExerciseSetCompletion';
+import { WorkoutExercise } from '@/client/types/workout';
+import { WeeklyProgressBase } from '@/apis/weeklyProgress/types';
 
 // --- Color constants for the light theme --- //
 const LIGHT_BG = '#FFFFFF';
@@ -425,6 +430,167 @@ const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
     );
 };
 
+// Add this near the other component imports
+const WorkoutItem: React.FC<{ 
+    workout: { 
+        _id: string | { toString(): string }; 
+        name: string;
+        isExpanded: boolean;
+        enhancedExercises: WorkoutExercise[];
+        error?: string;
+    }; 
+    planId: string;
+    weekNumber: number;
+    handleSetCompletionUpdate: (exerciseId: string, updatedProgress: WeeklyProgressBase) => void;
+    onToggleExpand: (workoutId: string) => void;
+}> = ({ workout, planId, weekNumber, handleSetCompletionUpdate, onToggleExpand }) => {
+    const workoutId = typeof workout._id === 'string' ? workout._id : workout._id.toString();
+    
+    // Calculate progress with better handling of missing values
+    const exercises = workout.enhancedExercises || [];
+    const totalSets = exercises.reduce((sum, ex) => sum + (ex.sets || 0), 0);
+    const completedSets = exercises.reduce((sum, ex) => sum + (ex.progress?.setsCompleted || 0), 0);
+    const progressPercent = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
+    
+    // Format the status text based on data availability
+    const getStatusText = () => {
+        if (exercises.length === 0 && !workout.error) {
+            return "No exercises";
+        } else if (totalSets === 0) {
+            return "No sets defined";
+        } else {
+            return `${completedSets} / ${totalSets} sets completed`;
+        }
+    };
+    
+    const handleToggleExpand = () => {
+        onToggleExpand(workoutId);
+    };
+    
+    return (
+        <Paper
+            elevation={2}
+            sx={{
+                mb: 2,
+                borderRadius: 3,
+                bgcolor: LIGHT_PAPER,
+                border: `1px solid ${alpha(NEON_BLUE, 0.2)}`,
+                boxShadow: `0 4px 12px ${alpha(NEON_BLUE, 0.1)}`,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                    boxShadow: `0 6px 14px ${alpha(NEON_BLUE, 0.2)}`
+                }
+            }}
+        >
+            {/* Workout Header */}
+            <Box 
+                onClick={handleToggleExpand}
+                sx={{
+                    p: 2,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'pointer'
+                }}
+            >
+                <Box>
+                    <Typography 
+                        variant="subtitle1" 
+                        sx={{ 
+                            fontWeight: 'bold', 
+                            color: alpha('#000000', 0.8) 
+                        }}
+                    >
+                        {workout.name}
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                        <Typography 
+                            variant="body2" 
+                            sx={{ 
+                                color: alpha('#000000', 0.6),
+                                fontSize: '0.8rem'
+                            }}
+                        >
+                            {getStatusText()}
+                        </Typography>
+                    </Box>
+                </Box>
+                
+                <IconButton
+                    size="small"
+                    sx={{ color: alpha('#000000', 0.6) }}
+                >
+                    {workout.isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+            </Box>
+            
+            {/* Progress bar */}
+            <LinearProgress
+                variant="determinate"
+                value={progressPercent}
+                sx={{
+                    height: 4,
+                    bgcolor: alpha(NEON_BLUE, 0.1),
+                    '& .MuiLinearProgress-bar': {
+                        bgcolor: progressPercent >= 100 ? NEON_GREEN : NEON_BLUE
+                    }
+                }}
+            />
+            
+            {/* Expanded content */}
+            {workout.isExpanded && (
+                <Box sx={{ p: 2, pt: 1, borderTop: `1px solid ${alpha('#000000', 0.05)}` }}>
+                    {workout.error ? (
+                        <Box>
+                            <Alert 
+                                severity="error" 
+                                sx={{ 
+                                    py: 0,
+                                    bgcolor: alpha('#FF0000', 0.1),
+                                    color: '#D32F2F',
+                                    border: `1px solid ${alpha('#FF0000', 0.2)}`,
+                                    '& .MuiAlert-icon': {
+                                        color: '#D32F2F'
+                                    }
+                                }}
+                            >
+                                {workout.error}
+                            </Alert>
+                        </Box>
+                    ) : exercises.length === 0 ? (
+                        <Box sx={{ textAlign: 'center', py: 1 }}>
+                            <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                    color: alpha('#000000', 0.5)
+                                }}
+                            >
+                                No exercises in this workout
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <Box sx={{ pt: 1 }}>
+                            {exercises.map((exercise) => (
+                                <WorkoutExerciseItem
+                                    key={exercise._id.toString()}
+                                    exercise={exercise}
+                                    planId={planId}
+                                    weekNumber={weekNumber}
+                                    onSetComplete={handleSetCompletionUpdate}
+                                    selectedExercises={[]}
+                                    handleExerciseSelect={() => {}}
+                                    showSelectionMode={false}
+                                />
+                            ))}
+                        </Box>
+                    )}
+                </Box>
+            )}
+        </Paper>
+    );
+};
+
 // Main Component
 export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     planId,
@@ -440,6 +606,8 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     progressPercentage,
     totalExercises,
     completedExercisesCount,
+    savedWorkouts,
+    isWorkoutsLoading,
 
     navigate,
     handleSetCompletionUpdate,
@@ -447,11 +615,15 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     handleStartSelectionMode,
     handleStartWorkout,
     toggleShowCompleted,
-    handleNavigateWeek
+    handleNavigateWeek,
+    fetchSavedWorkouts,
+    toggleWorkoutExpanded
 }) => {
     // State to track loading of week data
     const [isWeekLoading, setIsWeekLoading] = React.useState(false);
-
+    // Add tab state
+    const [activeTab, setActiveTab] = React.useState(0);
+    
     // Start selection mode by default
     React.useEffect(() => {
         if (!showSelectionMode) {
@@ -471,6 +643,22 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
             setIsWeekLoading(false);
         }
     }, [isLoading, weekNumber]);
+
+    // Fetch saved workouts when tab is Workouts
+    React.useEffect(() => {
+        if (activeTab === 1) {
+            fetchSavedWorkouts();
+        }
+    }, [activeTab, fetchSavedWorkouts]);
+
+    // Handle tab change
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        setActiveTab(newValue);
+        // Fetch saved workouts data when switching to workouts tab
+        if (newValue === 1) {
+            fetchSavedWorkouts();
+        }
+    };
 
     if (!planId) {
         return (
@@ -610,132 +798,117 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                 </Box>
             ) : (
                 <>
-                    {/* Actions */}
-                    <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography
-                            variant="h6"
-                            sx={{
-                                fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                    {/* Tabs for Exercises and Workouts */}
+                    <Tabs 
+                        value={activeTab} 
+                        onChange={handleTabChange}
+                        sx={{ 
+                            mb: 3,
+                            '& .MuiTabs-indicator': {
+                                backgroundColor: NEON_PURPLE
+                            }
+                        }}
+                    >
+                        <Tab 
+                            label="Exercises" 
+                            sx={{ 
+                                textTransform: 'none',
                                 fontWeight: 'bold',
-                                color: '#333',
-                                position: 'relative',
-                                '&:after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    bottom: -8,
-                                    left: 0,
-                                    width: 40,
-                                    height: 2,
-                                    bgcolor: NEON_PURPLE
+                                color: activeTab === 0 ? NEON_PURPLE : alpha('#000000', 0.6),
+                                '&.Mui-selected': {
+                                    color: NEON_PURPLE
                                 }
                             }}
-                        >
-                            Exercises
-                        </Typography>
-
-                        {selectedExercises.length > 0 && (
-                            <Chip
-                                label={`${selectedExercises.length} Selected`}
-                                onDelete={() => {
-                                    // Clear all selections
-                                    selectedExercises.forEach(id => handleExerciseSelect(id));
-                                }}
-                                sx={{
-                                    bgcolor: alpha(NEON_PINK, 0.1),
-                                    color: NEON_PINK,
-                                    fontWeight: 'bold',
-                                    border: `1px solid ${alpha(NEON_PINK, 0.2)}`,
-                                    '& .MuiChip-deleteIcon': {
-                                        color: alpha(NEON_PINK, 0.7),
-                                        '&:hover': {
-                                            color: NEON_PINK
-                                        }
-                                    }
-                                }}
-                            />
-                        )}
-                    </Box>
-
-                    {/* Exercises list */}
-                    {activeExercises.length === 0 && completedExercises.length === 0 ? (
-                        <Paper
-                            elevation={2}
-                            sx={{
-                                textAlign: 'center',
-                                mt: 6,
-                                p: 4,
-                                borderRadius: 3,
-                                bgcolor: LIGHT_PAPER,
-                                border: `1px dashed ${alpha('#000000', 0.2)}`
+                        />
+                        <Tab 
+                            label="Workouts" 
+                            sx={{ 
+                                textTransform: 'none',
+                                fontWeight: 'bold',
+                                color: activeTab === 1 ? NEON_PURPLE : alpha('#000000', 0.6),
+                                '&.Mui-selected': {
+                                    color: NEON_PURPLE
+                                }
                             }}
-                        >
-                            <Typography variant="h6" color={alpha('#000000', 0.5)}>
-                                No exercises found for this plan
-                            </Typography>
-                        </Paper>
-                    ) : (
-                        <Box>
-                            {/* Active Exercises */}
-                            <Box sx={{ mb: 4 }}>
-                                {activeExercises.length > 0 && (
-                                    <Typography
-                                        variant="subtitle1"
-                                        sx={{
-                                            mb: 2,
-                                            color: NEON_BLUE,
-                                            fontWeight: 'medium',
-                                            textTransform: 'uppercase',
-                                            letterSpacing: 1,
-                                            fontSize: '0.875rem'
-                                        }}
-                                    >
-                                        Active Exercises
-                                    </Typography>
-                                )}
-                                {activeExercises.map((exercise) => (
-                                    <WorkoutExerciseItem
-                                        key={exercise._id.toString()}
-                                        exercise={exercise}
-                                        planId={planId}
-                                        weekNumber={weekNumber}
-                                        onSetComplete={handleSetCompletionUpdate}
-                                        selectedExercises={selectedExercises}
-                                        handleExerciseSelect={handleExerciseSelect}
-                                        showSelectionMode={showSelectionMode}
-                                    />
-                                ))}
-                            </Box>
+                        />
+                    </Tabs>
 
-                            {/* Completed Exercises */}
-                            {completedExercises.length > 0 && (
-                                <Box sx={{ mt: 3 }}>
-                                    <Button
-                                        onClick={toggleShowCompleted}
-                                        variant="outlined"
-                                        fullWidth
+                    {/* Exercises Tab Content */}
+                    {activeTab === 0 && (
+                        <>
+                            {/* Actions */}
+                            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                                        fontWeight: 'bold',
+                                        color: '#333'
+                                    }}
+                                >
+                                    Exercises
+                                </Typography>
+
+                                {selectedExercises.length > 0 && (
+                                    <Chip
+                                        label={`${selectedExercises.length} Selected`}
+                                        onDelete={() => {
+                                            // Clear all selections
+                                            selectedExercises.forEach(id => handleExerciseSelect(id));
+                                        }}
                                         sx={{
-                                            justifyContent: 'space-between',
-                                            py: 1.5,
-                                            px: 3,
-                                            mb: 2,
-                                            borderRadius: 8,
-                                            color: alpha('#000000', 0.8),
-                                            borderColor: alpha('#000000', 0.2),
-                                            textTransform: 'none',
-                                            '&:hover': {
-                                                borderColor: alpha('#000000', 0.4),
-                                                bgcolor: alpha('#000000', 0.03)
+                                            bgcolor: alpha(NEON_PINK, 0.1),
+                                            color: NEON_PINK,
+                                            fontWeight: 'bold',
+                                            border: `1px solid ${alpha(NEON_PINK, 0.2)}`,
+                                            '& .MuiChip-deleteIcon': {
+                                                color: alpha(NEON_PINK, 0.7),
+                                                '&:hover': {
+                                                    color: NEON_PINK
+                                                }
                                             }
                                         }}
-                                        endIcon={showCompleted ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                                    >
-                                        <Box component="span">
-                                            Completed Exercises ({completedExercises.length})
-                                        </Box>
-                                    </Button>
+                                    />
+                                )}
+                            </Box>
 
-                                    <Box sx={{ display: showCompleted ? 'block' : 'none' }}>
-                                        {completedExercises.map((exercise) => (
+                            {/* Exercises list */}
+                            {activeExercises.length === 0 && completedExercises.length === 0 ? (
+                                <Paper
+                                    elevation={2}
+                                    sx={{
+                                        textAlign: 'center',
+                                        mt: 6,
+                                        p: 4,
+                                        borderRadius: 3,
+                                        bgcolor: LIGHT_PAPER,
+                                        border: `1px dashed ${alpha('#000000', 0.2)}`
+                                    }}
+                                >
+                                    <Typography variant="h6" color={alpha('#000000', 0.5)}>
+                                        No exercises found for this plan
+                                    </Typography>
+                                </Paper>
+                            ) : (
+                                <Box>
+                                    {/* Active Exercises */}
+                                    <Box sx={{ mb: 4 }}>
+                                        {activeExercises.length > 0 && (
+                                            <Typography
+                                                variant="subtitle1"
+                                                sx={{
+                                                    mb: 2,
+                                                    color: NEON_BLUE,
+                                                    fontWeight: 'medium',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: 1,
+                                                    fontSize: '0.875rem'
+                                                }}
+                                            >
+                                                Active Exercises
+                                            </Typography>
+                                        )}
+                                        {activeExercises.map((exercise) => (
                                             <WorkoutExerciseItem
                                                 key={exercise._id.toString()}
                                                 exercise={exercise}
@@ -748,15 +921,148 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                                             />
                                         ))}
                                     </Box>
+
+                                    {/* Completed Exercises */}
+                                    {completedExercises.length > 0 && (
+                                        <Box sx={{ mt: 3 }}>
+                                            <Button
+                                                onClick={toggleShowCompleted}
+                                                variant="outlined"
+                                                fullWidth
+                                                sx={{
+                                                    justifyContent: 'space-between',
+                                                    py: 1.5,
+                                                    px: 3,
+                                                    mb: 2,
+                                                    borderRadius: 8,
+                                                    color: alpha('#000000', 0.8),
+                                                    borderColor: alpha('#000000', 0.2),
+                                                    textTransform: 'none',
+                                                    '&:hover': {
+                                                        borderColor: alpha('#000000', 0.4),
+                                                        bgcolor: alpha('#000000', 0.03)
+                                                    }
+                                                }}
+                                                endIcon={showCompleted ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                            >
+                                                <Box component="span">
+                                                    Completed Exercises ({completedExercises.length})
+                                                </Box>
+                                            </Button>
+
+                                            <Box sx={{ display: showCompleted ? 'block' : 'none' }}>
+                                                {completedExercises.map((exercise) => (
+                                                    <WorkoutExerciseItem
+                                                        key={exercise._id.toString()}
+                                                        exercise={exercise}
+                                                        planId={planId}
+                                                        weekNumber={weekNumber}
+                                                        onSetComplete={handleSetCompletionUpdate}
+                                                        selectedExercises={selectedExercises}
+                                                        handleExerciseSelect={handleExerciseSelect}
+                                                        showSelectionMode={showSelectionMode}
+                                                    />
+                                                ))}
+                                            </Box>
+                                        </Box>
+                                    )}
                                 </Box>
                             )}
-                        </Box>
+                        </>
+                    )}
+
+                    {/* Workouts Tab Content */}
+                    {activeTab === 1 && (
+                        <>
+                            {/* Workouts header */}
+                            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                                        fontWeight: 'bold',
+                                        color: '#333'
+                                    }}
+                                >
+                                    Saved Workouts
+                                </Typography>
+                                
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    sx={{
+                                        bgcolor: NEON_PURPLE,
+                                        textTransform: 'none',
+                                        fontWeight: 'bold',
+                                        borderRadius: 8,
+                                        px: 2,
+                                        '&:hover': {
+                                            bgcolor: alpha(NEON_PURPLE, 0.9)
+                                        }
+                                    }}
+                                >
+                                    Create New
+                                </Button>
+                            </Box>
+
+                            {/* Workouts list */}
+                            {isWorkoutsLoading ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', my: 8 }}>
+                                    <CircularProgress sx={{ color: NEON_PURPLE }} />
+                                </Box>
+                            ) : savedWorkouts.length === 0 ? (
+                                <Paper
+                                    elevation={2}
+                                    sx={{
+                                        textAlign: 'center',
+                                        mt: 6,
+                                        p: 4,
+                                        borderRadius: 3,
+                                        bgcolor: LIGHT_PAPER,
+                                        border: `1px dashed ${alpha('#000000', 0.2)}`
+                                    }}
+                                >
+                                    <Typography variant="h6" color={alpha('#000000', 0.5)}>
+                                        No saved workouts found
+                                    </Typography>
+                                    <Button
+                                        variant="contained"
+                                        sx={{
+                                            mt: 2,
+                                            bgcolor: NEON_PURPLE,
+                                            textTransform: 'none',
+                                            fontWeight: 'bold',
+                                            borderRadius: 8,
+                                            px: 3,
+                                            '&:hover': {
+                                                bgcolor: alpha(NEON_PURPLE, 0.9)
+                                            }
+                                        }}
+                                    >
+                                        Create Your First Workout
+                                    </Button>
+                                </Paper>
+                            ) : (
+                                <Box>
+                                    {savedWorkouts.map((workout) => (
+                                        <WorkoutItem
+                                            key={typeof workout._id === 'string' ? workout._id : workout._id.toString()}
+                                            workout={workout}
+                                            planId={planId}
+                                            weekNumber={weekNumber}
+                                            handleSetCompletionUpdate={handleSetCompletionUpdate}
+                                            onToggleExpand={toggleWorkoutExpanded}
+                                        />
+                                    ))}
+                                </Box>
+                            )}
+                        </>
                     )}
                 </>
             )}
 
             {/* Selected exercises summary */}
-            {selectedExercises.length > 0 && (
+            {selectedExercises.length > 0 && activeTab === 0 && (
                 <Paper
                     elevation={4}
                     sx={{

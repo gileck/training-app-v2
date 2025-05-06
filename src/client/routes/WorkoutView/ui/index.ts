@@ -1,4 +1,4 @@
-import { NeonLightWorkoutView } from './LightModeUI';
+import { NeonLightWorkoutView } from './MainView';
 
 export const UI_VARIANTS = [
     {

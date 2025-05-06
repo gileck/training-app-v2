@@ -1,6 +1,14 @@
 import { TrainingPlan } from '@/apis/trainingPlans/types';
 import { WorkoutExercise } from '@/client/types/workout';
 import { WeeklyProgressBase } from '@/apis/weeklyProgress/types';
+import { SavedWorkout } from '@/apis/savedWorkouts/types';
+
+// Define enhanced workout type that includes exercises
+export interface EnhancedWorkout extends SavedWorkout {
+    enhancedExercises: WorkoutExercise[];
+    isExpanded: boolean;
+    error?: string;
+}
 
 export interface WorkoutViewProps {
     planId: string | undefined;
@@ -17,6 +25,8 @@ export interface WorkoutViewProps {
     progressPercentage: number;
     totalExercises: number;
     completedExercisesCount: number;
+    savedWorkouts: EnhancedWorkout[];
+    isWorkoutsLoading: boolean;
 
     // Actions
     navigate: (path: string) => void;
@@ -27,6 +37,8 @@ export interface WorkoutViewProps {
     handleStartWorkout: () => void;
     toggleShowCompleted: () => void;
     handleNavigateWeek: (week: number) => void;
+    fetchSavedWorkouts: () => Promise<void>;
+    toggleWorkoutExpanded: (workoutId: string) => void;
 }
 
 export interface WorkoutExerciseItemProps {
