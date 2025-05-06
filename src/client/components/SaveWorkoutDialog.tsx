@@ -14,7 +14,7 @@ import {
 interface SaveWorkoutDialogProps {
     open: boolean;
     onClose: () => void;
-    onSave: (name: string, description?: string) => Promise<boolean | void>;
+    onSave: (name: string) => Promise<boolean | void>;
 }
 
 export const SaveWorkoutDialog: React.FC<SaveWorkoutDialogProps> = ({
@@ -23,7 +23,6 @@ export const SaveWorkoutDialog: React.FC<SaveWorkoutDialogProps> = ({
     onSave
 }) => {
     const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -37,7 +36,7 @@ export const SaveWorkoutDialog: React.FC<SaveWorkoutDialogProps> = ({
         setIsLoading(true);
 
         try {
-            await onSave(name, description || undefined);
+            await onSave(name);
             handleClose();
         } catch (err) {
             console.error('Error saving workout:', err);
@@ -49,7 +48,6 @@ export const SaveWorkoutDialog: React.FC<SaveWorkoutDialogProps> = ({
 
     const handleClose = () => {
         setName('');
-        setDescription('');
         setError(null);
         onClose();
     };
@@ -86,18 +84,6 @@ export const SaveWorkoutDialog: React.FC<SaveWorkoutDialogProps> = ({
                     variant="outlined"
                     disabled={isLoading}
                     sx={{ mb: 2 }}
-                />
-
-                <TextField
-                    margin="dense"
-                    label="Description (optional)"
-                    fullWidth
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    multiline
-                    rows={3}
-                    variant="outlined"
-                    disabled={isLoading}
                 />
             </DialogContent>
             <DialogActions>

@@ -39,7 +39,7 @@ export const ExerciseFormDialog: React.FC<ExerciseFormDialogProps> = ({
     const [sets, setSets] = useState('');
     const [reps, setReps] = useState('');
     const [weight, setWeight] = useState('');
-    const [restTimeSeconds, setRestTimeSeconds] = useState('');
+    const [durationSeconds, setDurationSeconds] = useState('');
     const [comments, setComments] = useState('');
 
     // Submission state
@@ -87,7 +87,7 @@ export const ExerciseFormDialog: React.FC<ExerciseFormDialogProps> = ({
             setSets(String(exerciseToEdit.sets || ''));
             setReps(String(exerciseToEdit.reps || ''));
             setWeight(String(exerciseToEdit.weight ?? ''));
-            setRestTimeSeconds(String(exerciseToEdit.restTimeSeconds ?? ''));
+            setDurationSeconds(String(exerciseToEdit.durationSeconds ?? ''));
             setComments(exerciseToEdit.comments || '');
             // Definition is selected in the fetch effect
             setError(null); // Clear errors when switching to edit
@@ -98,7 +98,7 @@ export const ExerciseFormDialog: React.FC<ExerciseFormDialogProps> = ({
             setSets('');
             setReps('');
             setWeight('');
-            setRestTimeSeconds('');
+            setDurationSeconds('');
             setComments('');
             setError(null);
             setFetchError(null);
@@ -110,7 +110,7 @@ export const ExerciseFormDialog: React.FC<ExerciseFormDialogProps> = ({
             setSets('');
             setReps('');
             setWeight('');
-            setRestTimeSeconds('');
+            setDurationSeconds('');
             setComments('');
             setError(null);
             setFetchError(null);
@@ -126,14 +126,14 @@ export const ExerciseFormDialog: React.FC<ExerciseFormDialogProps> = ({
         const setsNum = parseInt(sets, 10);
         const repsNum = parseInt(reps, 10);
         const weightNum = weight ? parseFloat(weight) : undefined;
-        const restTimeNum = restTimeSeconds ? parseInt(restTimeSeconds, 10) : undefined;
+        const durationNum = durationSeconds ? parseInt(durationSeconds, 10) : undefined;
 
         if (!selectedDefinition?._id || !sets || !reps || isNaN(setsNum) || isNaN(repsNum)) {
             setError('Please select an Exercise Definition and provide valid Sets and Reps.');
             return;
         }
-        if ((weight && isNaN(weightNum as number)) || (restTimeSeconds && isNaN(restTimeNum as number))) {
-            setError('Weight and Rest Time must be valid numbers if provided.');
+        if ((weight && isNaN(weightNum as number)) || (durationSeconds && isNaN(durationNum as number))) {
+            setError('Weight and Duration must be valid numbers if provided.');
             return;
         }
 
@@ -149,7 +149,7 @@ export const ExerciseFormDialog: React.FC<ExerciseFormDialogProps> = ({
                 updates.sets = setsNum;
                 updates.reps = repsNum;
                 updates.weight = weightNum;
-                updates.restTimeSeconds = restTimeNum;
+                updates.durationSeconds = durationNum;
                 updates.comments = comments;
                 // Definition ID cannot be changed in edit mode here
 
@@ -176,7 +176,7 @@ export const ExerciseFormDialog: React.FC<ExerciseFormDialogProps> = ({
                     sets: setsNum,
                     reps: repsNum,
                     ...(weightNum !== undefined && { weight: weightNum }),
-                    ...(restTimeNum !== undefined && { restTimeSeconds: restTimeNum }),
+                    ...(durationNum !== undefined && { durationSeconds: durationNum }),
                     ...(comments && { comments }),
                 };
                 const response = await addExercise(requestData);
@@ -290,13 +290,13 @@ export const ExerciseFormDialog: React.FC<ExerciseFormDialogProps> = ({
                 />
                 <TextField
                     margin="dense"
-                    id={isEditMode ? "edit-restTimeSeconds" : "add-restTimeSeconds"}
-                    label="Rest Time (seconds, optional)"
+                    id={isEditMode ? "edit-durationSeconds" : "add-durationSeconds"}
+                    label="Duration (seconds, optional)"
                     type="number"
                     fullWidth
                     variant="standard"
-                    value={restTimeSeconds}
-                    onChange={(e) => setRestTimeSeconds(e.target.value)}
+                    value={durationSeconds}
+                    onChange={(e) => setDurationSeconds(e.target.value)}
                     disabled={isSubmitting}
                     inputProps={{ min: 0 }}
                 />

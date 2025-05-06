@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
-import { getDb } from '@/server/database';
 import { ApiHandlerContext } from '../../types';
-import { GetWeeklyProgressRequest, GetWeeklyProgressResponse, WeeklyProgressBase } from '../types';
+import { GetWeeklyProgressRequest, GetWeeklyProgressResponse } from '../types';
+import { weeklyProgress } from '@/server/database/collections';
 
 // --- Task 26: Get Weekly Progress ---
 // (Moved from server.ts)
@@ -21,24 +21,31 @@ export const getWeeklyProgress = async (
     }
 
     try {
-        const db = await getDb();
         const userIdObj = new ObjectId(userId);
         const planIdObj = new ObjectId(planId);
         const exerciseIdObj = new ObjectId(exerciseId);
 
-        const filter = { userId: userIdObj, planId: planIdObj, exerciseId: exerciseIdObj, weekNumber: weekNumber };
-
-        // Use findOne to simply read the current state
-        const existingProgress = await db.collection<WeeklyProgressBase>('weeklyProgress').findOne(filter);
+        // Use the new database layer to get weekly progress for this exercise
+        const existingProgress = await weeklyProgress.findProgressForExercise(
+            planIdObj,
+            exerciseIdObj,
+            userIdObj,
+            weekNumber
+        );
 
         if (existingProgress) {
-            // Return the found document, ensuring defaults for potentially missing fields
+            // Map from our new database schema to the API response format
             return {
-                // Removed redundant explicit assignments covered by spread
-                ...existingProgress,
-                setsCompleted: existingProgress.setsCompleted ?? 0, // Apply default if null/undefined
-                isExerciseDone: existingProgress.isExerciseDone ?? false, // Apply default if null/undefined
-                weeklyNotes: existingProgress.weeklyNotes ?? [], // Apply default if null/undefined
+                _id: existingProgress._id,
+                userId: existingProgress.userId,
+                planId: existingProgress.planId,
+                exerciseId: existingProgress.exerciseId,
+                weekNumber: existingProgress.weekNumber,
+                setsCompleted: existingProgress.setsCompleted ?? 0,
+                isExerciseDone: existingProgress.isExerciseDone ?? false,
+                lastUpdatedAt: existingProgress.updatedAt,
+                weeklyNotes: existingProgress.weeklyNotes ?? [],
+                completed: existingProgress.completed
             };
         } else {
             // No document found, return a default object structure 

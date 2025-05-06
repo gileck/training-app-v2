@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
-import { getDb } from '@/server/database';
 import { ApiHandlerContext } from '../../types';
-import { DeleteWeeklyNoteRequest, DeleteWeeklyNoteResponse, WeeklyProgressBase } from '../types';
+import { DeleteWeeklyNoteRequest, DeleteWeeklyNoteResponse } from '../types';
+import { weeklyProgress } from '@/server/database/collections';
 
 // --- Task 28: Delete Weekly Note ---
 // (Moved from server.ts)
@@ -20,39 +20,35 @@ export const deleteWeeklyNote = async (
         throw new Error("Invalid week number.");
     }
 
-    const db = await getDb();
-    const userIdObj = new ObjectId(userId);
-    const planIdObj = new ObjectId(planId);
-    const exerciseIdObj = new ObjectId(exerciseId);
-    const noteIdObj = new ObjectId(noteId);
+    try {
+        // Use the weeklyProgress collection function to delete the note
+        const deleted = await weeklyProgress.deleteWeeklyNote(
+            planId,
+            exerciseId,
+            userId,
+            weekNumber,
+            noteId
+        );
 
-    const filter = {
-        userId: userIdObj,
-        planId: planIdObj,
-        exerciseId: exerciseIdObj,
-        weekNumber: weekNumber
-        // No need to match noteId in filter, $pull handles that
-    };
+        if (!deleted) {
+            // Check if the progress document exists to provide a better error message
+            const progress = await weeklyProgress.findProgressForExercise(
+                planId,
+                exerciseId,
+                userId,
+                weekNumber
+            );
+            
+            if (!progress) {
+                return { success: false, message: "Weekly progress not found for the specified week." };
+            } else {
+                return { success: false, message: "Note not found within the specified week's progress." };
+            }
+        }
 
-    const update = {
-        // Use $pull to remove the note matching the noteId from the array
-        $pull: { weeklyNotes: { noteId: noteIdObj } },
-        $set: { lastUpdatedAt: new Date() } // Update timestamp
-    };
-
-    const result = await db.collection<WeeklyProgressBase>('weeklyProgress').updateOne(filter, update);
-
-    // Check if the main document was found
-    if (result.matchedCount === 0) {
-        // Success: false, Message: Document not found (no note could have been deleted)
-        return { success: false, message: "Weekly progress not found for the specified week." };
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete weekly note:", error);
+        return { success: false, message: "An error occurred while deleting the note." };
     }
-    // Check if the pull operation actually removed an element
-    if (result.modifiedCount !== 1) {
-        // Success: false, Message: Note not found within the document
-        return { success: false, message: "Note not found within the specified week's progress." };
-    }
-
-    // Success: true (document found and note removed)
-    return { success: true };
 }; 

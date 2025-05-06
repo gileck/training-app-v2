@@ -1,5 +1,4 @@
 import { ObjectId } from 'mongodb';
-import { getDb } from '@/server/database';
 import { 
     GetActivityLogParams, 
     GetActivityLogResponse, 
@@ -12,6 +11,8 @@ import {
     ExerciseActivityLogWithDetails,
     DailyActivitySummary
 } from './types';
+import { exerciseActivityLog, exercises, exerciseDefinitions, trainingPlans } from '@/server/database/collections';
+import { ExerciseActivityLog } from '@/server/database/collections/exerciseActivityLog/types';
 
 // Re-export API names from index.ts
 import {
@@ -44,96 +45,50 @@ export async function getActivityLogs(
         }
 
         const { startDate, endDate, planId, exerciseId } = params;
-        // console.log('getActivityLogs params:', { startDate, endDate, planId, exerciseId, userId: context.userId });
+        const userIdObj = new ObjectId(context.userId);
         
-        const db = await getDb();
-
-        // Build the query
-        const query: Record<string, unknown> = { userId: new ObjectId(context.userId) };
+        // Create filter for activity logs
+        const filter: Record<string, unknown> = {};
         
-        // Important: When querying for dates in MongoDB, we need to ensure:
-        // 1. We're using proper Date objects
-        // 2. The date range makes sense (start date <= end date)
-        // 3. Handle timezone issues consistently
-        
-        // Add date range to query if provided
+        // Add date range to filter if provided
         if (startDate || endDate) {
-            query.date = {};
+            filter.date = {};
             
             if (startDate) {
-                const startDateObj = new Date(startDate);
-                // Keep exact timestamp rather than normalizing to beginning of day
-                (query.date as Record<string, Date>).$gte = startDateObj;
+                (filter.date as Record<string, Date>).$gte = new Date(startDate);
             }
             
             if (endDate) {
                 const endDateObj = new Date(endDate);
                 // Set time to end of day (23:59:59) to include full day
                 endDateObj.setUTCHours(23, 59, 59, 999);
-                (query.date as Record<string, Date>).$lte = endDateObj;
+                (filter.date as Record<string, Date>).$lte = endDateObj;
             }
         }
         
+        // Add plan filter if provided
         if (planId) {
-            query.planId = planId;
+            filter.planId = new ObjectId(planId);
         }
         
+        // Add exercise filter if provided
         if (exerciseId) {
-            query.exerciseId = exerciseId;
-        }
-
-        // Log original query for debugging
-        // console.log('Raw MongoDB query:', JSON.stringify(query));
-        
-        // Create a clean query that won't be stringified inappropriately
-        const mongoQuery: Record<string, unknown> = { userId: new ObjectId(context.userId) };
-        
-        // Handle date range properly
-        if (startDate || endDate) {
-            mongoQuery.date = {} as Record<string, Date>;
-            
-            if (startDate) {
-                (mongoQuery.date as Record<string, Date>).$gte = new Date(startDate);
-            }
-            
-            if (endDate) {
-                const endDateObj = new Date(endDate);
-                endDateObj.setUTCHours(23, 59, 59, 999);
-                (mongoQuery.date as Record<string, Date>).$lte = endDateObj;
-            }
+            filter.exerciseId = new ObjectId(exerciseId);
         }
         
-        // Add other filters
-        if (planId) {
-            mongoQuery.planId = planId;
-        }
-        
-        if (exerciseId) {
-            mongoQuery.exerciseId = exerciseId;
-        }
-        
-        // console.log('MongoDB query (before execution):', mongoQuery);
-        
-        // const AllActivityLogs = await db.collection('exerciseActivityLog').find({}).sort({ date: -1 }).toArray();
-        // console.log('All activity logs count:', AllActivityLogs);
-        
-        // Use the properly constructed mongoQuery
-        const activityLogs = await db.collection('exerciseActivityLog').find(mongoQuery).sort({ date: -1 }).toArray();
-        // console.log('Activity logs found:', activityLogs.length);
+        // Get activity logs using the database layer
+        const activityLogs = await exerciseActivityLog.findActivityLogsForUser(userIdObj, filter);
         
         if (activityLogs.length === 0) {
-            // If no logs found, try a more basic query to confirm data exists
-            const basicQuery = { userId: new ObjectId(context.userId) };
-            const allUserLogs = await db.collection('exerciseActivityLog').find(basicQuery).limit(10).toArray();
-            // console.log('All user logs count:', allUserLogs.length);
+            // Check if there are any logs for this user
+            const allUserLogs = await exerciseActivityLog.findActivityLogsForUser(userIdObj, {});
+            
             if (allUserLogs.length > 0) {
-                // console.log('Sample log date:', allUserLogs[0].date);
-                
                 // Try without date filtering to see if that's the issue
-                const noDateQuery = { ...mongoQuery };
-                delete noDateQuery.date;
-                const logsWithoutDateFilter = await db.collection('exerciseActivityLog').find(noDateQuery).limit(10).toArray();
-                // console.log('Logs without date filter:', logsWithoutDateFilter.length);
+                const noDateFilter = { ...filter };
+                delete noDateFilter.date;
+                
+                const logsWithoutDateFilter = await exerciseActivityLog.findActivityLogsForUser(userIdObj, noDateFilter);
                 
                 if (logsWithoutDateFilter.length > 0) {
                     return { 
@@ -149,36 +104,43 @@ export async function getActivityLogs(
         
         // Enrich with exercise and plan details
         const enrichedLogs: ExerciseActivityLogWithDetails[] = await Promise.all(
-            activityLogs.map(async (log: Record<string, unknown>) => {
-                // Get exercise name from exercise definition
-                const exercise = await db.collection('exercises').findOne({ 
-                    _id: new ObjectId(log.exerciseId as string) 
-                });
-                const definitionId = exercise?.exerciseDefinitionId;
-                const definition = definitionId 
-                    ? await db.collection('exerciseDefinitions').findOne({ _id: new ObjectId(definitionId) })
-                    : null;
+            activityLogs.map(async (log: ExerciseActivityLog) => {
+                // Get exercise details
+                const exercise = await exercises.findExerciseById(log.exerciseId, userIdObj);
+                let definitionName = 'Unknown Exercise';
+                let primaryMuscle = undefined;
+                
+                if (exercise?.definitionId) {
+                    const definition = await exerciseDefinitions.findExerciseDefinitionById(exercise.definitionId);
+                    if (definition) {
+                        definitionName = definition.name;
+                        primaryMuscle = definition.primaryMuscle;
+                    }
+                }
                 
                 // Get plan name
-                const plan = await db.collection('trainingPlans').findOne({ 
-                    _id: new ObjectId(log.planId as string) 
-                });
+                let planName = 'Unknown Plan';
+                if (log.planId) {
+                    const plan = await trainingPlans.findTrainingPlanById(log.planId, userIdObj);
+                    if (plan) {
+                        planName = plan.name;
+                    }
+                }
                 
                 return {
-                    ...log,
-                    _id: (log._id as ObjectId).toString(),
-                    userId: log.userId as string,
-                    date: log.date as Date,
-                    planId: log.planId as string,
-                    exerciseId: log.exerciseId as string,
-                    exerciseDefinitionId: log.exerciseDefinitionId as string,
-                    setsCompleted: log.setsCompleted as number,
-                    weekNumber: log.weekNumber as number,
-                    exerciseName: definition?.name || 'Unknown Exercise',
-                    planName: plan?.name || 'Unknown Plan',
-                    primaryMuscle: definition?.primaryMuscle,
+                    _id: log._id.toString(),
+                    userId: log.userId.toString(),
+                    date: log.date,
+                    planId: log.planId.toString(),
+                    exerciseId: log.exerciseId.toString(),
+                    exerciseDefinitionId: (exercise?.definitionId || log.exerciseId).toString(),
+                    setsCompleted: log.setsCompleted,
+                    weekNumber: log.weekNumber,
+                    exerciseName: definitionName,
+                    planName: planName,
+                    primaryMuscle: primaryMuscle,
                     weight: exercise?.weight,
-                    reps: exercise?.reps
+                    reps: exercise?.reps ? parseInt(exercise.reps, 10) : undefined
                 };
             })
         );
@@ -207,72 +169,73 @@ export async function updateActivityLog(
             return { success: false, error: 'Activity ID is required' };
         }
 
-        const db = await getDb();
+        const userId = new ObjectId(context.userId);
+        const activityIdObj = new ObjectId(activityId);
         
-        // Verify ownership
-        const existingActivity = await db.collection('exerciseActivityLog').findOne({
-            _id: new ObjectId(activityId),
-            userId: new ObjectId(context.userId)
-        });
+        // Verify ownership using the database layer
+        const existingActivity = await exerciseActivityLog.findActivityLogById(activityIdObj, userId);
 
         if (!existingActivity) {
             return { success: false, error: 'Activity not found' };
         }
 
         // Build update object
-        const updateData: Record<string, unknown> = {};
+        const now = new Date();
+        const updateData: exerciseActivityLog.ExerciseActivityLogUpdate = {
+            updatedAt: now
+        };
+        
         if (setsCompleted !== undefined) {
             updateData.setsCompleted = setsCompleted;
         }
+        
         if (date) {
-            // Don't normalize the date - keep the exact timestamp
             updateData.date = new Date(date);
         }
 
-        // Update the activity
-        await db.collection('exerciseActivityLog').updateOne(
-            { _id: new ObjectId(activityId) },
-            { $set: updateData }
-        );
+        // Update the activity using the database layer
+        const updatedActivity = await exerciseActivityLog.updateActivityLog(activityIdObj, userId, updateData);
 
-        // Get updated activity with details
-        const updatedActivity = await db.collection('exerciseActivityLog').findOne({
-            _id: new ObjectId(activityId)
-        });
-        
         if (!updatedActivity) {
-            return { success: false, error: 'Failed to retrieve updated activity' };
+            return { success: false, error: 'Failed to update activity' };
         }
         
-        // Enrich with exercise and plan details
-        const exercise = await db.collection('exercises').findOne({ 
-            _id: new ObjectId(updatedActivity.exerciseId) 
-        });
-        const definitionId = exercise?.exerciseDefinitionId;
-        const definition = definitionId 
-            ? await db.collection('exerciseDefinitions').findOne({ 
-                _id: new ObjectId(definitionId) 
-            })
-            : null;
+        // Enrich with exercise and plan details similar to getActivityLogs
+        const exercise = await exercises.findExerciseById(updatedActivity.exerciseId, userId);
+        let definitionName = 'Unknown Exercise';
+        let primaryMuscle = undefined;
         
-        const plan = await db.collection('trainingPlans').findOne({ 
-            _id: new ObjectId(updatedActivity.planId) 
-        });
+        if (exercise?.definitionId) {
+            const definition = await exerciseDefinitions.findExerciseDefinitionById(exercise.definitionId);
+            if (definition) {
+                definitionName = definition.name;
+                primaryMuscle = definition.primaryMuscle;
+            }
+        }
+        
+        // Get plan name
+        let planName = 'Unknown Plan';
+        if (updatedActivity.planId) {
+            const plan = await trainingPlans.findTrainingPlanById(updatedActivity.planId, userId);
+            if (plan) {
+                planName = plan.name;
+            }
+        }
         
         const enrichedActivity: ExerciseActivityLogWithDetails = {
             _id: updatedActivity._id.toString(),
-            userId: updatedActivity.userId,
+            userId: updatedActivity.userId.toString(),
             date: updatedActivity.date,
-            planId: updatedActivity.planId,
-            exerciseId: updatedActivity.exerciseId,
-            exerciseDefinitionId: updatedActivity.exerciseDefinitionId,
+            planId: updatedActivity.planId.toString(),
+            exerciseId: updatedActivity.exerciseId.toString(),
+            exerciseDefinitionId: (exercise?.definitionId || updatedActivity.exerciseId).toString(),
             setsCompleted: updatedActivity.setsCompleted,
             weekNumber: updatedActivity.weekNumber,
-            exerciseName: definition?.name || 'Unknown Exercise',
-            planName: plan?.name || 'Unknown Plan',
-            primaryMuscle: definition?.primaryMuscle,
+            exerciseName: definitionName,
+            planName: planName,
+            primaryMuscle: primaryMuscle,
             weight: exercise?.weight,
-            reps: exercise?.reps
+            reps: exercise?.reps ? parseInt(exercise.reps, 10) : undefined
         };
 
         return { success: true, data: enrichedActivity };
@@ -299,20 +262,22 @@ export async function deleteActivityLog(
             return { success: false, error: 'Activity ID is required' };
         }
 
-        const db = await getDb();
+        const userId = new ObjectId(context.userId);
+        const activityIdObj = new ObjectId(activityId);
         
-        // Verify ownership
-        const existingActivity = await db.collection('exerciseActivityLog').findOne({
-            _id: new ObjectId(activityId),
-            userId: new ObjectId(context.userId)
-        });
+        // Verify ownership using the database layer
+        const existingActivity = await exerciseActivityLog.findActivityLogById(activityIdObj, userId);
 
         if (!existingActivity) {
             return { success: false, error: 'Activity not found' };
         }
 
-        // Delete the activity
-        await db.collection('exerciseActivityLog').deleteOne({ _id: new ObjectId(activityId) });
+        // Delete the activity using the database layer
+        const deleted = await exerciseActivityLog.deleteActivityLog(activityIdObj, userId);
+
+        if (!deleted) {
+            return { success: false, error: 'Failed to delete activity' };
+        }
 
         return { success: true };
     } catch (error) {
@@ -334,134 +299,121 @@ export async function getActivitySummary(
         }
 
         const { startDate, endDate, groupBy = 'day' } = params;
-        
         if (!startDate || !endDate) {
             return { success: false, error: 'Start date and end date are required' };
         }
 
-        const db = await getDb();
-
-        // Define date format based on groupBy
-        let dateFormat;
-        let groupingStage;
+        const userId = new ObjectId(context.userId);
         
-        switch (groupBy) {
-            case 'week':
-                dateFormat = { $dateToString: { format: "%Y-W%U", date: "$date" } };
-                groupingStage = {
-                    year: { $year: "$date" },
-                    week: { $week: "$date" }
-                };
-                break;
-            case 'month':
-                dateFormat = { $dateToString: { format: "%Y-%m", date: "$date" } };
-                groupingStage = {
-                    year: { $year: "$date" },
-                    month: { $month: "$date" }
-                };
-                break;
-            case 'day':
-            default:
-                dateFormat = { $dateToString: { format: "%Y-%m-%d", date: "$date" } };
-                groupingStage = {
-                    year: { $year: "$date" },
-                    month: { $month: "$date" },
-                    day: { $dayOfMonth: "$date" }
-                };
-                break;
-        }
-
-        // Aggregate to get daily summaries
-        const pipeline = [
-            {
-                $match: {
-                    userId: new ObjectId(context.userId),
-                    date: {
-                        $gte: new Date(startDate),
-                        $lte: new Date(endDate)
-                    }
-                }
-            },
-            {
-                $lookup: {
-                    from: "exercises",
-                    localField: "exerciseId",
-                    foreignField: "_id",
-                    as: "exercise"
-                }
-            },
-            {
-                $unwind: {
-                    path: "$exercise",
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            {
-                $lookup: {
-                    from: "exerciseDefinitions",
-                    localField: "exercise.exerciseDefinitionId",
-                    foreignField: "_id",
-                    as: "definition"
-                }
-            },
-            {
-                $unwind: {
-                    path: "$definition",
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            {
-                $group: {
-                    _id: {
-                        ...groupingStage,
-                        primaryMuscle: "$definition.primaryMuscle"
-                    },
-                    totalSets: { $sum: "$setsCompleted" },
-                    uniqueExercises: { $addToSet: "$exerciseId" },
-                    formattedDate: { $first: dateFormat }
-                }
-            },
-            {
-                $group: {
-                    _id: "$formattedDate",
-                    totalSets: { $sum: "$totalSets" },
-                    exerciseCount: { $sum: { $size: "$uniqueExercises" } },
-                    muscleGroups: {
-                        $push: {
-                            k: "$_id.primaryMuscle",
-                            v: "$totalSets"
-                        }
-                    }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    date: "$_id",
-                    totalSets: 1,
-                    exerciseCount: 1,
-                    muscleGroups: {
-                        $arrayToObject: {
-                            $filter: {
-                                input: "$muscleGroups",
-                                as: "item",
-                                cond: { $ne: ["$$item.k", null] }
-                            }
-                        }
-                    }
-                }
-            },
-            {
-                $sort: { date: 1 }
+        // Get activity logs for the date range
+        const filter: Record<string, unknown> = {
+            date: {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
             }
-        ];
-
-        const summaries = await db.collection('exerciseActivityLog').aggregate(pipeline).toArray() as unknown as DailyActivitySummary[];
-
-        return {
-            success: true,
-            data: summaries
         };
+        
+        const activityLogs = await exerciseActivityLog.findActivityLogsForUser(userId, filter);
+        
+        if (activityLogs.length === 0) {
+            return { success: true, data: [] };
+        }
+        
+        // Get all exercise definitions for the muscle groups
+        const exerciseDefinitionsCache = new Map();
+        
+        // Get all unique exerciseIds from the logs
+        const exerciseIds = [...new Set(activityLogs.map(log => log.exerciseId.toString()))];
+        
+        // Fetch exercise details in parallel
+        await Promise.all(
+            exerciseIds.map(async (exerciseId) => {
+                const exercise = await exercises.findExerciseById(new ObjectId(exerciseId), userId);
+                if (exercise?.definitionId) {
+                    const definition = await exerciseDefinitions.findExerciseDefinitionById(exercise.definitionId);
+                    if (definition) {
+                        exerciseDefinitionsCache.set(exerciseId, {
+                            name: definition.name,
+                            primaryMuscle: definition.primaryMuscle
+                        });
+                    }
+                }
+            })
+        );
+        
+        // Extend DailyActivitySummary to allow tracking exercises
+        interface ExtendedDailyActivitySummary extends DailyActivitySummary {
+            // Define specific properties that might be added dynamically
+            muscleGroups: { [key: string]: number };
+            // Allow other dynamic properties
+            [key: string]: string | number | ObjectId | Date | boolean | undefined | { [key: string]: number };
+        }
+        
+        // Group logs by date (or appropriate grouping)
+        const groupedLogs = new Map<string, ExtendedDailyActivitySummary>();
+        
+        activityLogs.forEach(log => {
+            // Determine the group key based on groupBy parameter
+            let groupKey: string;
+            
+            if (groupBy === 'day') {
+                groupKey = log.date.toISOString().split('T')[0]; // YYYY-MM-DD
+            } else if (groupBy === 'week') {
+                // Get week number - ISO weeks start on Monday
+                const date = new Date(log.date);
+                const dayOfWeek = date.getUTCDay() || 7; // Convert Sunday from 0 to 7
+                const mondayDate = new Date(date);
+                mondayDate.setUTCDate(date.getUTCDate() - (dayOfWeek - 1));
+                groupKey = mondayDate.toISOString().split('T')[0]; // Monday of the week
+            } else { // month
+                groupKey = log.date.toISOString().substr(0, 7); // YYYY-MM
+            }
+            
+            // Initialize group if not exists
+            if (!groupedLogs.has(groupKey)) {
+                groupedLogs.set(groupKey, {
+                    date: groupKey,
+                    totalSets: 0,
+                    exerciseCount: 0,
+                    muscleGroups: {}
+                });
+            }
+            
+            const summary = groupedLogs.get(groupKey)!;
+            summary.totalSets += log.setsCompleted;
+            
+            // Increment exercise count only once per unique exercise
+            const exerciseKey = log.exerciseId.toString();
+            if (!summary[exerciseKey]) {
+                summary.exerciseCount++;
+                summary[exerciseKey] = true;
+            }
+            
+            // Add muscle group if available
+            const exerciseInfo = exerciseDefinitionsCache.get(exerciseKey);
+            if (exerciseInfo?.primaryMuscle) {
+                const muscleGroup = exerciseInfo.primaryMuscle;
+                summary.muscleGroups[muscleGroup] = (summary.muscleGroups[muscleGroup] || 0) + log.setsCompleted;
+            }
+        });
+        
+        // Convert map to array and clean up temporary properties
+        const summaries = Array.from(groupedLogs.values()).map(summary => {
+            // Delete the tracking properties that aren't part of the final output
+            const cleanSummary: DailyActivitySummary = {
+                date: summary.date,
+                totalSets: summary.totalSets,
+                exerciseCount: summary.exerciseCount,
+                muscleGroups: summary.muscleGroups
+            };
+            
+            return cleanSummary;
+        });
+        
+        // Sort by date
+        summaries.sort((a, b) => a.date.localeCompare(b.date));
+        
+        return { success: true, data: summaries };
     } catch (error) {
         console.error('Error getting activity summary:', error);
         return { success: false, error: 'Failed to get activity summary' };

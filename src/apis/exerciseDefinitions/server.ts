@@ -1,6 +1,5 @@
-import { getDb } from '@/server/database';
-import mongoose from 'mongoose';
 import { ObjectId } from 'mongodb';
+import { exerciseDefinitions } from '@/server/database/collections';
 
 export * from './index';
 
@@ -12,10 +11,22 @@ import type {
     ExerciseDefinition
 } from './types';
 
-
 export { baseName as name };
 
-// --- Server-Side Processing Functions ---
+// Helper to map DB ExerciseDefinition to API ExerciseDefinition
+function mapToApiExerciseDefinition(definition: exerciseDefinitions.ExerciseDefinition): ExerciseDefinition {
+    return {
+        _id: definition._id,
+        name: definition.name,
+        primaryMuscle: definition.primaryMuscle,
+        secondaryMuscles: definition.secondaryMuscles,
+        bodyWeight: definition.bodyWeight,
+        type: definition.type,
+        imageUrl: definition.imageUrl,
+        createdAt: definition.createdAt,
+        updatedAt: definition.updatedAt
+    } as ExerciseDefinition;
+}
 
 /**
  * Fetches all exercise definitions (simplified for options list).
@@ -23,20 +34,14 @@ export { baseName as name };
  */
 export const processGetAllOptions = async (): Promise<GetAllExerciseDefinitionsResponse> => {
     try {
-        const db = await getDb();
+        // Use the new database layer to get options
+        const options = await exerciseDefinitions.getAllExerciseDefinitionOptions();
 
-        // Query using MongoDB driver directly instead of Mongoose
-        const options = await db.collection('exerciseDefinitions')
-            .find({}, { projection: { _id: 1, name: 1 } })
-            .toArray();
-
-        // Convert _id to string for client consumption
-        const formattedOptions = options.map(opt => ({
-            _id: opt._id.toString(),
+        // Map to expected API response format
+        return options.map(opt => ({
+            _id: opt._id,
             name: opt.name
         }));
-
-        return formattedOptions;
     } catch (error) {
         console.error('Error fetching exercise definitions:', error);
         throw new Error('Failed to fetch exercise definitions');
@@ -49,22 +54,21 @@ export const processGetAllOptions = async (): Promise<GetAllExerciseDefinitionsR
  */
 export const processGetById = async (params: GetExerciseDefinitionByIdRequestParams): Promise<GetExerciseDefinitionByIdResponse> => {
     try {
-        const db = await getDb();
         const { definitionId } = params;
 
-        if (!definitionId || !mongoose.Types.ObjectId.isValid(definitionId)) {
+        if (!definitionId || !ObjectId.isValid(definitionId)) {
             throw new Error('Invalid Definition ID');
         }
 
-        const definition = await db.collection('exerciseDefinitions')
-            .findOne({ _id: new ObjectId(definitionId) });
+        // Use the new database layer to get definition by ID
+        const definition = await exerciseDefinitions.findExerciseDefinitionById(definitionId);
 
         if (!definition) {
             throw new Error('Exercise Definition not found');
         }
 
-        // Cast the MongoDB document to ExerciseDefinition type
-        return definition as ExerciseDefinition;
+        // Map to expected API response format
+        return mapToApiExerciseDefinition(definition);
     } catch (error) {
         console.error('Error fetching exercise definition:', error);
         throw new Error(`Failed to fetch exercise definition: ${error instanceof Error ? error.message : String(error)}`);

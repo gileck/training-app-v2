@@ -130,8 +130,11 @@ We primarily use referencing (storing ObjectIds) for relationships, but embeddin
   "_id": ObjectId(),
   "userId": ObjectId(),       // Reference to users._id, Indexed
   "exerciseId": ObjectId(),   // Reference to exercises._id, Indexed
+  "planId": ObjectId(),       // Reference to trainingPlans._id, Indexed
+  "exerciseDefinitionId": ObjectId(), // Reference to exerciseDefinitions._id, Indexed
   "date": "Date",           // The specific date (YYYY-MM-DD), Indexed
-  "setsCompleted": "Number"   // Total sets of this exercise completed on this date, Integer
+  "setsCompleted": "Number",   // Total sets of this exercise completed on this date, Integer
+  "weekNumber": "Number"      // The week number this activity belongs to, Integer
 }
 ```
 *Indexes:* 

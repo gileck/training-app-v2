@@ -327,11 +327,10 @@ export const WorkoutPage: React.FC = () => {
     };
 
     // Handler for saving the workout
-    const handleSaveWorkout = async (name: string, description?: string) => {
+    const handleSaveWorkout = async (name: string) => {
         try {
             const response = await createSavedWorkout({
                 name,
-                description,
                 exerciseIds: workoutExercises.map(ex => ex._id.toString())
             });
 

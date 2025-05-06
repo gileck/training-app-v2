@@ -194,7 +194,7 @@ export const SavedWorkouts: React.FC = () => {
                                         {workout.name}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        {workout.description || 'No description'}
+                                        {'No description'}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                                         Created: {new Date(workout.createdAt).toLocaleDateString()}

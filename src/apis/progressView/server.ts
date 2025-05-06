@@ -1,4 +1,3 @@
-import { getDb } from '@/server/database';
 import { ObjectId } from 'mongodb';
 import { ApiHandlerContext } from '../types';
 import { name as baseName } from './index';
@@ -7,8 +6,7 @@ import {
     GetDailyActivityResponse,
     DailyActivitySummary
 } from './types';
-
-
+import { exerciseActivityLog, exercises, exerciseDefinitions } from '@/server/database/collections';
 
 // Export base name as well
 export { baseName as name };
@@ -32,7 +30,6 @@ export const getDailyActivity = async (
     }
 
     try {
-        const db = await getDb();
         const userIdObj = new ObjectId(userId);
 
         // Convert date strings to Date objects
@@ -50,14 +47,13 @@ export const getDailyActivity = async (
             throw new Error("Start date must be before or equal to end date");
         }
 
-        // Get exercise activity logs for the date range
-        const activityLogs = await db.collection('exerciseActivityLog').find({
-            userId: userIdObj,
+        // Get exercise activity logs for the date range using the collections layer
+        const activityLogs = await exerciseActivityLog.findActivityLogsForUser(userIdObj, {
             date: {
                 $gte: startDateTime,
                 $lte: endDateTime
             }
-        }).toArray();
+        });
 
         console.log('activityLogs', activityLogs);
 
@@ -86,7 +82,7 @@ export const getDailyActivity = async (
         }
 
         // Get exercise definitions to get their types
-        const exerciseIds = [...new Set(activityLogs.map(log => log.exerciseId))].filter(id => id); // Filter out undefined/null
+        const exerciseIds = [...new Set(activityLogs.map(log => log.exerciseId))].filter(id => id);
         
         // Handle empty exerciseIds case
         if (exerciseIds.length === 0) {
@@ -94,36 +90,18 @@ export const getDailyActivity = async (
             return Object.values(dailySummaries).sort((a, b) => a.date.localeCompare(b.date));
         }
         
-        // Convert exercise IDs to ObjectIds safely, filtering out any that fail conversion
-        const validExerciseObjectIds: ObjectId[] = [];
-        for (const id of exerciseIds) {
-            try {
-                const objectId = new ObjectId(typeof id === 'string' ? id : id?.toString());
-                validExerciseObjectIds.push(objectId);
-            } catch (error) {
-                console.error(`Invalid exercise ID: ${id}`, error instanceof Error ? error.message : String(error));
-                // Skip invalid IDs
+        // Create a map to store exercise ID to definition ID mappings
+        const exerciseToDefinitionMap: Record<string, ObjectId> = {};
+        
+        // For each exercise ID, find the exercise and get its definition ID
+        for (const exerciseId of exerciseIds) {
+            const exercise = await exercises.findExerciseById(exerciseId, userId);
+            if (exercise && exercise.definitionId) {
+                exerciseToDefinitionMap[exerciseId.toString()] = exercise.definitionId;
             }
         }
-        
-        // If no valid IDs after conversion, return early
-        if (validExerciseObjectIds.length === 0) {
-            return Object.values(dailySummaries).sort((a, b) => a.date.localeCompare(b.date));
-        }
-        
-        const exerciseDefinitionIds = await db.collection('exercises').find({
-            _id: { $in: validExerciseObjectIds }
-        }).project({ _id: 1, exerciseDefinitionId: 1 }).toArray();
 
         // Map exercise IDs to their definition IDs
-        const exerciseToDefinitionMap: Record<string, ObjectId> = {};
-        for (const exercise of exerciseDefinitionIds) {
-            if (exercise && exercise._id) {
-                exerciseToDefinitionMap[exercise._id.toString()] = exercise.exerciseDefinitionId;
-            }
-        }
-
-        // Get exercise types from definitions - only if we have any definitions
         const definitionValues = Object.values(exerciseToDefinitionMap).filter(id => id);
         const definitionIds = [...new Set(definitionValues)];
         
@@ -135,34 +113,14 @@ export const getDailyActivity = async (
             return result;
         }
         
-        // Convert definition IDs to ObjectIds safely
-        const validDefinitionObjectIds: ObjectId[] = [];
-        for (const id of definitionIds) {
-            try {
-                const objectId = new ObjectId(typeof id === 'string' ? id : id?.toString());
-                validDefinitionObjectIds.push(objectId);
-            } catch (error) {
-                console.error(`Invalid definition ID: ${id}`, error instanceof Error ? error.message : String(error));
-                // Skip invalid IDs
-            }
-        }
-        
-        // If no valid definition IDs, return early
-        if (validDefinitionObjectIds.length === 0) {
-            const result = Object.values(dailySummaries).sort((a, b) => a.date.localeCompare(b.date));
-            console.log('result', result);
-            return result;
-        }
-        
-        const exerciseDefinitions = await db.collection('exerciseDefinitions').find({
-            _id: { $in: validDefinitionObjectIds }
-        }).project({ _id: 1, primaryMuscle: 1 }).toArray();
-
-        // Map definition IDs to their primary muscle group
+        // Create a map to store definition ID to muscle group mappings
         const definitionToTypeMap: Record<string, string> = {};
-        for (const def of exerciseDefinitions) {
-            if (def && def._id) {
-                definitionToTypeMap[def._id.toString()] = def.primaryMuscle || 'Other';
+        
+        // For each definition ID, find the definition and get its primary muscle
+        for (const definitionId of definitionIds) {
+            const definition = await exerciseDefinitions.findExerciseDefinitionById(definitionId);
+            if (definition && definition.primaryMuscle) {
+                definitionToTypeMap[definitionId.toString()] = definition.primaryMuscle;
             }
         }
 
@@ -212,7 +170,7 @@ export const getDailyActivity = async (
         console.log('Final daily summaries:', JSON.stringify(Object.values(dailySummaries), null, 2));
 
         // Convert the object to an array and sort by date
-        const result =  Object.values(dailySummaries).sort((a, b) => a.date.localeCompare(b.date));
+        const result = Object.values(dailySummaries).sort((a, b) => a.date.localeCompare(b.date));
         console.log('result', result);
         return result;
     } catch (error) {

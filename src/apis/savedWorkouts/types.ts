@@ -6,7 +6,6 @@ export interface SavedWorkout {
     _id: ObjectId;
     userId: ObjectId;
     name: string;
-    description?: string;
     exerciseIds: ObjectId[]; // References to exercises
     createdAt: Date;
     updatedAt: Date;
@@ -24,7 +23,6 @@ export type GetAllSavedWorkoutsResponse = SavedWorkout[];
 // POST /savedWorkouts (Create saved workout)
 export interface CreateSavedWorkoutRequest {
     name: string;
-    description?: string;
     exerciseIds: string[]; // Array of exercise IDs as strings
 }
 export type CreateSavedWorkoutResponse = SavedWorkout | { error: string };

@@ -1,45 +1,37 @@
-import { Db, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import type { WeeklyProgressBase } from './types';
+import { weeklyProgress } from '@/server/database/collections';
 
 // --- Helper: Get or Create Default Weekly Progress ---
 // (Moved from server.ts)
 export async function getOrCreateWeeklyProgress(
-    db: Db,
-    userId: ObjectId,
-    planId: ObjectId,
-    exerciseId: ObjectId,
+    userId: string | ObjectId,
+    planId: string | ObjectId,
+    exerciseId: string | ObjectId,
     weekNumber: number
 ): Promise<WeeklyProgressBase> {
-    const filter = {
-        userId,
-        planId,
-        exerciseId,
+    // Use the collection function directly
+    const userIdObj = typeof userId === 'string' ? new ObjectId(userId) : userId;
+    const planIdObj = typeof planId === 'string' ? new ObjectId(planId) : planId;
+    const exerciseIdObj = typeof exerciseId === 'string' ? new ObjectId(exerciseId) : exerciseId;
+    
+    const result = await weeklyProgress.getOrCreateWeeklyProgress(
+        planIdObj,
+        exerciseIdObj,
+        userIdObj,
         weekNumber
-    };
-
-    const now = new Date();
-
-    const result = await db.collection<WeeklyProgressBase>('weeklyProgress').findOneAndUpdate(
-        filter,
-        {
-            $setOnInsert: {
-                createdAt: now,
-                lastUpdatedAt: now,
-                setsCompleted: 0,
-                totalSets: 0,
-                isExerciseDone: false,
-                weeklyNotes: []
-            }
-        },
-        {
-            upsert: true,
-            returnDocument: 'after'
-        }
     );
 
-    if (!result) {
-        throw new Error("Failed to get or create weekly progress");
-    }
-
-    return result;
+    // Return mapped result to match the expected WeeklyProgressBase interface
+    return {
+        _id: result._id,
+        userId: result.userId,
+        planId: result.planId,
+        exerciseId: result.exerciseId,
+        weekNumber: result.weekNumber,
+        setsCompleted: result.setsCompleted,
+        isExerciseDone: result.isExerciseDone,
+        lastUpdatedAt: result.updatedAt,
+        weeklyNotes: result.weeklyNotes || [],
+    };
 } 

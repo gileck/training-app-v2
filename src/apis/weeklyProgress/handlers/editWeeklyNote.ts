@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
-import { getDb } from '@/server/database';
 import { ApiHandlerContext } from '../../types';
-import { EditWeeklyNoteRequest, EditWeeklyNoteResponse, WeeklyProgressBase, WeeklyNote } from '../types';
+import { EditWeeklyNoteRequest, EditWeeklyNoteResponse } from '../types';
+import { weeklyProgress } from '@/server/database/collections';
 
 // --- Task 28: Edit Weekly Note ---
 // (Moved from server.ts)
@@ -20,45 +20,23 @@ export const editWeeklyNote = async (
         throw new Error("Invalid week number or missing/empty updated note text.");
     }
 
-    const db = await getDb();
-    const userIdObj = new ObjectId(userId);
-    const planIdObj = new ObjectId(planId);
-    const exerciseIdObj = new ObjectId(exerciseId);
-    const noteIdObj = new ObjectId(noteId);
-    const now = new Date();
-    const trimmedNote = updatedNote.trim();
+    try {
+        // Use the weeklyProgress collection function to edit the note
+        const editedNote = await weeklyProgress.editWeeklyNote(
+            planId,
+            exerciseId,
+            userId,
+            weekNumber,
+            noteId,
+            updatedNote
+        );
 
-    const filter = {
-        userId: userIdObj,
-        planId: planIdObj,
-        exerciseId: exerciseIdObj,
-        weekNumber: weekNumber,
-        'weeklyNotes.noteId': noteIdObj // Match the specific note within the array
-    };
-
-    const update = {
-        $set: {
-            'weeklyNotes.$.note': trimmedNote, // Update the matched note's text
-            'weeklyNotes.$.date': now,       // Update the matched note's date
-            lastUpdatedAt: now                // Update the top-level timestamp
+        return editedNote;
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('not found')) {
+            throw new Error("Weekly progress or specific note not found.");
         }
-    };
-
-    const result = await db.collection<WeeklyProgressBase>('weeklyProgress').updateOne(filter, update);
-
-    if (result.matchedCount === 0) {
-        throw new Error("Weekly progress or specific note not found.");
+        console.error("Failed to edit weekly note:", error);
+        throw new Error("Failed to edit weekly note.");
     }
-    if (result.modifiedCount !== 1 && result.matchedCount === 1) {
-        // This can happen if the updated text is identical to the old text
-        console.warn(`[editWeeklyNote] Edit did not modify document (note text might be identical). Filter: ${JSON.stringify(filter)}`);
-    }
-
-    // Return the representation of the updated note
-    const updatedNoteObject: WeeklyNote = {
-        noteId: noteIdObj,
-        date: now,
-        note: trimmedNote
-    };
-    return updatedNoteObject;
 }; 

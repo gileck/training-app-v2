@@ -87,4 +87,7 @@ export async function closeDbConnection(): Promise<void> {
             console.error('Error closing MongoDB connection:', error);
         }
     }
-} 
+}
+
+// Export all collections
+export * from './collections'; 

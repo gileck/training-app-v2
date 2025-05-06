@@ -12,7 +12,7 @@ import {
     GetCurrentUserResponse
 } from "./types";
 import type { ApiHandlerContext } from '@/apis/types'; // Import new context type
-import { getDb } from '@/server/database';
+import { users } from '@/server/database/collections';
 
 // --- Configuration ---
 const SALT_ROUNDS = 10;
@@ -48,38 +48,34 @@ const sanitizeUser = (user: User & { password_hash?: string }): User | undefined
  * Task 11: Implement user registration endpoint
  */
 export const registerUser = async (request: RegisterRequest, context: ApiHandlerContext): Promise<RegisterResponse> => {
-    const db = await getDb();
-    const usersCollection = db.collection<Omit<User, '_id'> & { password_hash: string }>('users');
-
     try {
         if (!request.username || !request.email || !request.password) {
             return { error: "Username, email, and password are required." };
         }
 
-        const existingUser = await usersCollection.findOne({ $or: [{ email: request.email }, { username: request.username }] });
-        if (existingUser) {
+        // Check if a user with the same email or username already exists
+        const existingUserByEmail = await users.findUserByEmail(request.email);
+        const existingUserByUsername = await users.findUserByUsername(request.username);
+        
+        if (existingUserByEmail || existingUserByUsername) {
             return { error: "Email or username already exists." };
         }
 
         const password_hash = await bcrypt.hash(request.password, SALT_ROUNDS);
-        const newUserDoc = {
+        const newUserDoc: users.UserCreate = {
             username: request.username,
             email: request.email,
             password_hash: password_hash,
             createdAt: new Date(),
             updatedAt: new Date(),
         };
-        const result = await usersCollection.insertOne(newUserDoc);
-
-        if (!result.insertedId) {
-            throw new Error("Failed to insert user.");
-        }
-
-        const createdUser: User = { _id: result.insertedId, ...newUserDoc };
+        
+        // Insert the new user using the collection function
+        const createdUser = await users.insertUser(newUserDoc);
 
         // --- Auto-login --- 
         // Generate JWT for the new user
-        const payload = { userId: result.insertedId.toHexString() };
+        const payload = { userId: createdUser._id.toHexString() };
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
         // Set cookie using the context method
@@ -98,15 +94,13 @@ export const registerUser = async (request: RegisterRequest, context: ApiHandler
  * Task 12: Implement user login endpoint
  */
 export const loginUser = async (request: LoginRequest, context: ApiHandlerContext): Promise<LoginResponse> => {
-    const db = await getDb();
-    const usersCollection = db.collection<User & { password_hash: string }>('users');
-
     try {
         if (!request.email || !request.password) {
             return { error: "Email and password are required." };
         }
 
-        const user = await usersCollection.findOne({ email: request.email });
+        // Find the user by email using the collection function
+        const user = await users.findUserByEmail(request.email);
         if (!user) {
             return { error: "Invalid email or password." };
         }
@@ -140,14 +134,13 @@ export const getCurrentUser = async (_request: Record<string, never>, context: A
         return { error: "Unauthorized: Not logged in." };
     }
 
-    const db = await getDb();
-    const usersCollection = db.collection<User>('users');
-
     try {
         if (!ObjectId.isValid(context.userId)) {
             return { error: "Unauthorized: Invalid user ID format." };
         }
-        const user = await usersCollection.findOne({ _id: new ObjectId(context.userId) });
+        
+        // Find user by ID using the collection function
+        const user = await users.findUserById(context.userId);
 
         if (!user) {
             // User ID from token valid but user deleted?

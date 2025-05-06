@@ -18,7 +18,7 @@ export interface WeeklyProgressBase {
     weekNumber: number; // Ensure this is number
     setsCompleted: number;
     isExerciseDone: boolean;
-    completedAt?: Date; // Optional: when exercise first marked done this week
+    completed?: boolean; // Whether the exercise week is marked as completed
     lastUpdatedAt: Date;
     weeklyNotes: WeeklyNote[];
 }

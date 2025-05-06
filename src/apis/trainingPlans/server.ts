@@ -1,8 +1,6 @@
-import { Db, ObjectId } from 'mongodb';
-import { getDb, getMongoClient } from '@/server/database';
+import { ObjectId } from 'mongodb';
 import { ApiHandlerContext } from '@/apis/types';
 import {
-    TrainingPlan,
     GetAllTrainingPlansRequest,
     GetAllTrainingPlansResponse,
     GetTrainingPlanRequest,
@@ -31,6 +29,8 @@ import {
     getActiveApiName as getActiveTrainingPlanApiName
 } from './index';
 
+import { trainingPlans } from '@/server/database/collections';
+
 // Re-export API names for registration
 export {
     getTrainingPlanApiName,
@@ -43,22 +43,6 @@ export {
     getActiveTrainingPlanApiName
 };
 
-// --- Helper: Ensure Plan Ownership & Existence ---
-async function getPlanAndCheckOwnership(db: Db, planId: string, userId: string): Promise<TrainingPlan | null> {
-    if (!ObjectId.isValid(planId)) {
-        return null; // Invalid ID format
-    }
-    if (!ObjectId.isValid(userId)) {
-        throw new Error("Invalid User ID format in context"); // Should not happen if middleware is correct
-    }
-
-    const plan = await db.collection<TrainingPlan>('trainingPlans').findOne({
-        _id: new ObjectId(planId),
-        userId: new ObjectId(userId) // Check ownership
-    });
-    return plan;
-}
-
 // --- API Handlers ---
 
 /**
@@ -69,8 +53,8 @@ export const getAllTrainingPlans = async (_params: GetAllTrainingPlansRequest, c
         return { error: "Unauthorized" };
     }
     try {
-        const db = await getDb();
-        const plans = await db.collection<TrainingPlan>('trainingPlans').find({ userId: new ObjectId(context.userId) }).sort({ createdAt: -1 }).toArray();
+        // Use the database layer to get all training plans
+        const plans = await trainingPlans.findTrainingPlansForUser(context.userId);
         return plans;
     } catch (error) {
         console.error("Error getting all training plans:", error);
@@ -90,8 +74,8 @@ export const getTrainingPlanById = async (params: GetTrainingPlanRequest, contex
     }
 
     try {
-        const db = await getDb();
-        const plan = await getPlanAndCheckOwnership(db, params.planId, context.userId);
+        // Use the database layer to find the plan
+        const plan = await trainingPlans.findTrainingPlanById(params.planId, context.userId);
 
         if (!plan) {
             return { error: "Training plan not found or access denied." };
@@ -114,17 +98,15 @@ export const createTrainingPlan = async (params: CreateTrainingPlanRequest, cont
         return { error: "Valid plan name and positive duration (weeks) are required." };
     }
 
-    const userIdObj = new ObjectId(context.userId);
-
     try {
-        const db = await getDb();
+        const userIdObj = new ObjectId(context.userId);
 
-        // Check if this is the user's first plan
-        const existingPlanCount = await db.collection('trainingPlans').countDocuments({ userId: userIdObj });
-        const isFirstPlan = existingPlanCount === 0;
+        // Get count of existing plans to determine if this is the first one
+        const existingPlans = await trainingPlans.findTrainingPlansForUser(userIdObj);
+        const isFirstPlan = existingPlans.length === 0;
 
         const now = new Date();
-        const newPlanDoc: Omit<TrainingPlan, '_id'> = { // Use Omit to ensure all fields are covered
+        const newPlanDoc: trainingPlans.TrainingPlanCreate = {
             userId: userIdObj,
             name: params.name,
             durationWeeks: params.durationWeeks,
@@ -133,18 +115,9 @@ export const createTrainingPlan = async (params: CreateTrainingPlanRequest, cont
             updatedAt: now,
         };
 
-        const result = await db.collection('trainingPlans').insertOne(newPlanDoc);
-
-        if (!result.insertedId) {
-            throw new Error("Failed to insert training plan.");
-        }
-
-        const createdPlan: TrainingPlan = {
-            _id: result.insertedId,
-            ...newPlanDoc,
-        };
+        // Use the database layer to insert the new plan
+        const createdPlan = await trainingPlans.insertTrainingPlan(newPlanDoc);
         return createdPlan;
-
     } catch (error) {
         console.error("Error creating training plan:", error);
         return { error: "Failed to create training plan." };
@@ -169,31 +142,26 @@ export const updateTrainingPlan = async (params: UpdateTrainingPlanRequest, cont
     }
 
     try {
-        const db = await getDb();
-        // Verify ownership before update
-        const existingPlan = await getPlanAndCheckOwnership(db, params.planId, context.userId);
+        // First verify the plan exists and belongs to the user
+        const existingPlan = await trainingPlans.findTrainingPlanById(params.planId, context.userId);
         if (!existingPlan) {
             return { error: "Training plan not found or access denied." };
         }
 
-        const updates: Partial<TrainingPlan> = {};
+        const updates: trainingPlans.TrainingPlanUpdate = {
+            updatedAt: new Date()
+        };
         if (params.name) updates.name = params.name;
         if (params.durationWeeks !== undefined) updates.durationWeeks = params.durationWeeks;
-        updates.updatedAt = new Date();
 
-        const result = await db.collection<TrainingPlan>('trainingPlans').findOneAndUpdate(
-            { _id: new ObjectId(params.planId) }, // Filter by ID (ownership already checked)
-            { $set: updates },
-            { returnDocument: 'after' } // Return the updated document
-        );
+        // Use the database layer to update the plan
+        const updatedPlan = await trainingPlans.updateTrainingPlan(params.planId, context.userId, updates);
 
-        if (!result) {
-            // Should not happen if findOne worked, but check anyway
+        if (!updatedPlan) {
             return { error: "Update failed or plan not found." };
         }
 
-        return result as TrainingPlan; // Cast because returnDocument: 'after' guarantees it
-
+        return updatedPlan;
     } catch (error) {
         console.error("Error updating training plan:", error);
         return { error: "Failed to update training plan." };
@@ -214,50 +182,16 @@ export const deleteTrainingPlan = async (params: DeleteTrainingPlanRequest, cont
         return { success: false, message: "Invalid Plan ID format." };
     }
 
-    const planIdObj = new ObjectId(params.planId);
-    const userIdObj = new ObjectId(context.userId);
-    const mongoClient = await getMongoClient();
-    const session = mongoClient.startSession();
-
     try {
-        let deletedCount = 0;
-        await session.withTransaction(async () => {
-            const db = mongoClient.db();
-            // 1. Verify ownership & existence of the plan itself
-            const plan = await db.collection('trainingPlans').findOne({ _id: planIdObj, userId: userIdObj }, { session });
-            if (!plan) {
-                throw new Error("Training plan not found or access denied.");
-            }
+        // Use the database layer to delete the plan and all associated data
+        const deleted = await trainingPlans.deleteTrainingPlan(params.planId, context.userId);
 
-            // 4. Get exerciseIds BEFORE deleting exercises
-            const exerciseIds = await db.collection('exercises').find({ planId: planIdObj }, { projection: { _id: 1 }, session }).map(ex => ex._id).toArray();
-
-            // 2. Delete associated Exercises
-            await db.collection('exercises').deleteMany({ planId: planIdObj }, { session });
-
-            // 3. Delete associated Weekly Progress
-            await db.collection('weeklyProgress').deleteMany({ planId: planIdObj, userId: userIdObj }, { session });
-
-            // 4. Delete associated Daily Logs
-            if (exerciseIds.length > 0) {
-                await db.collection('exerciseActivityLog').deleteMany({ exerciseId: { $in: exerciseIds }, userId: userIdObj }, { session });
-            }
-
-            // 5. Delete the Training Plan itself
-            const deleteResult = await db.collection('trainingPlans').deleteOne({ _id: planIdObj, userId: userIdObj }, { session });
-            deletedCount = deleteResult.deletedCount;
-        });
-
-        await session.endSession();
-
-        if (deletedCount > 0) {
+        if (deleted) {
             return { success: true, message: "Training plan and associated data deleted." };
         } else {
             return { success: false, message: "Training plan not found or access denied (during delete)." };
         }
-
     } catch (error) {
-        await session.endSession();
         console.error("Error deleting training plan:", error);
         const errorMessage = error instanceof Error ? error.message : String(error);
         return { success: false, message: `Failed to delete training plan: ${errorMessage}` };
@@ -275,69 +209,27 @@ export const duplicateTrainingPlan = async (params: DuplicateTrainingPlanRequest
         return { error: "Original Plan ID is required." };
     }
 
-    const originalPlanIdObj = new ObjectId(params.planId);
-    const userIdObj = new ObjectId(context.userId);
-    const mongoClient = await getMongoClient();
-    const session = mongoClient.startSession();
-
     try {
-        let newPlan: TrainingPlan | null = null;
-        await session.withTransaction(async () => {
-            const db = mongoClient.db();
-            // 1. Find the original plan and check ownership
-            const originalPlan = await db.collection<TrainingPlan>('trainingPlans').findOne({ _id: originalPlanIdObj, userId: userIdObj }, { session });
-            if (!originalPlan) {
-                throw new Error("Original training plan not found or access denied.");
-            }
-
-            // 2. Create the new plan document (adjust name, reset dates, set isActive to false)
-            const now = new Date();
-            const newPlanData: Omit<TrainingPlan, '_id'> = {
-                userId: userIdObj,
-                name: `${originalPlan.name} (Copy)`,
-                durationWeeks: originalPlan.durationWeeks,
-                isActive: false, // Ensure duplicated plan is not active
-                createdAt: now,
-                updatedAt: now,
-            };
-            const insertPlanResult = await db.collection('trainingPlans').insertOne(newPlanData, { session });
-            if (!insertPlanResult.insertedId) {
-                throw new Error("Failed to insert new training plan.");
-            }
-            const newPlanId = insertPlanResult.insertedId;
-
-            // 3. Find original exercises
-            const originalExercises = await db.collection('exercises').find({ planId: originalPlanIdObj }, { session }).toArray();
-
-            // 4. Create new exercises linked to the new plan
-            if (originalExercises.length > 0) {
-                const newExercises = originalExercises.map(ex => ({
-                    ...ex,
-                    _id: new ObjectId(), // Generate new ID for the exercise copy
-                    planId: newPlanId, // Link to the new plan
-                    createdAt: now,
-                    updatedAt: now,
-                }));
-                await db.collection('exercises').insertMany(newExercises, { session });
-            }
-
-            // Store the complete new plan to return later
-            newPlan = { _id: newPlanId, ...newPlanData };
-        });
-
-        await session.endSession();
-
-        if (newPlan) {
-            return newPlan;
-        } else {
-            // This case should ideally not be reached if the transaction succeeded without error
-            // but the plan wasn't assigned. Log an error if it happens.
-            console.error("Duplicate transaction completed but new plan data is missing.");
-            return { error: "Failed to retrieve duplicated plan data after transaction." };
+        // Use the database layer to duplicate the plan
+        // Generate the new name for the duplicate plan
+        const originalPlan = await trainingPlans.findTrainingPlanById(params.planId, context.userId);
+        if (!originalPlan) {
+            return { error: "Original training plan not found or access denied." };
         }
 
+        const newName = `${originalPlan.name} (Copy)`;
+        const duplicatedPlan = await trainingPlans.duplicateTrainingPlan(
+            params.planId,
+            context.userId,
+            newName
+        );
+
+        if (!duplicatedPlan) {
+            return { error: "Failed to duplicate training plan." };
+        }
+
+        return duplicatedPlan;
     } catch (error) {
-        await session.endSession();
         console.error("Error duplicating training plan:", error);
         return { error: `Failed to duplicate training plan: ${error instanceof Error ? error.message : String(error)}` };
     }
@@ -357,45 +249,15 @@ export const setActiveTrainingPlan = async (
         return { success: false, message: "Invalid Plan ID format." };
     }
 
-    const planIdObj = new ObjectId(params.planId);
-    const userIdObj = new ObjectId(context.userId);
-
     try {
-        const db = await getDb();
+        // Use the database layer to set the plan as active
+        const updatedPlan = await trainingPlans.setTrainingPlanActive(params.planId, context.userId);
 
-        // 1. Verify the target plan exists and belongs to the user
-        const targetPlan = await db.collection<TrainingPlan>('trainingPlans').findOne({ _id: planIdObj, userId: userIdObj });
-        if (!targetPlan) {
+        if (!updatedPlan) {
             return { success: false, message: "Training plan not found or access denied." };
         }
 
-        // 2. Use bulkWrite for atomic update
-        const bulkOps = [
-            {
-                // Deactivate all other plans for this user
-                updateMany: {
-                    filter: { userId: userIdObj, _id: { $ne: planIdObj }, isActive: true },
-                    update: { $set: { isActive: false, updatedAt: new Date() } }
-                }
-            },
-            {
-                // Activate the target plan
-                updateOne: {
-                    filter: { _id: planIdObj, userId: userIdObj },
-                    update: { $set: { isActive: true, updatedAt: new Date() } }
-                }
-            }
-        ];
-
-        const result = await db.collection('trainingPlans').bulkWrite(bulkOps, { ordered: false });
-
-        // Check results (optional but good practice)
-        if (result.modifiedCount === undefined || result.modifiedCount < 1) {
-            console.warn("Set active plan operation resulted in no modifications. Plan might have already been active.")
-        }
-
         return { success: true, message: "Training plan set as active." };
-
     } catch (error) {
         console.error("Error setting active training plan:", error);
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -404,7 +266,7 @@ export const setActiveTrainingPlan = async (
 };
 
 /**
- * Task X: Get the Active Training Plan for the User
+ * Get the active training plan for the current user
  */
 export const getActiveTrainingPlan = async (
     _params: Record<string, never>, // No params needed
@@ -413,27 +275,18 @@ export const getActiveTrainingPlan = async (
     if (!context.userId) {
         return { error: "Unauthorized", plan: null };
     }
-
-    const userIdObj = new ObjectId(context.userId);
-
+    
     try {
-        const db = await getDb();
-
-        // Find the plan marked as active for this user
-        const activePlan = await db.collection<TrainingPlan>('trainingPlans').findOne({
-            userId: userIdObj,
-            isActive: true
-        });
+        // Use the database layer to get the active training plan
+        const activePlan = await trainingPlans.findActiveTrainingPlan(context.userId);
 
         if (!activePlan) {
-            // It's okay if no plan is active, return null plan
-            return { plan: null };
+            return { error: "No active training plan found", plan: null };
         }
 
-        return activePlan; // Return the found active plan
-
+        return activePlan;
     } catch (error) {
-        console.error("Error getting active training plan:", error);
-        return { error: `Failed to retrieve active training plan: ${error instanceof Error ? error.message : String(error)}`, plan: null };
+        console.error("Error fetching active training plan:", error);
+        return { error: "Failed to retrieve active training plan", plan: null };
     }
 }; 

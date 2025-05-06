@@ -1,4 +1,3 @@
-import { getDb } from '@/server/database';
 import { ObjectId } from 'mongodb';
 import { ApiHandlerContext } from '../types';
 import { ExerciseBase } from '../exercises/types';
@@ -21,11 +20,27 @@ import {
     DeleteSavedWorkoutResponse,
     SavedWorkoutWithExercises
 } from './types';
+import { savedWorkouts, exerciseDefinitions } from '@/server/database/collections';
 
 // No need to define API names here, they're imported from index.ts
 
 // Export base name as well
 export { name, getAllApiName, getDetailsApiName, createApiName, deleteApiName };
+
+// Helper to map DB SavedWorkout to API SavedWorkout
+function mapToApiSavedWorkout(workout: savedWorkouts.SavedWorkout): SavedWorkout {
+    // Extract exerciseIds from the exercises array
+    const exerciseIds = workout.exercises.map(exercise => exercise.definitionId);
+    
+    return {
+        _id: workout._id,
+        userId: workout.userId,
+        name: workout.name,
+        exerciseIds,
+        createdAt: workout.createdAt,
+        updatedAt: workout.updatedAt
+    };
+}
 
 // --- Task 29: API endpoint to get all saved workouts for the user ---
 export const getAllSavedWorkouts = async (
@@ -36,15 +51,13 @@ export const getAllSavedWorkouts = async (
         throw new Error("User not authenticated");
     }
 
-    const userIdObj = new ObjectId(context.userId);
-    const db = await getDb();
-
     try {
-        const workouts = await db.collection<SavedWorkout>('savedWorkouts')
-            .find({ userId: userIdObj })
-            .sort({ createdAt: -1 })
-            .toArray();
-
+        // Use the database layer to get all saved workouts for the user
+        const workoutsFromDB = await savedWorkouts.findSavedWorkoutsForUser(context.userId);
+        
+        // Map to the API response format
+        const workouts = workoutsFromDB.map(mapToApiSavedWorkout);
+        
         return workouts;
     } catch (error) {
         console.error("Error getting saved workouts:", error);
@@ -69,34 +82,52 @@ export const getSavedWorkoutDetails = async (
     }
 
     try {
-        const db = await getDb();
-        const userIdObj = new ObjectId(userId);
-        const workoutIdObj = new ObjectId(workoutId);
-
-        // Find the saved workout
-        const savedWorkout = await db.collection<SavedWorkout>('savedWorkouts').findOne({
-            _id: workoutIdObj,
-            userId: userIdObj
-        });
+        // Get the saved workout from the database layer
+        const savedWorkout = await savedWorkouts.findSavedWorkoutById(workoutId, userId);
 
         if (!savedWorkout) {
             return null;
         }
 
-        // Fetch the exercises for this saved workout
-        const exerciseIds = savedWorkout.exerciseIds.map(id => id);
-        const exercises = await db.collection('exercises')
-            .find({ _id: { $in: exerciseIds } })
-            .toArray();
+        // Get the definition IDs from the saved workout exercises
+        const definitionIds = savedWorkout.exercises.map(exercise => exercise.definitionId);
+
+        // Fetch exercise details for each definition ID
+        const exercisesArray: ExerciseBase[] = [];
+        
+        for (const definitionId of definitionIds) {
+            // Get the definition details
+            const definition = await exerciseDefinitions.findExerciseDefinitionById(definitionId);
+            if (definition) {
+                // Create a basic ExerciseBase object
+                const exerciseBase: ExerciseBase = {
+                    _id: new ObjectId(), // Temporary ID
+                    userId: savedWorkout.userId,
+                    trainingPlanId: new ObjectId(), // Temporary
+                    exerciseDefinitionId: definitionId,
+                    sets: 0,
+                    reps: 0,
+                    order: 0,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                };
+                exercisesArray.push(exerciseBase);
+            }
+        }
 
         // Build the response with full exercise details
         const result: SavedWorkoutWithExercises = {
-            ...savedWorkout,
-            exercises: exercises as ExerciseBase[]
+            _id: savedWorkout._id,
+            userId: savedWorkout.userId,
+            name: savedWorkout.name,
+            exercises: exercisesArray,
+            createdAt: savedWorkout.createdAt,
+            updatedAt: savedWorkout.updatedAt
         };
 
         return result;
-    } catch {
+    } catch (error) {
+        console.error("Failed to fetch saved workout details:", error);
         throw new Error("Failed to fetch saved workout details");
     }
 };
@@ -114,52 +145,52 @@ export const createSavedWorkout = async (
         return { error: "Name and at least one exercise are required" };
     }
 
-    const userIdObj = new ObjectId(context.userId);
-    const db = await getDb();
-
-    // Convert exercise ID strings to ObjectIds
-    const exerciseObjectIds: ObjectId[] = [];
     try {
+        const userIdObj = new ObjectId(context.userId);
+        
+        // Convert exercise ID strings to ObjectIds
+        const exerciseIds: ObjectId[] = [];
         for (const idStr of params.exerciseIds) {
             if (ObjectId.isValid(idStr)) {
-                exerciseObjectIds.push(new ObjectId(idStr));
+                exerciseIds.push(new ObjectId(idStr));
             } else {
                 return { error: `Invalid exercise ID format: ${idStr}` };
             }
         }
 
-        // Verify all exercises exist and belong to the user
-        const exerciseCount = await db.collection('exercises').countDocuments({
-            _id: { $in: exerciseObjectIds },
-            userId: userIdObj
-        });
-
-        if (exerciseCount !== exerciseObjectIds.length) {
-            return { error: "One or more exercises do not exist or do not belong to this user" };
+        // Create the exercises array with definition IDs
+        const exercisesArray: savedWorkouts.SavedWorkoutExercise[] = [];
+        
+        for (let i = 0; i < exerciseIds.length; i++) {
+            // Verify exercise definition exists
+            const definition = await exerciseDefinitions.findExerciseDefinitionById(exerciseIds[i]);
+            if (!definition) {
+                return { error: `Exercise definition not found for ID: ${exerciseIds[i]}` };
+            }
+            
+            // Add to exercises array
+            exercisesArray.push({
+                definitionId: exerciseIds[i],
+                sets: 3, // Default values
+                reps: "10",
+                order: i + 1
+            });
         }
 
         const now = new Date();
-        const newWorkout: Omit<SavedWorkout, '_id'> = {
+        const newWorkout: savedWorkouts.SavedWorkoutCreate = {
             userId: userIdObj,
             name: params.name,
-            description: params.description,
-            exerciseIds: exerciseObjectIds,
+            exercises: exercisesArray,
             createdAt: now,
             updatedAt: now
         };
 
-        const result = await db.collection('savedWorkouts').insertOne(newWorkout as SavedWorkout);
-
-        if (!result.insertedId) {
-            throw new Error("Failed to insert workout");
-        }
-
-        const createdWorkout: SavedWorkout = {
-            _id: result.insertedId,
-            ...newWorkout
-        };
-
-        return createdWorkout;
+        // Use the database layer to create the saved workout
+        const createdWorkout = await savedWorkouts.insertSavedWorkout(newWorkout);
+        
+        // Map back to API format
+        return mapToApiSavedWorkout(createdWorkout);
     } catch (error) {
         console.error("Error creating saved workout:", error);
         return { error: `Failed to create saved workout: ${error instanceof Error ? error.message : String(error)}` };
@@ -179,17 +210,11 @@ export const deleteSavedWorkout = async (
         return { success: false, message: "Invalid workout ID format" };
     }
 
-    const userIdObj = new ObjectId(context.userId);
-    const workoutIdObj = new ObjectId(params.workoutId);
-    const db = await getDb();
-
     try {
-        const result = await db.collection('savedWorkouts').deleteOne({
-            _id: workoutIdObj,
-            userId: userIdObj
-        });
+        // Use the database layer to delete the saved workout
+        const deleted = await savedWorkouts.deleteSavedWorkout(params.workoutId, context.userId);
 
-        if (result.deletedCount === 0) {
+        if (!deleted) {
             return {
                 success: false,
                 message: "Workout not found or you don't have permission to delete it"

@@ -1,9 +1,7 @@
 import { ObjectId } from 'mongodb';
-import { getDb } from '@/server/database';
 import { ApiHandlerContext } from '../../types';
 import { UpdateSetCompletionRequest, UpdateSetCompletionResponse, WeeklyProgressBase } from '../types';
-import { ExerciseBase } from '../../exercises/types';
-import { getOrCreateWeeklyProgress } from './_helpers'; // Import helper
+import { weeklyProgress, exerciseActivityLog, exercises } from '@/server/database/collections';
 
 // --- Task 27: Update Set Completion (Simplified Version) ---
 // WARNING: This simpler version might have race conditions for isExerciseDone/completedAt
@@ -32,91 +30,122 @@ export const updateSetCompletion = async (
     const now = new Date();
 
     try {
-        const db = await getDb();
-
-        // 1. Ensure doc exists using helper (outside any transaction logic if added later)
-        await getOrCreateWeeklyProgress(db, userIdObj, planIdObj, exerciseIdObj, weekNumber);
-
-        // 2. Determine total sets if not provided
+        // 1. Determine total sets if not provided
         let actualTotalSets = totalSetsForExercise;
         if (actualTotalSets === undefined) {
-            const exerciseDoc = await db.collection<ExerciseBase>('exercises').findOne(
-                { _id: exerciseIdObj, planId: planIdObj, userId: userIdObj },
-                { projection: { sets: 1 } }
-            );
+            const exerciseDoc = await exercises.findExerciseById(exerciseIdObj, userIdObj);
             if (!exerciseDoc || typeof exerciseDoc.sets !== 'number') {
                 throw new Error('Could not find exercise or determine total sets required.');
             }
             actualTotalSets = exerciseDoc.sets;
         }
 
-        // 3. If completeAll is true, get current setsCompleted to calculate the correct increment
+        // 2. Find current progress for this exercise
+        const currentProgress = await weeklyProgress.findProgressForExercise(
+            planIdObj, 
+            exerciseIdObj, 
+            userIdObj, 
+            weekNumber
+        );
+
+        // 3. Calculate the effective increment for this update
         let effectiveIncrement = setsIncrement;
+        const currentSets = currentProgress?.setsCompleted || 0;
+        
         if (completeAll) {
-            const currentProgress = await db.collection<WeeklyProgressBase>('weeklyProgress').findOne(
-                { userId: userIdObj, planId: planIdObj, exerciseId: exerciseIdObj, weekNumber: weekNumber }
-            );
-            const currentSets = currentProgress?.setsCompleted || 0;
             // Calculate how many sets we need to add to complete all
             effectiveIncrement = actualTotalSets - currentSets;
             // Don't do anything if already complete or would need to decrease sets
             if (effectiveIncrement <= 0) {
                 // If already complete or would need to decrease, return the current progress
-                return {
-                    success: true,
-                    updatedProgress: currentProgress as WeeklyProgressBase
-                };
-            }
-        }
-
-        // 4. Perform Update
-        const filter = { userId: userIdObj, planId: planIdObj, exerciseId: exerciseIdObj, weekNumber: weekNumber };
-
-        const updateResult = await db.collection<WeeklyProgressBase>('weeklyProgress').findOneAndUpdate(
-            filter,
-            {
-                $inc: { setsCompleted: effectiveIncrement },
-                $set: { lastUpdatedAt: now },
-                $setOnInsert: {
-                    userId: userIdObj, planId: planIdObj, exerciseId: exerciseIdObj, weekNumber: weekNumber,
-                    isExerciseDone: (effectiveIncrement > 0 ? effectiveIncrement : 0) >= actualTotalSets,
-                    weeklyNotes: [], createdAt: now,
-                    ...((effectiveIncrement > 0 ? effectiveIncrement : 0) >= actualTotalSets && { completedAt: now })
+                if (currentProgress) {
+                    return {
+                        success: true,
+                        updatedProgress: {
+                            _id: currentProgress._id,
+                            userId: currentProgress.userId,
+                            planId: currentProgress.planId,
+                            exerciseId: currentProgress.exerciseId,
+                            weekNumber: currentProgress.weekNumber,
+                            setsCompleted: currentProgress.setsCompleted,
+                            isExerciseDone: currentProgress.isExerciseDone,
+                            lastUpdatedAt: currentProgress.updatedAt,
+                            weeklyNotes: currentProgress.weeklyNotes || [],
+                            completed: currentProgress.completed
+                        }
+                    };
+                } else {
+                    // Should not happen - we'd have a currentProgress if setsCompleted > 0
+                    throw new Error('Current progress not found but completeAll indicates it should exist');
                 }
-            },
-            {
-                upsert: true,
-                returnDocument: 'after'
             }
-        );
-
-        if (!updateResult) {
-            throw new Error('Failed to find or update weekly progress document.');
         }
 
-        const finalUpdatedProgressDoc = updateResult as WeeklyProgressBase;
-        const isDoneNow = (finalUpdatedProgressDoc.setsCompleted ?? 0) >= actualTotalSets;
-        finalUpdatedProgressDoc.isExerciseDone = isDoneNow;
+        // 4. Perform the update with the new database layer
+        const newSetsCompleted = currentSets + effectiveIncrement;
+        const isDoneNow = newSetsCompleted >= actualTotalSets;
+        
+        // Create some realistic dates for the week
+        const today = new Date();
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() - ((weekNumber - 1) * 7));
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        
+        // Prepare data for the upsert operation
+        const progressData = {
+            userId: userIdObj,
+            planId: planIdObj,
+            exerciseId: exerciseIdObj,
+            weekNumber: weekNumber,
+            setsCompleted: newSetsCompleted,
+            isExerciseDone: isDoneNow,
+            completed: isDoneNow, // For compatibility with the WeeklyProgress type
+            startDate,
+            endDate,
+            weeklyNotes: currentProgress?.weeklyNotes || [],
+            createdAt: currentProgress?.createdAt || now,
+            updatedAt: now
+        };
+        
+        // Use upsert to create or update
+        const updatedProgress = await weeklyProgress.upsertExerciseProgress(progressData);
 
-        // 5. Still update activity log separately (no transaction)
+        // 5. Create/update exercise activity log for today
         const todayDate = new Date();
-        await db.collection('exerciseActivityLog').updateOne(
-            { userId: userIdObj, exerciseId: exerciseIdObj, date: todayDate },
-            { 
-                $inc: { setsCompleted: effectiveIncrement },
-                $setOnInsert: {
-                    userId: userIdObj, 
-                    planId: planIdObj, 
-                    exerciseId: exerciseIdObj,
-                    exerciseDefinitionId: exerciseId,
-                    weekNumber: weekNumber,
-                    date: todayDate  // Preserves the exact timestamp
-                }
-            },
-            { upsert: true }
-        );
+        todayDate.setHours(0, 0, 0, 0); // Normalize to start of day
+        
+        // Use the activityLog DB layer to record today's activity
+        await exerciseActivityLog.recordActivity({
+            userId: userIdObj,
+            exerciseId: exerciseIdObj,
+            planId: planIdObj,
+            weekNumber: weekNumber,
+            date: todayDate,
+            setsCompleted: effectiveIncrement,
+            repsCompleted: [], // We don't track individual reps in this simple version
+            createdAt: now,
+            updatedAt: now
+        });
 
-        return { success: true, updatedProgress: finalUpdatedProgressDoc };
+        // Map the result to match the expected API response format
+        const apiResponse: WeeklyProgressBase = {
+            _id: updatedProgress._id,
+            userId: updatedProgress.userId,
+            planId: updatedProgress.planId,
+            exerciseId: updatedProgress.exerciseId,
+            weekNumber: updatedProgress.weekNumber,
+            setsCompleted: updatedProgress.setsCompleted,
+            isExerciseDone: updatedProgress.isExerciseDone,
+            lastUpdatedAt: updatedProgress.updatedAt,
+            weeklyNotes: updatedProgress.weeklyNotes || [],
+            completed: updatedProgress.completed
+        };
+
+        return { 
+            success: true, 
+            updatedProgress: apiResponse
+        };
 
     } catch (error) {
         return { success: false, message: error instanceof Error ? error.message : "Operation failed" };

@@ -1,55 +1,55 @@
-import { Types } from 'mongoose';
+import { ObjectId } from 'mongodb';
 
-// Base Exercise structure (mirroring the Mongoose model structure)
-// Adapt this based on the actual fields in your Exercise model
+/**
+ * Base type for an Exercise stored in an exercise
+ */
 export interface ExerciseBase {
-    _id: Types.ObjectId;
-    userId: Types.ObjectId;
-    trainingPlanId: Types.ObjectId;
-    exerciseDefinitionId: Types.ObjectId; // Link to the definition
-    sets: number;
-    reps: number;
-    weight?: number; // Optional
-    restTimeSeconds?: number; // Optional
-    order: number; // To maintain sequence within the plan
-    comments?: string; // Optional notes for the exercise instance
+    _id: ObjectId;
+    userId: ObjectId;
+    trainingPlanId: ObjectId;  // Plan this exercise belongs to
+    exerciseDefinitionId: ObjectId;  // Exercise definition (name, type, etc.)
+    sets: number;  // Number of sets
+    reps: number;  // Number of reps per set
+    weight?: number;  // Optional weight for the exercise
+    durationSeconds?: number; // Optional
+    order?: number;  // Order in the plan
+    comments?: string;  // Optional notes/comments
     createdAt: Date;
     updatedAt: Date;
 }
 
-// --- Get Exercises ---
-export type GetExercisesRequest = {
-    trainingPlanId: string; // Passed in the API call parameters, not body
-};
+// GET /exercises (Read/List exercises for a plan)
+export interface GetExercisesRequest {
+    trainingPlanId: string;
+}
 export type GetExercisesResponse = ExerciseBase[];
 
-// --- Add Exercise ---
-export type AddExerciseRequest = {
-    trainingPlanId: string; // Plan to add to
-    exerciseDefinitionId: string; // Definition to use
+// POST /exercises (Add a new exercise to a plan)
+export interface AddExerciseRequest {
+    trainingPlanId: string;
+    exerciseDefinitionId: string;
     sets: number;
     reps: number;
     weight?: number;
-    restTimeSeconds?: number;
+    durationSeconds?: number;
     comments?: string;
-    // Order might be handled automatically on the server
-};
-export type AddExerciseResponse = ExerciseBase; // Return the newly created exercise
+}
+export type AddExerciseResponse = ExerciseBase;
 
-// --- Update Exercise ---
-export type UpdateExerciseRequest = {
-    exerciseId: string; // ID of the exercise to update
-    trainingPlanId: string; // For verification/context
-    updates: Partial<Pick<ExerciseBase, 'sets' | 'reps' | 'weight' | 'restTimeSeconds' | 'order' | 'comments'>>; // Allow partial updates
-};
-export type UpdateExerciseResponse = ExerciseBase; // Return the updated exercise
+// PUT /exercises/:id (Update an exercise in a plan)
+export interface UpdateExerciseRequest {
+    exerciseId: string;
+    trainingPlanId: string;
+    updates: Partial<Pick<ExerciseBase, 'sets' | 'reps' | 'weight' | 'durationSeconds' | 'order' | 'comments'>>;
+}
+export type UpdateExerciseResponse = ExerciseBase;
 
-// --- Delete Exercise ---
-export type DeleteExerciseRequest = {
-    exerciseId: string; // ID of the exercise to delete
-    trainingPlanId: string; // For verification/context
-};
+// DELETE /exercises/:id (Remove an exercise from a plan)
+export interface DeleteExerciseRequest {
+    exerciseId: string;
+    trainingPlanId: string;
+}
 export type DeleteExerciseResponse = {
     success: boolean;
-    message?: string;
+    message: string;
 }; 
