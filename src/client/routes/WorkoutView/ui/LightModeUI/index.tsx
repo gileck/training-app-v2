@@ -189,11 +189,11 @@ const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                     overflow: 'hidden',
                     border: `1px solid ${isSelected ? alpha(NEON_PINK, 0.5) : alpha(accentColor, 0.2)}`,
                     transition: 'all 0.3s ease',
-                    boxShadow: isSelected 
+                    boxShadow: isSelected
                         ? `0 4px 12px ${alpha(NEON_PINK, 0.2)}`
                         : `0 4px 12px ${alpha(accentColor, 0.1)}`,
                     '&:hover': {
-                        boxShadow: isSelected 
+                        boxShadow: isSelected
                             ? `0 8px 16px ${alpha(NEON_PINK, 0.25)}`
                             : `0 8px 16px ${alpha(accentColor, 0.15)}`,
                         transform: 'translateY(-3px)'
@@ -201,7 +201,7 @@ const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                 }}
             >
                 {/* Header - now clickable for selection */}
-                <Box 
+                <Box
                     onClick={handleHeaderClick}
                     sx={{
                         p: 1.5,
@@ -222,8 +222,8 @@ const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                             sx={{
                                 fontWeight: 'bold',
                                 color: isSelected ? NEON_PINK : '#333',
-                                textShadow: isSelected 
-                                    ? `0 0 1px ${alpha(NEON_PINK, 0.3)}` 
+                                textShadow: isSelected
+                                    ? `0 0 1px ${alpha(NEON_PINK, 0.3)}`
                                     : `0 0 1px ${alpha(accentColor, 0.3)}`
                             }}
                         >
@@ -451,7 +451,7 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
 }) => {
     // State to track loading of week data
     const [isWeekLoading, setIsWeekLoading] = React.useState(false);
-    
+
     // Start selection mode by default
     React.useEffect(() => {
         if (!showSelectionMode) {
@@ -632,7 +632,7 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                         >
                             Exercises
                         </Typography>
-                        
+
                         {selectedExercises.length > 0 && (
                             <Chip
                                 label={`${selectedExercises.length} Selected`}
