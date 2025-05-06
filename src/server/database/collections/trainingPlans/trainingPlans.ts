@@ -10,7 +10,7 @@ import {
 /**
  * Get a reference to the trainingPlans collection
  */
-export const getTrainingPlansCollection = async (): Promise<Collection<TrainingPlan>> => {
+const getTrainingPlansCollection = async (): Promise<Collection<TrainingPlan>> => {
   const db = await getDb();
   return db.collection<TrainingPlan>('trainingPlans');
 };

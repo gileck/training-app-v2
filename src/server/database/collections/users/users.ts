@@ -5,7 +5,7 @@ import { User, UserCreate, UserUpdate } from './types';
 /**
  * Get a reference to the users collection
  */
-export const getUsersCollection = async (): Promise<Collection<User>> => {
+const getUsersCollection = async (): Promise<Collection<User>> => {
   const db = await getDb();
   return db.collection<User>('users');
 };

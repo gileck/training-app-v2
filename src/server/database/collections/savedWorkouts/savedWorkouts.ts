@@ -5,7 +5,7 @@ import { SavedWorkout, SavedWorkoutCreate, SavedWorkoutUpdate, SavedWorkoutFilte
 /**
  * Get a reference to the savedWorkouts collection
  */
-export const getSavedWorkoutsCollection = async (): Promise<Collection<SavedWorkout>> => {
+const getSavedWorkoutsCollection = async (): Promise<Collection<SavedWorkout>> => {
   const db = await getDb();
   return db.collection<SavedWorkout>('savedWorkouts');
 };

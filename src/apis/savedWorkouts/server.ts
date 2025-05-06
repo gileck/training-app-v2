@@ -20,7 +20,7 @@ import {
     DeleteSavedWorkoutResponse,
     SavedWorkoutWithExercises
 } from './types';
-import { savedWorkouts, exerciseDefinitions } from '@/server/database/collections';
+import { savedWorkouts, exerciseDefinitions, exercises } from '@/server/database/collections';
 
 // No need to define API names here, they're imported from index.ts
 
@@ -29,8 +29,8 @@ export { name, getAllApiName, getDetailsApiName, createApiName, deleteApiName };
 
 // Helper to map DB SavedWorkout to API SavedWorkout
 function mapToApiSavedWorkout(workout: savedWorkouts.SavedWorkout): SavedWorkout {
-    // Extract exerciseIds from the exercises array
-    const exerciseIds = workout.exercises.map(exercise => exercise.definitionId);
+    // Extract exerciseIds from the exercises array with null checking
+    const exerciseIds = workout.exercises?.map(exercise => exercise.definitionId) || [];
     
     return {
         _id: workout._id,
@@ -149,11 +149,12 @@ export const createSavedWorkout = async (
         const userIdObj = new ObjectId(context.userId);
         
         // Convert exercise ID strings to ObjectIds
-        const exerciseIds: ObjectId[] = [];
+        const exerciseObjectIds: ObjectId[] = [];
         for (const idStr of params.exerciseIds) {
             if (ObjectId.isValid(idStr)) {
-                exerciseIds.push(new ObjectId(idStr));
+                exerciseObjectIds.push(new ObjectId(idStr));
             } else {
+                console.error(`Invalid exercise ID format: ${idStr}`);
                 return { error: `Invalid exercise ID format: ${idStr}` };
             }
         }
@@ -161,20 +162,50 @@ export const createSavedWorkout = async (
         // Create the exercises array with definition IDs
         const exercisesArray: savedWorkouts.SavedWorkoutExercise[] = [];
         
-        for (let i = 0; i < exerciseIds.length; i++) {
-            // Verify exercise definition exists
-            const definition = await exerciseDefinitions.findExerciseDefinitionById(exerciseIds[i]);
-            if (!definition) {
-                return { error: `Exercise definition not found for ID: ${exerciseIds[i]}` };
+        // Get each exercise individually using the proper function
+        for (let i = 0; i < exerciseObjectIds.length; i++) {
+            const exerciseId = exerciseObjectIds[i];
+            
+            // Find the exercise using the exported function
+            const exercise = await exercises.findExerciseById(exerciseId, userIdObj);
+            
+            if (!exercise) {
+                console.error(`Exercise not found: ${exerciseId.toString()}`);
+                continue;
             }
             
-            // Add to exercises array
-            exercisesArray.push({
-                definitionId: exerciseIds[i],
-                sets: 3, // Default values
-                reps: "10",
-                order: i + 1
-            });
+            // Verify definition exists
+            if (!exercise.definitionId) {
+                console.error(`Exercise ${exercise._id} has no definitionId`);
+                continue;
+            }
+            
+            const definitionId = exercise.definitionId;
+            
+            try {
+                // Verify the definition exists
+                const definition = await exerciseDefinitions.findExerciseDefinitionById(definitionId);
+                
+                if (!definition) {
+                    console.error(`Exercise definition not found: ${definitionId.toString()}`);
+                    continue;
+                }
+                
+                // Add to exercises array
+                exercisesArray.push({
+                    definitionId: definitionId,
+                    sets: exercise.sets || 3, // Use exercise sets or default
+                    reps: exercise.reps?.toString() || "10",
+                    order: i + 1
+                });
+            } catch (err) {
+                console.error(`Error processing definition ID ${definitionId}: ${err instanceof Error ? err.message : String(err)}`);
+                continue; // Skip this one but continue with others
+            }
+        }
+        
+        if (exercisesArray.length === 0) {
+            return { error: "Could not create workout with the provided exercises" };
         }
 
         const now = new Date();

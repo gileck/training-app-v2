@@ -36,7 +36,7 @@ export interface WeeklyNote {
 /**
  * Get a reference to the weeklyProgress collection
  */
-export const getWeeklyProgressCollection = async (): Promise<Collection<WeeklyProgress>> => {
+const getWeeklyProgressCollection = async (): Promise<Collection<WeeklyProgress>> => {
   const db = await getDb();
   return db.collection<WeeklyProgress>('weeklyProgress');
 };

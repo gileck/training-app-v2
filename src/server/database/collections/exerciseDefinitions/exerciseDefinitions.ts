@@ -11,7 +11,7 @@ import {
 /**
  * Get a reference to the exerciseDefinitions collection
  */
-export const getExerciseDefinitionsCollection = async (): Promise<Collection<ExerciseDefinition>> => {
+const getExerciseDefinitionsCollection = async (): Promise<Collection<ExerciseDefinition>> => {
   const db = await getDb();
   return db.collection<ExerciseDefinition>('exerciseDefinitions');
 };

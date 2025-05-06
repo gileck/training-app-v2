@@ -5,7 +5,7 @@ import { Exercise, ExerciseCreate, ExerciseUpdate } from './types';
 /**
  * Get a reference to the exercises collection
  */
-export const getExercisesCollection = async (): Promise<Collection<Exercise>> => {
+const getExercisesCollection = async (): Promise<Collection<Exercise>> => {
   const db = await getDb();
   return db.collection<Exercise>('exercises');
 };

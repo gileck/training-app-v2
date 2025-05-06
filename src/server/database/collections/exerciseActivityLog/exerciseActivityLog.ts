@@ -5,7 +5,7 @@ import { ExerciseActivityLog, ExerciseActivityLogCreate, ExerciseActivityLogUpda
 /**
  * Get a reference to the exerciseActivityLog collection
  */
-export const getExerciseActivityLogCollection = async (): Promise<Collection<ExerciseActivityLog>> => {
+const getExerciseActivityLogCollection = async (): Promise<Collection<ExerciseActivityLog>> => {
   const db = await getDb();
   return db.collection<ExerciseActivityLog>('exerciseActivityLog');
 };
