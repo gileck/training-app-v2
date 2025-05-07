@@ -30,6 +30,11 @@ const createDefinitionMap = (defs: ExerciseDefinitionOption[]): Record<string, s
     }, {});
 };
 
+// Tab indices (can be moved to a shared constants file or kept here if only used by this hook and its consumers)
+const EXERCISES_TAB_INDEX = 0;
+// const WORKOUTS_TAB_INDEX = 1; // Already defined in MainView, ensure consistency or centralize
+const ACTIVE_WORKOUT_TAB_INDEX = 2;
+
 export const useWorkoutView = () => {
     const { routeParams, navigate } = useRouter();
     const [planId, setPlanId] = useState<string | undefined>(routeParams.planId as string | undefined);
@@ -53,6 +58,9 @@ export const useWorkoutView = () => {
     // State for exercise selection
     const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
     const [showSelectionMode, setShowSelectionMode] = useState(false);
+
+    // New state for activeTab, managed by the hook
+    const [activeTab, setActiveTabState] = useState<number>(EXERCISES_TAB_INDEX);
 
     // Fetch active training plan if no planId is provided
     useEffect(() => {
@@ -328,14 +336,22 @@ export const useWorkoutView = () => {
         setShowSelectionMode(false);
     };
 
+    const handleTabChange = useCallback((eventOrNewValue: React.SyntheticEvent | number, newValue?: number) => {
+        if (typeof eventOrNewValue === 'number') {
+            setActiveTabState(eventOrNewValue as number);
+        } else if (newValue !== undefined) {
+            setActiveTabState(newValue);
+        }
+    }, []);
+
     // New function to start an active workout session
     const startActiveWorkout = useCallback((exercisesToStart: WorkoutExercise[], name?: string) => {
         setActiveWorkoutSession(exercisesToStart);
         setActiveWorkoutName(name || 'Active Workout');
-        setSelectedExercises([]); // Clear selection after starting
-        setShowSelectionMode(false); // Exit selection mode
-        // Potentially navigate to a specific tab or ensure the view updates, handled by parent component
-    }, [setActiveWorkoutSession, setActiveWorkoutName, setSelectedExercises, setShowSelectionMode]);
+        setSelectedExercises([]); 
+        setShowSelectionMode(false); 
+        setActiveTabState(ACTIVE_WORKOUT_TAB_INDEX); // Explicitly switch tab
+    }, [setActiveWorkoutSession, setActiveWorkoutName, setSelectedExercises, setShowSelectionMode, setActiveTabState]);
 
     // Handlers for active workout session exercise sets
     const handleIncrementActiveSet = useCallback((exerciseId: string) => {
@@ -416,21 +432,37 @@ export const useWorkoutView = () => {
         });
     }, [setActiveWorkoutSession]);
 
-    const handleStartWorkout = () => {
-        // This function is called by SelectedExercisesBar
-        // It will use the currently selected exercises (which are IDs)
+    const handleEndActiveWorkout = useCallback(() => {
+        setActiveWorkoutSession(null);
+        setActiveWorkoutName(null);
+        setActiveTabState(EXERCISES_TAB_INDEX); 
+    }, [setActiveWorkoutSession, setActiveWorkoutName, setActiveTabState]);
+
+    const handleRemoveExerciseFromActiveSession = useCallback((exerciseIdToRemove: string) => {
+        setActiveWorkoutSession(prevSession => {
+            if (!prevSession) return null;
+            const updatedSession = prevSession.filter(ex => ex._id.toString() !== exerciseIdToRemove);
+            if (updatedSession.length === 0) {
+                // If session becomes empty, end it and switch tabs
+                handleEndActiveWorkout(); 
+                return null; // Or return empty array, then handleEndActiveWorkout will clear it
+            }
+            return updatedSession;
+        });
+    }, [setActiveWorkoutSession, handleEndActiveWorkout]);
+
+    const handleStartWorkout = useCallback(() => {
         if (selectedExercises.length > 0) {
             const exercisesToStart = workoutExercises.filter(ex => selectedExercises.includes(ex._id.toString()));
             if (exercisesToStart.length > 0) {
-                startActiveWorkout(exercisesToStart, 'Selected Exercises Workout');
+                startActiveWorkout(exercisesToStart, 'Custom Workout');
             } else {
-                console.warn("Could not find full exercise details for selected IDs.");
-                // Optionally set an error message for the user
+                console.warn("Could not find full exercise details for selected IDs to start workout.");
             }
         } else {
             console.warn("handleStartWorkout called with no selected exercises.");
         }
-    };
+    }, [selectedExercises, workoutExercises, startActiveWorkout]);
 
     // Toggle show completed exercises
     const toggleShowCompleted = () => {
@@ -468,6 +500,8 @@ export const useWorkoutView = () => {
         onIncrementActiveSet: handleIncrementActiveSet,
         onDecrementActiveSet: handleDecrementActiveSet,
         onCompleteActiveExercise: handleCompleteActiveExercise,
+        onEndActiveWorkout: handleEndActiveWorkout,
+        onRemoveExerciseFromActiveSession: handleRemoveExerciseFromActiveSession,
         navigate,
         handleSetCompletionUpdate,
         handleExerciseSelect,
@@ -479,5 +513,7 @@ export const useWorkoutView = () => {
         fetchSavedWorkouts: fetchSavedWorkoutStructures,
         toggleWorkoutExpanded,
         handleSavedWorkoutExerciseSetCompletionUpdate,
+        activeTab,
+        handleTabChange,
     };
 }; 

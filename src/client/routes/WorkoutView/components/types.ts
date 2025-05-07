@@ -56,10 +56,16 @@ export interface WorkoutViewProps {
     activeWorkoutSession: WorkoutExercise[] | null;
     activeWorkoutName: string | null;
 
+    // Tab state and handler from hook
+    activeTab: number;
+    handleTabChange: (eventOrNewValue: React.SyntheticEvent | number, newValue?: number) => void;
+
     // Callbacks for active workout exercise manipulation
     onIncrementActiveSet: (exerciseId: string) => void;
     onDecrementActiveSet: (exerciseId: string) => void;
     onCompleteActiveExercise: (exerciseId: string) => void;
+    onEndActiveWorkout: () => void;
+    onRemoveExerciseFromActiveSession: (exerciseId: string) => void;
 
     navigate: (path: string) => void;
     handleSetCompletionUpdate: (exerciseId: string, updatedProgress: WeeklyProgressBase) => void;

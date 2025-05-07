@@ -17,9 +17,10 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { WorkoutViewProps, WeekNavigatorProps } from './types';
 import { PlanHeader } from './PlanHeader';
 import { WeeklyProgressDisplay } from './WeeklyProgressDisplay';
-import { MainTabs } from './MainTabs';
 import { SelectedExercisesBar } from './SelectedExercisesBar';
 import { ActiveWorkoutContent } from './ActiveWorkoutContent';
+import { ExerciseTabContent } from './ExerciseTabContent';
+import { WorkoutTabContent } from './WorkoutTabContent';
 
 // --- Color constants for the light theme --- //
 const LIGHT_BG = '#FFFFFF';
@@ -120,6 +121,8 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     onIncrementActiveSet,
     onDecrementActiveSet,
     onCompleteActiveExercise,
+    onEndActiveWorkout,
+    onRemoveExerciseFromActiveSession,
 
     navigate,
     handleSetCompletionUpdate,
@@ -130,12 +133,17 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     toggleShowCompleted,
     handleNavigateWeek,
     toggleWorkoutExpanded,
-    handleSavedWorkoutExerciseSetCompletionUpdate
+    handleSavedWorkoutExerciseSetCompletionUpdate,
+
+    // New props from hook for tab management
+    activeTab,
+    handleTabChange,
 }) => {
-    // State to track loading of week data
     const [isWeekLoading, setIsWeekLoading] = React.useState(false);
-    // Add tab state
-    const [activeTab, setActiveTab] = React.useState(0);
+
+    const EXERCISES_TAB_INDEX = 0;
+    const WORKOUTS_TAB_INDEX = 1;
+    const ACTIVE_WORKOUT_TAB_INDEX = 2;
 
     // Start selection mode by default
     React.useEffect(() => {
@@ -144,31 +152,24 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
         }
     }, [showSelectionMode, handleStartSelectionMode]);
 
-    // Modified navigate handler to show loading state
-    const handleWeekNavigate = (week: number) => {
+    const handleLocalWeekNavigate = (week: number) => {
         setIsWeekLoading(true);
         handleNavigateWeek(week);
     };
 
-    // Reset loading state when data arrives or week number changes
     React.useEffect(() => {
         if (!isLoading) {
             setIsWeekLoading(false);
         }
     }, [isLoading, weekNumber]);
 
-    // Handle tab change
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setActiveTab(newValue);
-    };
-
     // Call PlanHeader to get its output
-    const planHeaderOutput = (
+    const planHeaderOutputComponent = (
         <PlanHeader
             planId={planId}
             weekNumber={weekNumber}
             planDetails={planDetails}
-            isLoading={isLoading && !planDetails && !isWeekLoading} // Pass isLoading for initial plan details fetch
+            isLoading={isLoading && !planDetails && !isWeekLoading}
             error={error}
             navigate={navigate}
         />
@@ -176,15 +177,13 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
 
     // If PlanHeader renders an element (not null), it means it's handling an initial loading/error state.
     // In this case, we return what PlanHeader rendered.
-    if (planHeaderOutput.props.children !== undefined && planHeaderOutput.type !== React.Fragment) { // A more robust check if it rendered actual content
-        // A more direct check: if any of the conditions within PlanHeader that return JSX are met, it will render.
-        // This check relies on the internal logic of PlanHeader, which is not ideal, but simpler than inspecting React elements.
+    if (planHeaderOutputComponent.props.children !== undefined && planHeaderOutputComponent.type !== React.Fragment) {
         if (!planId ||
             (error && planId && !(isLoading && planDetails)) ||
             (isLoading && !planDetails && planId) ||
-            (!isLoading && !planDetails && planId && !error) // Added !error here to distinguish from the error case above
+            (!isLoading && !planDetails && planId && !error)
         ) {
-            return planHeaderOutput;
+            return planHeaderOutputComponent;
         }
     }
 
@@ -195,7 +194,7 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     if (!planId || !planDetails) {
         // This case should ideally be caught by PlanHeader or indicate an unexpected state.
         // Render a fallback or an error if PlanHeader didn't catch it.
-        if (!error) { // Avoid double-rendering error if PlanHeader already did for planId issues.
+        if (!error) {
             return (
                 <Box sx={{ p: 3, bgcolor: LIGHT_BG, color: '#333', minHeight: '100vh' }}>
                     <Typography variant="h5" sx={{ mb: 2, color: NEON_PURPLE, fontWeight: 'bold' }}>
@@ -206,7 +205,7 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                 </Box>
             );
         }
-        return planHeaderOutput; // Or return what PlanHeader decided if there was an error it handled.
+        return planHeaderOutputComponent;
     }
 
     // At this point, planId and planDetails are guaranteed to be defined due to the checks above.
@@ -214,13 +213,13 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
 
     return (
         <Box sx={{ p: { xs: 1, sm: 2, md: 3 }, bgcolor: LIGHT_BG, color: '#333', minHeight: '100vh' }}>
-            {planHeaderOutput}
+            {planHeaderOutputComponent}
 
             {planDetails && planDetails.durationWeeks > 0 && (
                 <WeekNavigator
                     currentWeek={weekNumber}
                     maxWeeks={planDetails.durationWeeks}
-                    onNavigate={handleWeekNavigate}
+                    onNavigate={handleLocalWeekNavigate}
                     isWeekLoading={isWeekLoading}
                 />
             )}
@@ -231,72 +230,54 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                 totalExercises={totalExercises}
             />
 
-            {/* Render Tabs and their content OR ActiveWorkoutContent */}
-            {activeWorkoutSession && activeWorkoutSession.length > 0 ? (
-                <Box sx={{ mt: 3 }}>
-                     {/* Keep Tabs visible as requested */}
-                    <Tabs
-                        value={activeTab} // This might need adjustment if tabs shouldn't appear selected
-                        onChange={handleTabChange}
-                        sx={{
-                            mb: 3,
-                            '& .MuiTabs-indicator': {
-                                backgroundColor: NEON_PURPLE,
-                            },
-                        }}
-                    >
-                        <Tab
-                            label="Exercises"
-                            sx={{
-                                textTransform: 'none',
-                                fontWeight: 'bold',
-                                color: NEON_PURPLE, // Keep tabs styled as if active or a neutral style
-                            }}
-                        />
-                        <Tab
-                            label="Workouts"
-                            sx={{
-                                textTransform: 'none',
-                                fontWeight: 'bold',
-                                color: NEON_PURPLE, // Keep tabs styled as if active or a neutral style
-                            }}
-                        />
-                    </Tabs>
-                    <ActiveWorkoutContent 
-                        exercises={activeWorkoutSession} 
-                        workoutName={activeWorkoutName} 
-                        onIncrementSet={onIncrementActiveSet}    // Pass down
-                        onDecrementSet={onDecrementActiveSet}    // Pass down
-                        onCompleteExercise={onCompleteActiveExercise} // Pass down
-                    />
-                </Box>
-            ) : (
-                <MainTabs
-                    activeTab={activeTab}
-                    handleTabChange={handleTabChange}
-                    planId={planId}
-                    weekNumber={weekNumber}
-                    activeExercises={activeExercises}
-                    completedExercises={completedExercises}
-                    showCompleted={showCompleted}
-                    selectedExercises={selectedExercises}
-                    showSelectionMode={showSelectionMode}
-                    handleSetCompletionUpdate={handleSetCompletionUpdate}
-                    handleExerciseSelect={handleExerciseSelect}
+            <Tabs
+                value={activeTab}
+                onChange={handleTabChange}
+                sx={{ mb: 3, '& .MuiTabs-indicator': { backgroundColor: NEON_PURPLE } }}
+            >
+                <Tab label="Exercises" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === EXERCISES_TAB_INDEX ? NEON_PURPLE : alpha('#000000', 0.6), '&.Mui-selected': { color: NEON_PURPLE } }} />
+                <Tab label="Workouts" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === WORKOUTS_TAB_INDEX ? NEON_PURPLE : alpha('#000000', 0.6), '&.Mui-selected': { color: NEON_PURPLE } }} />
+                <Tab 
+                    label="Active Workout" 
+                    disabled={!activeWorkoutSession || activeWorkoutSession.length === 0}
+                    sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === ACTIVE_WORKOUT_TAB_INDEX ? NEON_PURPLE : alpha('#000000', 0.6), '&.Mui-selected': { color: NEON_PURPLE } }}
+                />
+            </Tabs>
+
+            {activeTab === EXERCISES_TAB_INDEX && (
+                <ExerciseTabContent
+                    planId={planId} weekNumber={weekNumber} activeExercises={activeExercises} completedExercises={completedExercises} 
+                    showCompleted={showCompleted} selectedExercises={selectedExercises} showSelectionMode={showSelectionMode}
+                    handleSetCompletionUpdate={handleSetCompletionUpdate} handleExerciseSelect={handleExerciseSelect} 
                     toggleShowCompleted={toggleShowCompleted}
-                    savedWorkouts={savedWorkouts}
-                    isWorkoutsLoading={isWorkoutsLoading}
-                    toggleWorkoutExpanded={toggleWorkoutExpanded}
+                />
+            )}
+            {activeTab === WORKOUTS_TAB_INDEX && (
+                <WorkoutTabContent
+                    planId={planId} weekNumber={weekNumber} savedWorkouts={savedWorkouts} isWorkoutsLoading={isWorkoutsLoading}
+                    toggleWorkoutExpanded={toggleWorkoutExpanded} 
                     handleSavedWorkoutExerciseSetCompletionUpdate={handleSavedWorkoutExerciseSetCompletionUpdate}
                     startActiveWorkout={startActiveWorkout}
                 />
             )}
+            {activeTab === ACTIVE_WORKOUT_TAB_INDEX && activeWorkoutSession && activeWorkoutSession.length > 0 && (
+                <ActiveWorkoutContent 
+                    exercises={activeWorkoutSession} 
+                    workoutName={activeWorkoutName} 
+                    onIncrementSet={onIncrementActiveSet}
+                    onDecrementSet={onDecrementActiveSet}
+                    onCompleteExercise={onCompleteActiveExercise}
+                    onEndWorkout={onEndActiveWorkout}
+                    onRemoveExerciseFromSession={onRemoveExerciseFromActiveSession}
+                />
+            )}
 
-            {showSelectionMode && selectedExercises.length > 0 && activeTab === 0 && !activeWorkoutSession && (
+            {/* SelectedExercisesBar: only show on Exercises tab */}
+            {showSelectionMode && selectedExercises.length > 0 && activeTab === EXERCISES_TAB_INDEX && (
                 <SelectedExercisesBar
                     selectedExercises={selectedExercises}
-                    activeTab={activeTab} // Pass activeTab to ensure it only shows on exercise tab
-                    handleStartWorkout={handleStartWorkout}
+                    activeTab={activeTab} 
+                    handleStartWorkout={handleStartWorkout} // This will now replace the active session if one exists
                 />
             )}
         </Box>
