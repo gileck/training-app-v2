@@ -11,7 +11,7 @@ import type { TrainingPlan } from '@/apis/trainingPlans/types';
 import type { ExerciseDefinitionOption } from '@/apis/exerciseDefinitions/types';
 import type { WeeklyProgressBase } from '@/apis/weeklyProgress/types';
 import { WorkoutExercise } from '@/client/types/workout';
-import { EnhancedWorkout } from '../ui/types';
+import { EnhancedWorkout } from '../components/types';
 
 // --- New Structure Definitions ---
 // SavedWorkoutExerciseStructure removed as it was unused
