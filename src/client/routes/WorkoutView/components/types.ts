@@ -51,12 +51,23 @@ export interface WorkoutViewProps {
     completedExercisesCount: number;
     savedWorkouts: EnhancedWorkout[];
     isWorkoutsLoading: boolean;
+
+    // New props for active workout session
+    activeWorkoutSession: WorkoutExercise[] | null;
+    activeWorkoutName: string | null;
+
+    // Callbacks for active workout exercise manipulation
+    onIncrementActiveSet: (exerciseId: string) => void;
+    onDecrementActiveSet: (exerciseId: string) => void;
+    onCompleteActiveExercise: (exerciseId: string) => void;
+
     navigate: (path: string) => void;
     handleSetCompletionUpdate: (exerciseId: string, updatedProgress: WeeklyProgressBase) => void;
     handleSavedWorkoutExerciseSetCompletionUpdate: (workoutId: string, exerciseId: string, updatedProgress: WeeklyProgressBase) => void;
     handleExerciseSelect: (exerciseId: string) => void;
     handleStartSelectionMode: () => void;
     handleStartWorkout: () => void;
+    startActiveWorkout: (exercises: WorkoutExercise[], name?: string) => void;
     toggleShowCompleted: () => void;
     handleNavigateWeek: (week: number) => void;
     fetchSavedWorkouts: () => void;
@@ -90,7 +101,7 @@ export interface MainTabsProps {
     activeTab: number;
     handleTabChange: (event: React.SyntheticEvent, newValue: number) => void;
     // Props for ExerciseTabContent
-    planId: string; // Assuming planId is string by the time this is rendered
+    planId: string;
     weekNumber: number;
     activeExercises: WorkoutExercise[];
     completedExercises: WorkoutExercise[];
@@ -105,7 +116,7 @@ export interface MainTabsProps {
     isWorkoutsLoading: boolean;
     toggleWorkoutExpanded: (workoutId: string) => void;
     handleSavedWorkoutExerciseSetCompletionUpdate: (workoutId: string, exerciseId: string, updatedProgress: WeeklyProgressBase) => void;
-    // Potentially other shared props like navigate if needed by sub-tabs for actions
+    startActiveWorkout: (exercises: WorkoutExercise[], name?: string) => void;
 }
 
 export interface ExerciseTabContentProps {
@@ -128,7 +139,7 @@ export interface WorkoutTabContentProps {
     isWorkoutsLoading: boolean;
     toggleWorkoutExpanded: (workoutId: string) => void;
     handleSavedWorkoutExerciseSetCompletionUpdate: (workoutId: string, exerciseId: string, updatedProgress: WeeklyProgressBase) => void;
-    // Add navigate prop if "Create New" button needs it, or handle that action via a callback prop
+    startActiveWorkout: (exercises: WorkoutExercise[], name?: string) => void;
 }
 
 export interface SelectedExercisesBarProps {

@@ -15,7 +15,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { WorkoutTabContentProps, EnhancedWorkout } from './types';
 import { WeeklyProgressBase } from '../../../../apis/weeklyProgress/types';
-// import { WorkoutExercise } from '../../../types/workout'; // Removed unused import
+import { WorkoutExercise } from '../../../types/workout';
 
 import { WorkoutExerciseItem } from './WorkoutExerciseItem';
 
@@ -30,9 +30,10 @@ interface WorkoutItemProps {
     weekNumber: number;
     onSavedWorkoutExerciseSetComplete: (workoutId: string, exerciseId: string, updatedProgress: WeeklyProgressBase) => void;
     onToggleExpand: (workoutId: string) => void;
+    startActiveWorkout: (exercises: WorkoutExercise[], name?: string) => void;
 }
 
-const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, onSavedWorkoutExerciseSetComplete, onToggleExpand }) => {
+const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, onSavedWorkoutExerciseSetComplete, onToggleExpand, startActiveWorkout }) => {
     const workoutId = typeof workout._id === 'string' ? workout._id : workout._id.toString();
     const exercises = workout.enhancedExercises || [];
     const totalSetsInWorkout = exercises.reduce((sum, ex) => sum + (ex.sets || 0), 0);
@@ -59,7 +60,7 @@ const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, 
             }}
         >
             <Box onClick={() => onToggleExpand(workoutId)} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-                <Box>
+                <Box flexGrow={1}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: alpha('#000000', 0.8) }}>
                         {workout.name}
                     </Typography>
@@ -69,7 +70,32 @@ const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, 
                         </Typography>
                     </Box>
                 </Box>
-                <IconButton size="small" sx={{ color: alpha('#000000', 0.6) }}>
+                <Button 
+                    variant="contained"
+                    size="small"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (workout.enhancedExercises && workout.enhancedExercises.length > 0) {
+                            startActiveWorkout(workout.enhancedExercises, workout.name);
+                        } else {
+                            console.warn('Cannot start workout: no exercises found or workout has an error.');
+                        }
+                    }}
+                    sx={{
+                        bgcolor: NEON_GREEN, 
+                        color: 'white',
+                        textTransform: 'none', 
+                        fontWeight: 'bold', 
+                        borderRadius: 2, 
+                        px: 2, 
+                        ml: 1,
+                        '&:hover': { bgcolor: alpha(NEON_GREEN, 0.85) }
+                    }}
+                    disabled={!!workout.error || !workout.enhancedExercises || workout.enhancedExercises.length === 0}
+                >
+                    Start
+                </Button>
+                <IconButton size="small" sx={{ color: alpha('#000000', 0.6) }} onClick={(e) => { e.stopPropagation(); onToggleExpand(workoutId); }}>
                     {workout.isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
             </Box>
@@ -121,7 +147,8 @@ export const WorkoutTabContent: React.FC<WorkoutTabContentProps> = ({
     savedWorkouts,
     isWorkoutsLoading,
     toggleWorkoutExpanded,
-    handleSavedWorkoutExerciseSetCompletionUpdate
+    handleSavedWorkoutExerciseSetCompletionUpdate,
+    startActiveWorkout
 }) => {
     return (
         <Box>
@@ -205,6 +232,7 @@ export const WorkoutTabContent: React.FC<WorkoutTabContentProps> = ({
                             weekNumber={weekNumber}
                             onSavedWorkoutExerciseSetComplete={handleSavedWorkoutExerciseSetCompletionUpdate}
                             onToggleExpand={toggleWorkoutExpanded}
+                            startActiveWorkout={startActiveWorkout}
                         />
                     ))}
                 </Box>

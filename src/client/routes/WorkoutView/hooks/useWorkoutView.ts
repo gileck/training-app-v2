@@ -41,6 +41,10 @@ export const useWorkoutView = () => {
     const [error, setError] = useState<string | null>(null);
     const [showCompleted, setShowCompleted] = useState(false);
 
+    // State for active workout session
+    const [activeWorkoutSession, setActiveWorkoutSession] = useState<WorkoutExercise[] | null>(null);
+    const [activeWorkoutName, setActiveWorkoutName] = useState<string | null>(null);
+
     // State for saved workout structures (templates)
     const [savedWorkoutStructures, setSavedWorkoutStructures] = useState<SavedWorkoutStructure[]>([]);
     const [isWorkoutsLoading, setIsWorkoutsLoading] = useState(false);
@@ -216,7 +220,9 @@ export const useWorkoutView = () => {
     useEffect(() => {
         if (planId) {
             fetchData();
-            fetchSavedWorkoutStructures();
+            if (fetchSavedWorkoutStructures) {
+                fetchSavedWorkoutStructures();
+            }
         }
     }, [planId, fetchData, fetchSavedWorkoutStructures]);
 
@@ -314,22 +320,116 @@ export const useWorkoutView = () => {
     // Start selection mode
     const handleStartSelectionMode = () => {
         setShowSelectionMode(true);
-        setSelectedExercises([]);
     };
 
     // Cancel selection mode
     const handleCancelSelectionMode = () => {
-        setShowSelectionMode(false);
         setSelectedExercises([]);
+        setShowSelectionMode(false);
     };
 
-    // Start workout with selected exercises
-    const handleStartWorkout = () => {
-        if (selectedExercises.length === 0) {
-            return;
-        }
+    // New function to start an active workout session
+    const startActiveWorkout = useCallback((exercisesToStart: WorkoutExercise[], name?: string) => {
+        setActiveWorkoutSession(exercisesToStart);
+        setActiveWorkoutName(name || 'Active Workout');
+        setSelectedExercises([]); // Clear selection after starting
+        setShowSelectionMode(false); // Exit selection mode
+        // Potentially navigate to a specific tab or ensure the view updates, handled by parent component
+    }, [setActiveWorkoutSession, setActiveWorkoutName, setSelectedExercises, setShowSelectionMode]);
 
-        navigate(`/workout-page?planId=${planId}&week=${weekNumber}&exercises=${selectedExercises.join(',')}`);
+    // Handlers for active workout session exercise sets
+    const handleIncrementActiveSet = useCallback((exerciseId: string) => {
+        setActiveWorkoutSession(prevSession => {
+            if (!prevSession) return null;
+            return prevSession.map(ex => {
+                if (ex._id.toString() === exerciseId) {
+                    if (!ex.progress) {
+                        console.error(`Exercise ${exerciseId} is missing progress object during increment.`);
+                        return ex;
+                    }
+                    const currentSetsCompleted = ex.progress.setsCompleted || 0;
+                    if (currentSetsCompleted < ex.sets) {
+                        return {
+                            ...ex,
+                            progress: {
+                                ...ex.progress, // Spread existing progress
+                                setsCompleted: currentSetsCompleted + 1,
+                                lastUpdatedAt: new Date(),
+                                isExerciseDone: (currentSetsCompleted + 1) >= ex.sets,
+                            } as WeeklyProgressBase, // Keep type assertion if necessary for TS
+                        };
+                    }
+                }
+                return ex;
+            });
+        });
+    }, [setActiveWorkoutSession]);
+
+    const handleDecrementActiveSet = useCallback((exerciseId: string) => {
+        setActiveWorkoutSession(prevSession => {
+            if (!prevSession) return null;
+            return prevSession.map(ex => {
+                if (ex._id.toString() === exerciseId) {
+                    if (!ex.progress) {
+                        console.error(`Exercise ${exerciseId} is missing progress object during decrement.`);
+                        return ex;
+                    }
+                    const currentSetsCompleted = ex.progress.setsCompleted || 0;
+                    if (currentSetsCompleted > 0) {
+                        return {
+                            ...ex,
+                            progress: {
+                                ...ex.progress,
+                                setsCompleted: currentSetsCompleted - 1,
+                                lastUpdatedAt: new Date(),
+                                isExerciseDone: false, // If decrementing, it's no longer fully done by this action
+                            } as WeeklyProgressBase,
+                        };
+                    }
+                }
+                return ex;
+            });
+        });
+    }, [setActiveWorkoutSession]);
+
+    const handleCompleteActiveExercise = useCallback((exerciseId: string) => {
+        setActiveWorkoutSession(prevSession => {
+            if (!prevSession) return null;
+            return prevSession.map(ex => {
+                if (ex._id.toString() === exerciseId) {
+                    if (!ex.progress) {
+                        console.error(`Exercise ${exerciseId} is missing progress object during completion.`);
+                        return ex;
+                    }
+                    return {
+                        ...ex,
+                        progress: {
+                            ...ex.progress,
+                            setsCompleted: ex.sets, // Mark all sets as complete
+                            isExerciseDone: true,
+                            lastUpdatedAt: new Date(),
+                        } as WeeklyProgressBase,
+                    };
+                }
+                return ex;
+            });
+        });
+    }, [setActiveWorkoutSession]);
+
+    const handleStartWorkout = () => {
+        // This function is called by SelectedExercisesBar
+        // It will use the currently selected exercises (which are IDs)
+        if (selectedExercises.length > 0) {
+            const exercisesToStart = workoutExercises.filter(ex => selectedExercises.includes(ex._id.toString()));
+            if (exercisesToStart.length > 0) {
+                startActiveWorkout(exercisesToStart, 'Selected Exercises Workout');
+            } else {
+                console.warn("Could not find full exercise details for selected IDs.");
+                // Optionally set an error message for the user
+            }
+        } else {
+            console.warn("handleStartWorkout called with no selected exercises.");
+        }
     };
 
     // Toggle show completed exercises
@@ -348,8 +448,7 @@ export const useWorkoutView = () => {
         planId,
         weekNumber,
         planDetails,
-        activeExercises: showCompleted ? workoutExercises : activePlanExercises,
-        completedExercises: completedPlanExercises,
+        workoutExercises,
         isLoading,
         error,
         showCompleted,
@@ -358,15 +457,19 @@ export const useWorkoutView = () => {
         progressPercentage: calculateProgressPercentage(),
         totalExercises: workoutExercises.length,
         completedExercisesCount: completedPlanExercises.length,
-        
-        // For the Workouts Tab
+        activeExercises: showCompleted ? workoutExercises : activePlanExercises,
+        completedExercises: completedPlanExercises,
         savedWorkouts: displayedSavedWorkouts,
         isWorkoutsLoading,
-        
-        // Actions / Handlers
+        activeWorkoutSession,
+        activeWorkoutName,
+        startActiveWorkout,
+        // Active set handlers
+        onIncrementActiveSet: handleIncrementActiveSet,
+        onDecrementActiveSet: handleDecrementActiveSet,
+        onCompleteActiveExercise: handleCompleteActiveExercise,
         navigate,
         handleSetCompletionUpdate,
-        handleSavedWorkoutExerciseSetCompletionUpdate,
         handleExerciseSelect,
         handleStartSelectionMode,
         handleCancelSelectionMode,
@@ -375,5 +478,6 @@ export const useWorkoutView = () => {
         handleNavigateWeek,
         fetchSavedWorkouts: fetchSavedWorkoutStructures,
         toggleWorkoutExpanded,
+        handleSavedWorkoutExerciseSetCompletionUpdate,
     };
 }; 

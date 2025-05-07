@@ -38,7 +38,8 @@ export const MainTabs: React.FC<MainTabsProps> = ({
     savedWorkouts,
     isWorkoutsLoading,
     toggleWorkoutExpanded,
-    handleSavedWorkoutExerciseSetCompletionUpdate
+    handleSavedWorkoutExerciseSetCompletionUpdate,
+    startActiveWorkout
 }) => {
     return (
         <Box>
@@ -101,6 +102,7 @@ export const MainTabs: React.FC<MainTabsProps> = ({
                     isWorkoutsLoading={isWorkoutsLoading}
                     toggleWorkoutExpanded={toggleWorkoutExpanded}
                     handleSavedWorkoutExerciseSetCompletionUpdate={handleSavedWorkoutExerciseSetCompletionUpdate}
+                    startActiveWorkout={startActiveWorkout}
                 />
             )}
         </Box>
