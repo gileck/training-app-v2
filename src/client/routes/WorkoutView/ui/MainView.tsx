@@ -117,7 +117,6 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     handleStartWorkout,
     toggleShowCompleted,
     handleNavigateWeek,
-    fetchSavedWorkouts,
     toggleWorkoutExpanded,
     handleSavedWorkoutExerciseSetCompletionUpdate
 }) => {
@@ -146,20 +145,9 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
         }
     }, [isLoading, weekNumber]);
 
-    // Fetch saved workouts when tab is Workouts
-    React.useEffect(() => {
-        if (activeTab === 1) {
-            fetchSavedWorkouts();
-        }
-    }, [activeTab, fetchSavedWorkouts]);
-
     // Handle tab change
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setActiveTab(newValue);
-        // Fetch saved workouts data when switching to workouts tab
-        if (newValue === 1) {
-            fetchSavedWorkouts();
-        }
     };
 
     // Call PlanHeader to get its output

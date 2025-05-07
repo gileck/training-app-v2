@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from '@/client/router';
 import { getExercises } from '@/apis/exercises/client';
 import { getTrainingPlanById, getActiveTrainingPlan } from '@/apis/trainingPlans/client';
@@ -12,6 +12,15 @@ import type { ExerciseDefinitionOption } from '@/apis/exerciseDefinitions/types'
 import type { WeeklyProgressBase } from '@/apis/weeklyProgress/types';
 import { WorkoutExercise } from '@/client/types/workout';
 import { EnhancedWorkout } from '../ui/types';
+
+// --- New Structure Definitions ---
+// SavedWorkoutExerciseStructure removed as it was unused
+interface SavedWorkoutStructure {
+    _id: string; // Saved Workout ID
+    name: string;
+    exercises: ExerciseBase[]; 
+}
+// --- End New Structure Definitions ---
 
 // Helper function to create the definition map
 const createDefinitionMap = (defs: ExerciseDefinitionOption[]): Record<string, string> => {
@@ -32,9 +41,10 @@ export const useWorkoutView = () => {
     const [error, setError] = useState<string | null>(null);
     const [showCompleted, setShowCompleted] = useState(false);
 
-    // State for saved workouts
-    const [savedWorkouts, setSavedWorkouts] = useState<EnhancedWorkout[]>([]);
+    // State for saved workout structures (templates)
+    const [savedWorkoutStructures, setSavedWorkoutStructures] = useState<SavedWorkoutStructure[]>([]);
     const [isWorkoutsLoading, setIsWorkoutsLoading] = useState(false);
+    const [expandedWorkoutIds, setExpandedWorkoutIds] = useState<Record<string, boolean>>({});
 
     // State for exercise selection
     const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
@@ -159,167 +169,58 @@ export const useWorkoutView = () => {
         }
     }, [planId, weekNumber]);
 
-    useEffect(() => {
-        if (planId) {
-            fetchData();
+    const fetchSavedWorkoutStructures = useCallback(async () => {
+        if (!planId) {
+            console.warn("fetchSavedWorkoutStructures called without planId being set.");
+            return;
         }
-    }, [fetchData, planId]);
-
-    // Enhanced function to fetch saved workouts with their exercises
-    const fetchSavedWorkouts = useCallback(async () => {
         setIsWorkoutsLoading(true);
+        setError(null);
         try {
-            // 1. Get all saved workouts
-            const response = await getAllSavedWorkouts();
+            const savedWorkoutsListResponse = await getAllSavedWorkouts();
 
-            if (!response.data || !Array.isArray(response.data)) {
-                throw new Error('Failed to fetch saved workouts');
+            if (!savedWorkoutsListResponse.data || !Array.isArray(savedWorkoutsListResponse.data)) {
+                throw new Error('Failed to fetch the list of saved workouts.');
             }
 
-            // 2. Fetch all exercises for the current plan to get sets/reps data
-            const planExercisesResponse = await getExercises({ trainingPlanId: planId || '' });
-
-            if (!planExercisesResponse.data || !Array.isArray(planExercisesResponse.data)) {
-                throw new Error('Failed to fetch plan exercises');
-            }
-
-            // Create a map of exercise definition IDs to their complete data
-            const planExercisesMap = planExercisesResponse.data.reduce((map, exercise) => {
-                const defId = exercise.exerciseDefinitionId.toString();
-                map[defId] = exercise;
-                return map;
-            }, {} as Record<string, ExerciseBase>);
-
-            // 3. Enhance each workout with its exercises
-            const enhancedWorkoutsPromises = response.data.map(async (workout) => {
-                try {
-                    // Get workout details with exercises
-                    const workoutDetailsResponse = await getSavedWorkoutDetails({
-                        workoutId: workout._id.toString()
-                    });
-
-                    if (!workoutDetailsResponse.data || !workoutDetailsResponse.data.exercises) {
-                        return {
-                            ...workout,
-                            enhancedExercises: [],
-                            isExpanded: false,
-                            error: 'Failed to fetch workout details'
-                        };
-                    }
-
-                    const rawExercises = workoutDetailsResponse.data.exercises;
-
-                    // Process each exercise in the workout
-                    const exercisePromises = rawExercises.map(async (exercise) => {
-                        // Get the exercise definition ID
-                        const defId = exercise.exerciseDefinitionId.toString();
-
-                        // Find the corresponding exercise in the plan
-                        const planExercise = planExercisesMap[defId];
-
-                        if (!planExercise) {
-                            throw new Error(`Exercise not found in training plan: ${defId}`);
-                        }
-
-                        // Fetch progress data for this exercise using the planExercise._id
-                        const progressResponse = await getWeeklyProgress({
-                            planId: planId || '',
-                            exerciseId: planExercise._id.toString(),
-                            weekNumber
-                        });
-
-                        // Fetch definition data
-                        const definitionResponse = await getExerciseDefinitionById({
-                            definitionId: defId
-                        });
-
-                        // Construct the WorkoutExercise object for the UI
-                        return {
-                            ...exercise,
-                            _id: planExercise._id,
-                            exerciseDefinitionId: planExercise.exerciseDefinitionId,
-                            trainingPlanId: planExercise.trainingPlanId,
-                            sets: planExercise.sets,
-                            reps: planExercise.reps,
-                            weight: planExercise.weight,
-                            name: definitionResponse.data?.name || 'Exercise (name not found)',
-                            progress: progressResponse.data,
-                            definition: definitionResponse.data ? {
-                                primaryMuscle: definitionResponse.data.primaryMuscle,
-                                secondaryMuscles: definitionResponse.data.secondaryMuscles,
-                                bodyWeight: definitionResponse.data.bodyWeight,
-                                type: definitionResponse.data.type,
-                                imageUrl: definitionResponse.data.imageUrl,
-                                hasComments: !!(progressResponse.data?.weeklyNotes?.length)
-                            } : undefined
-                        } as WorkoutExercise;
-                    });
-
-                    // Use Promise.allSettled to handle errors for individual exercises
-                    const exerciseResults = await Promise.allSettled(exercisePromises);
-
-                    // Check for errors
-                    const rejectedExercises = exerciseResults.filter(
-                        result => result.status === 'rejected'
-                    );
-
-                    // If any exercises failed, add an error to the workout
-                    let workoutError = undefined;
-                    if (rejectedExercises.length > 0) {
-                        const firstError = rejectedExercises[0] as PromiseRejectedResult;
-                        workoutError = `Failed to load some exercises: ${firstError.reason.message || 'Unknown error'}`;
-                    }
-
-                    // Get the successful exercise results
-                    const enhancedExercises = exerciseResults
-                        .filter((result): result is PromiseFulfilledResult<WorkoutExercise> =>
-                            result.status === 'fulfilled'
-                        )
-                        .map(result => result.value);
-
-                    // Return enhanced workout with exercises
-                    return {
-                        ...workout,
-                        enhancedExercises,
-                        isExpanded: false,
-                        error: workoutError
-                    };
-                } catch (error) {
-                    // Handle errors for entire workout
-                    return {
-                        ...workout,
-                        enhancedExercises: [],
-                        isExpanded: false,
-                        error: error instanceof Error ? error.message : 'Unknown error'
-                    };
+            const structuresPromises = savedWorkoutsListResponse.data.map(async (swHeader) => {
+                const detailsResponse = await getSavedWorkoutDetails({ workoutId: swHeader._id.toString() });
+                
+                if (!detailsResponse.data || !Array.isArray(detailsResponse.data.exercises)) {
+                    console.error(`Failed to load exercise details for saved workout: ${swHeader.name}`);
+                    // Return a structure that indicates an error or skip it
+                    return null; 
                 }
+                // getSavedWorkoutDetailsResponse has exercises as ExerciseBase[]
+                return {
+                    _id: swHeader._id.toString(),
+                    name: swHeader.name,
+                    exercises: detailsResponse.data.exercises, // This is ExerciseBase[]
+                } as SavedWorkoutStructure;
             });
 
-            // Wait for all workouts to be processed
-            const enhancedWorkouts = await Promise.all(enhancedWorkoutsPromises);
-            setSavedWorkouts(enhancedWorkouts);
+            const newSavedWorkoutStructures = (await Promise.all(structuresPromises))
+                .filter(structure => structure !== null) as SavedWorkoutStructure[];
+            
+            setSavedWorkoutStructures(newSavedWorkoutStructures);
 
-        } catch (error) {
-            console.error('Failed to fetch saved workouts:', error);
-            // Don't set global error as this is just for one tab
+        } catch (err) {
+            console.error("Failed to load saved workout structures:", err);
+            setError(err instanceof Error ? err.message : 'An unknown error occurred while fetching saved workout structures');
+            setSavedWorkoutStructures([]); // Clear previous structures on error
         } finally {
             setIsWorkoutsLoading(false);
         }
-    }, [planId, weekNumber]);
+    }, [planId, setIsLoading, setError, setSavedWorkoutStructures]);
 
-    // Function to toggle workout expanded state
-    const toggleWorkoutExpanded = useCallback((workoutId: string) => {
-        setSavedWorkouts(prevWorkouts =>
-            prevWorkouts.map(workout =>
-                workout._id.toString() === workoutId
-                    ? { ...workout, isExpanded: !workout.isExpanded }
-                    : workout
-            )
-        );
-    }, []);
+    useEffect(() => {
+        if (planId) {
+            fetchData();
+            fetchSavedWorkoutStructures();
+        }
+    }, [planId, fetchData, fetchSavedWorkoutStructures]);
 
-    // Handler to update local state when a set is completed via API
-    const handleSetCompletionUpdate = (exerciseId: string, updatedProgress: WeeklyProgressBase) => {
+    const handleSetCompletionUpdate = useCallback((exerciseId: string, updatedProgress: WeeklyProgressBase) => {
         setWorkoutExercises(prevExercises =>
             prevExercises.map(ex =>
                 ex._id.toString() === exerciseId
@@ -327,42 +228,77 @@ export const useWorkoutView = () => {
                     : ex
             )
         );
-    };
+    }, [setWorkoutExercises]);
 
-    // Handler to update set completion for exercises in a Saved Workout
-    const handleSavedWorkoutExerciseSetCompletionUpdate = useCallback((workoutId: string, exerciseId: string, updatedProgress: WeeklyProgressBase) => {
-        setSavedWorkouts(prevSavedWorkouts =>
-            prevSavedWorkouts.map(workout => {
-                if (workout._id.toString() === workoutId) {
-                    return {
-                        ...workout,
-                        enhancedExercises: workout.enhancedExercises.map(ex =>
-                            ex._id.toString() === exerciseId
-                                ? { ...ex, progress: updatedProgress }
-                                : ex
-                        )
-                    };
-                }
-                return workout;
-            })
-        );
-    }, []);
+    // This function will now only call handleSetCompletionUpdate.
+    // The WorkoutTabContent should ensure it passes the correct exerciseId from the live WorkoutExercise.
+    const handleSavedWorkoutExerciseSetCompletionUpdate = useCallback((
+        workoutId: string, // workoutId might not be needed if exerciseId is sufficient
+        exerciseId: string, 
+        updatedProgress: WeeklyProgressBase
+    ) => {
+        handleSetCompletionUpdate(exerciseId, updatedProgress);
+        // No longer directly updates savedWorkoutStructures or savedWorkouts for progress here.
+        // The change will flow via workoutExercises -> useMemo -> displayedSavedWorkouts.
+    }, [handleSetCompletionUpdate]);
 
-    // Separate exercises into active and completed
-    const activeExercises = workoutExercises.filter(ex => {
+    const toggleWorkoutExpanded = useCallback((workoutId: string) => {
+        setExpandedWorkoutIds(prev => ({
+            ...prev,
+            [workoutId]: !prev[workoutId]
+        }));
+    }, [setExpandedWorkoutIds]);
+
+    // Create displayedSavedWorkouts using useMemo
+    const displayedSavedWorkouts = useMemo(() => {
+        return savedWorkoutStructures.map(structure => {
+            const enhancedExercises = structure.exercises // structure.exercises are ExerciseBase[] from getSavedWorkoutDetails
+                .map(savedExBase => {
+                    // Match based on exerciseDefinitionId as savedExBase._id is temporary from server
+                    const liveWorkoutExercise = workoutExercises.find(
+                        wEx => wEx.exerciseDefinitionId.toString() === savedExBase.exerciseDefinitionId.toString()
+                    );
+
+                    if (liveWorkoutExercise) {
+                        return liveWorkoutExercise; 
+                    } else {
+                        // This warning is more relevant now if a definition ID from a saved workout
+                        // doesn't exist in any of the current plan's live exercises.
+                        console.warn(`No live exercise found for definitionId: ${savedExBase.exerciseDefinitionId} from saved workout: ${structure.name}. This exercise will not be shown.`);
+                        return null;
+                    }
+                })
+                .filter(Boolean) as WorkoutExercise[];
+
+            return {
+                _id: structure._id,
+                name: structure.name,
+                isExpanded: !!expandedWorkoutIds[structure._id],
+                enhancedExercises: enhancedExercises,
+            } as EnhancedWorkout;
+        });
+    }, [savedWorkoutStructures, workoutExercises, expandedWorkoutIds]);
+
+    // Calculate active and completed exercises based on the single source of truth: workoutExercises
+    const activePlanExercises = useMemo(() => workoutExercises.filter(ex => {
+        const setsPrescribed = ex.sets;
         const setsDone = ex.progress?.setsCompleted || 0;
-        return setsDone < ex.sets;
-    });
+        return setsDone < setsPrescribed;
+    }), [workoutExercises]);
 
-    const completedExercises = workoutExercises.filter(ex => {
+    const completedPlanExercises = useMemo(() => workoutExercises.filter(ex => {
+        const setsPrescribed = ex.sets;
         const setsDone = ex.progress?.setsCompleted || 0;
-        return setsDone >= ex.sets;
-    });
-
-    // Calculate weekly progress
-    const totalExercises = workoutExercises.length;
-    const completedExercisesCount = completedExercises.length;
-    const progressPercentage = totalExercises > 0 ? (completedExercisesCount / totalExercises) * 100 : 0;
+        return setsDone >= setsPrescribed;
+    }), [workoutExercises]);
+    
+    const calculateProgressPercentage = useCallback(() => {
+        if (workoutExercises.length === 0) return 0;
+        const totalPossibleSets = workoutExercises.reduce((acc, ex) => acc + ex.sets, 0);
+        if (totalPossibleSets === 0) return 0;
+        const totalCompletedSets = workoutExercises.reduce((acc, ex) => acc + (ex.progress?.setsCompleted || 0), 0);
+        return Math.round((totalCompletedSets / totalPossibleSets) * 100);
+    }, [workoutExercises]);
 
     // Handle exercise selection
     const handleExerciseSelect = (exerciseId: string) => {
@@ -409,26 +345,25 @@ export const useWorkoutView = () => {
     };
 
     return {
-        // State
         planId,
         weekNumber,
         planDetails,
+        activeExercises: showCompleted ? workoutExercises : activePlanExercises,
+        completedExercises: completedPlanExercises,
         isLoading,
         error,
-        workoutExercises,
-        activeExercises,
-        completedExercises,
         showCompleted,
         selectedExercises,
         showSelectionMode,
-        progressPercentage,
-        totalExercises,
-        completedExercisesCount,
-        savedWorkouts,
+        progressPercentage: calculateProgressPercentage(),
+        totalExercises: workoutExercises.length,
+        completedExercisesCount: completedPlanExercises.length,
+        
+        // For the Workouts Tab
+        savedWorkouts: displayedSavedWorkouts,
         isWorkoutsLoading,
-        toggleWorkoutExpanded,
-
-        // Actions
+        
+        // Actions / Handlers
         navigate,
         handleSetCompletionUpdate,
         handleSavedWorkoutExerciseSetCompletionUpdate,
@@ -438,6 +373,7 @@ export const useWorkoutView = () => {
         handleStartWorkout,
         toggleShowCompleted,
         handleNavigateWeek,
-        fetchSavedWorkouts
+        fetchSavedWorkouts: fetchSavedWorkoutStructures,
+        toggleWorkoutExpanded,
     };
 }; 
