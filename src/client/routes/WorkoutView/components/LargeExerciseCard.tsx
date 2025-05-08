@@ -4,13 +4,13 @@ import {
     Typography,
     Paper,
     IconButton,
-    LinearProgress,
     alpha,
-    Stack
+    Stack,
+    Divider,
+    LinearProgress
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
 import Image from 'next/image';
 import { WorkoutExercise } from '@/client/types/workout';
@@ -26,7 +26,6 @@ interface LargeExerciseCardProps {
     exercise: WorkoutExercise;
     onIncrementSet: (exerciseId: string) => void;
     onDecrementSet: (exerciseId: string) => void;
-    onCompleteExercise: (exerciseId: string) => void;
     onRemoveExercise: (exerciseId: string) => void;
 }
 
@@ -34,16 +33,13 @@ export const LargeExerciseCard: React.FC<LargeExerciseCardProps> = ({
     exercise, 
     onIncrementSet, 
     onDecrementSet, 
-    onCompleteExercise,
     onRemoveExercise
 }) => {
-    const { _id, name, sets: targetSets, reps, weight, durationSeconds, definition, progress, comments } = exercise;
+    const { _id, name, sets: targetSets, reps, weight, comments, definition, progress } = exercise;
     const exerciseId = _id.toString();
     const imageUrl = definition?.imageUrl || '/placeholder-image.jpg';
     const setsCompleted = progress?.setsCompleted || 0;
     const isExerciseComplete = setsCompleted >= targetSets;
-
-    const progressPercent = targetSets > 0 ? (setsCompleted / targetSets) * 100 : 0;
     const accentColor = isExerciseComplete ? NEON_GREEN : NEON_BLUE;
 
     const handleIncrement = () => {
@@ -56,10 +52,6 @@ export const LargeExerciseCard: React.FC<LargeExerciseCardProps> = ({
         if (setsCompleted > 0) {
             onDecrementSet(exerciseId);
         }
-    };
-
-    const handleComplete = () => {
-        onCompleteExercise(exerciseId);
     };
 
     const handleRemove = () => {
@@ -78,75 +70,95 @@ export const LargeExerciseCard: React.FC<LargeExerciseCardProps> = ({
                 boxShadow: `0 4px 12px ${alpha(accentColor, 0.15)}`,
             }}
         >
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ p: 1.5, bgcolor: alpha(accentColor, 0.08), borderBottom: `1px solid ${alpha(accentColor, 0.2)}` }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', color: accentColor }}>
+            <Stack 
+                direction="row" 
+                justifyContent="space-between" 
+                alignItems="center" 
+                sx={{ 
+                    p: 1.5, 
+                    bgcolor: alpha(accentColor, 0.05), // Softer background for header
+                    borderBottom: `1px solid ${alpha(accentColor, 0.15)}` 
+                }}
+            >
+                <Typography variant="h5" sx={{ fontWeight: 'bold', color: accentColor }}>
                     {name || 'Unnamed Exercise'}
                 </Typography>
-                <IconButton onClick={handleRemove} size="small" sx={{ color: alpha('#000000', 0.5), '&:hover': { color: 'red' } }}>
-                    <CloseIcon fontSize="small" />
+                <IconButton 
+                    onClick={handleRemove} 
+                    size="medium" 
+                    sx={{ color: alpha('#000000', 0.6), '&:hover': { color: '#FF0000', bgcolor: alpha('#FF0000', 0.1) } }}
+                >
+                    <CloseIcon fontSize="medium" />
                 </IconButton>
             </Stack>
 
-            <LinearProgress
-                variant="determinate"
-                value={progressPercent}
-                sx={{
-                    height: 5,
-                    bgcolor: alpha(accentColor, 0.15),
-                    '& .MuiLinearProgress-bar': { bgcolor: accentColor }
-                }}
-            />
-
-            <Stack direction='row' spacing={{ xs: 1, sm: 2 }} sx={{ p: { xs: 1, sm: 2 } }}>
+            <Stack 
+                direction='row' 
+                spacing={{ xs: 1.5, sm: 2 }} 
+                sx={{ p: { xs: 1.5, sm: 2 }, alignItems: 'center' }}
+            >
                 <Box sx={{ 
-                    width: { xs: 80, sm: 100 },
-                    height: { xs: 80, sm: 100 },
+                    width: { xs: 80, sm: 90 },
+                    height: { xs: 80, sm: 90 }, 
                     position: 'relative', 
                     flexShrink: 0, 
-                    borderRadius: 1, 
+                    borderRadius: 1.5, 
                     overflow:'hidden', 
-                    bgcolor: alpha(accentColor, 0.05) 
+                    bgcolor: alpha(accentColor, 0.03) 
                 }}>
                     <Image src={imageUrl} alt={name || 'Exercise'} fill style={{ objectFit: 'contain' }} onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-image.jpg'; }} />
                 </Box>
 
                 <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <Typography variant="body1" sx={{ color: alpha('#000000', 0.8), fontWeight: 'medium' }}>
-                        Target: {targetSets} sets x {reps} reps
+                    <Typography variant="h6" sx={{ color: alpha('#000000', 0.9), fontWeight: 500, lineHeight: 1.3 }}>
+                        {reps} reps {weight != null ? `x ${weight}kg` : '(Bodyweight)'}
                     </Typography>
-                    {weight != null && (
-                        <Typography variant="body2" sx={{ color: alpha('#000000', 0.7) }}>Weight: {weight}kg</Typography>
-                    )}
-                    {durationSeconds != null && (
-                        <Typography variant="body2" sx={{ color: alpha('#000000', 0.7) }}>Duration: {durationSeconds}s</Typography>
-                    )}
                     {comments && (
-                        <Typography variant="caption" sx={{ color: alpha('#000000', 0.6), display:'block', fontStyle:'italic' }}>Comments: {comments}</Typography>
+                        <Typography variant="body2" sx={{ color: alpha('#000000', 0.7), fontStyle:'italic', mt: 0.5, lineHeight: 1.2 }}>
+                            Comments: {comments}
+                        </Typography>
                     )}
-                    <Typography variant="h6" component="div" sx={{ mt: {xs: 0.5, sm:1}, fontWeight: 'bold', color: accentColor, fontSize: {xs: '1rem', sm: '1.25rem'} }}>
-                        Sets Done: {setsCompleted} / {targetSets}
-                    </Typography>
                 </Box>
             </Stack>
 
-            <Box sx={{ 
-                p: 1.5, 
-                bgcolor: ACTIONS_BG, 
-                borderTop: `1px solid ${ACTIONS_BORDER}`,
-                display: 'flex', 
-                justifyContent: 'space-around', 
-                alignItems: 'center' 
-            }}>
-                <IconButton onClick={handleIncrement} disabled={setsCompleted >= targetSets} size="large" sx={{ color: NEON_BLUE, '&.Mui-disabled': { color: alpha(NEON_BLUE, 0.3)} }}>
-                    <AddCircleOutlineIcon sx={{ fontSize: {xs: '2.2rem', sm: '2.8rem'} }}/>
-                </IconButton>
-                <IconButton onClick={handleDecrement} disabled={setsCompleted <= 0} size="large" sx={{ color: NEON_BLUE, '&.Mui-disabled': { color: alpha(NEON_BLUE, 0.3)} }}>
-                    <RemoveCircleOutlineIcon sx={{ fontSize: {xs: '2.2rem', sm: '2.8rem'} }}/>
-                </IconButton>
-                <IconButton onClick={handleComplete} disabled={isExerciseComplete} size="large" sx={{ color: NEON_GREEN, '&.Mui-disabled': { color: alpha(NEON_GREEN, 0.3)} }}>
-                    <CheckCircleIcon sx={{ fontSize: {xs: '2.2rem', sm: '2.8rem'} }}/>
-                </IconButton>
+            <Box sx={{ px: { xs: 1.5, sm: 2 }, pb: 1 }}>
+                <LinearProgress 
+                    variant="determinate" 
+                    value={(setsCompleted / targetSets) * 100}
+                    sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        bgcolor: alpha(accentColor, 0.1),
+                        '& .MuiLinearProgress-bar': {
+                            bgcolor: accentColor,
+                            borderRadius: 4,
+                        }
+                    }}
+                />
             </Box>
+
+            <Divider sx={{ mx: 2, my: 1, borderStyle: 'dashed' }} />
+
+            <Stack 
+                direction="row" 
+                justifyContent="space-around" 
+                alignItems="center" 
+                sx={{ 
+                    p: {xs: 1, sm: 1.5},
+                    bgcolor: ACTIONS_BG, 
+                    borderTop: `1px solid ${ACTIONS_BORDER}` 
+                }}
+            >
+                <IconButton onClick={handleDecrement} disabled={setsCompleted <= 0} sx={{ color: NEON_BLUE, '&.Mui-disabled': { color: alpha(NEON_BLUE, 0.4)} }}>
+                    <RemoveCircleOutlineIcon sx={{ fontSize: { xs: '2.8rem', sm: '3rem' } }}/>
+                </IconButton>
+                <Typography variant="h4" component="div" sx={{ fontWeight: 'bold', color: accentColor, fontSize: {xs: '1.8rem', sm: '2.25rem'} }}>
+                    {setsCompleted} / {targetSets}
+                </Typography>
+                <IconButton onClick={handleIncrement} disabled={setsCompleted >= targetSets} sx={{ color: NEON_BLUE, '&.Mui-disabled': { color: alpha(NEON_BLUE, 0.4)} }}>
+                    <AddCircleOutlineIcon sx={{ fontSize: { xs: '2.8rem', sm: '3rem' } }}/>
+                </IconButton>
+            </Stack>
         </Paper>
     );
 }; 

@@ -3,98 +3,23 @@ import {
     Box,
     Typography,
     Button,
-    IconButton,
     CircularProgress,
-    Stack,
-    Paper,
     alpha,
     Tabs,
     Tab,
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
-import { WorkoutViewProps, WeekNavigatorProps } from './types';
+import { WorkoutViewProps } from './types';
 import { PlanHeader } from './PlanHeader';
-import { WeeklyProgressDisplay } from './WeeklyProgressDisplay';
 import { SelectedExercisesBar } from './SelectedExercisesBar';
 import { ActiveWorkoutContent } from './ActiveWorkoutContent';
 import { ExerciseTabContent } from './ExerciseTabContent';
 import { WorkoutTabContent } from './WorkoutTabContent';
+import { PlanWeekHeader } from '@/client/components/PlanWeekHeader';
 
 // --- Color constants for the light theme --- //
 const LIGHT_BG = '#FFFFFF';
-const LIGHT_PAPER = '#F5F5F7';
 const NEON_PURPLE = '#9C27B0';
-const NEON_BLUE = '#3D5AFE';
-
-// --- Sub Components --- //
-
-const WeekNavigator: React.FC<WeekNavigatorProps> = ({ currentWeek, maxWeeks, onNavigate, isWeekLoading = false }) => {
-    return (
-        <Paper
-            elevation={2}
-            sx={{
-                mb: 3,
-                bgcolor: LIGHT_PAPER,
-                borderRadius: 4,
-                overflow: 'hidden',
-                border: `1px solid ${alpha(NEON_PURPLE, 0.2)}`,
-                boxShadow: `0 4px 12px ${alpha(NEON_PURPLE, 0.15)}`
-            }}
-        >
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ p: 1.5 }}>
-                <IconButton
-                    onClick={() => onNavigate(currentWeek - 1)}
-                    disabled={currentWeek <= 1 || isWeekLoading}
-                    sx={{
-                        color: NEON_PURPLE,
-                        '&.Mui-disabled': {
-                            color: alpha(NEON_PURPLE, 0.3)
-                        }
-                    }}
-                >
-                    <ArrowBackIcon />
-                </IconButton>
-                <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                    {isWeekLoading ? (
-                        <CircularProgress
-                            size={24}
-                            sx={{
-                                color: NEON_BLUE,
-                                position: 'absolute',
-                                left: -36,
-                                mx: 'auto'
-                            }}
-                        />
-                    ) : null}
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            fontWeight: 700,
-                            color: '#333',
-                            textShadow: `0 0 1px ${alpha(NEON_PURPLE, 0.3)}`
-                        }}
-                    >
-                        WEEK {currentWeek} / {maxWeeks}
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={() => onNavigate(currentWeek + 1)}
-                    disabled={currentWeek >= maxWeeks || isWeekLoading}
-                    sx={{
-                        color: NEON_PURPLE,
-                        '&.Mui-disabled': {
-                            color: alpha(NEON_PURPLE, 0.3)
-                        }
-                    }}
-                >
-                    <ArrowForwardIcon />
-                </IconButton>
-            </Stack>
-        </Paper>
-    );
-};
 
 // Main Component
 export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
@@ -120,7 +45,6 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     // Destructure new callback props
     onIncrementActiveSet,
     onDecrementActiveSet,
-    onCompleteActiveExercise,
     onEndActiveWorkout,
     onRemoveExerciseFromActiveSession,
 
@@ -192,8 +116,16 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     // that relies on it (like WorkoutExerciseItem, WorkoutItem).
     // planDetails should also be available if we reach this point and planId is valid.
     if (!planId || !planDetails) {
-        // This case should ideally be caught by PlanHeader or indicate an unexpected state.
-        // Render a fallback or an error if PlanHeader didn't catch it.
+        // Show a loader if data is still loading
+        if (isLoading) {
+            return (
+                <Box sx={{ p: 3, bgcolor: LIGHT_BG, color: '#333', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <CircularProgress sx={{ color: NEON_PURPLE, mb: 2 }} />
+                    <Typography variant="h6" sx={{ color: NEON_PURPLE, fontWeight: 'bold' }}>Loading workout plan...</Typography>
+                </Box>
+            );
+        }
+        // Only show error if loading is done and data is still missing
         if (!error) {
             return (
                 <Box sx={{ p: 3, bgcolor: LIGHT_BG, color: '#333', minHeight: '100vh' }}>
@@ -216,19 +148,16 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
             {planHeaderOutputComponent}
 
             {planDetails && planDetails.durationWeeks > 0 && (
-                <WeekNavigator
+                <PlanWeekHeader
                     currentWeek={weekNumber}
                     maxWeeks={planDetails.durationWeeks}
                     onNavigate={handleLocalWeekNavigate}
                     isWeekLoading={isWeekLoading}
+                    progressPercentage={progressPercentage}
+                    completedExercisesCount={completedExercisesCount}
+                    totalExercises={totalExercises}
                 />
             )}
-
-            <WeeklyProgressDisplay
-                progressPercentage={progressPercentage}
-                completedExercisesCount={completedExercisesCount}
-                totalExercises={totalExercises}
-            />
 
             <Tabs
                 value={activeTab}
@@ -266,7 +195,6 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                     workoutName={activeWorkoutName} 
                     onIncrementSet={onIncrementActiveSet}
                     onDecrementSet={onDecrementActiveSet}
-                    onCompleteExercise={onCompleteActiveExercise}
                     onEndWorkout={onEndActiveWorkout}
                     onRemoveExerciseFromSession={onRemoveExerciseFromActiveSession}
                 />

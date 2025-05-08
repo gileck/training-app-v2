@@ -8,7 +8,6 @@ interface ActiveWorkoutContentProps {
     workoutName?: string | null;
     onIncrementSet: (exerciseId: string) => void;
     onDecrementSet: (exerciseId: string) => void;
-    onCompleteExercise: (exerciseId: string) => void;
     onEndWorkout: () => void;
     onRemoveExerciseFromSession: (exerciseId: string) => void;
 }
@@ -18,7 +17,6 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
     workoutName, 
     onIncrementSet,
     onDecrementSet,
-    onCompleteExercise,
     onEndWorkout,
     onRemoveExerciseFromSession
 }) => {
@@ -60,7 +58,6 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
                     exercise={exercise} 
                     onIncrementSet={onIncrementSet}
                     onDecrementSet={onDecrementSet}
-                    onCompleteExercise={onCompleteExercise}
                     onRemoveExercise={onRemoveExerciseFromSession}
                 />
             ))}

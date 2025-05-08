@@ -408,30 +408,6 @@ export const useWorkoutView = () => {
         });
     }, [setActiveWorkoutSession]);
 
-    const handleCompleteActiveExercise = useCallback((exerciseId: string) => {
-        setActiveWorkoutSession(prevSession => {
-            if (!prevSession) return null;
-            return prevSession.map(ex => {
-                if (ex._id.toString() === exerciseId) {
-                    if (!ex.progress) {
-                        console.error(`Exercise ${exerciseId} is missing progress object during completion.`);
-                        return ex;
-                    }
-                    return {
-                        ...ex,
-                        progress: {
-                            ...ex.progress,
-                            setsCompleted: ex.sets, // Mark all sets as complete
-                            isExerciseDone: true,
-                            lastUpdatedAt: new Date(),
-                        } as WeeklyProgressBase,
-                    };
-                }
-                return ex;
-            });
-        });
-    }, [setActiveWorkoutSession]);
-
     const handleEndActiveWorkout = useCallback(() => {
         setActiveWorkoutSession(null);
         setActiveWorkoutName(null);
@@ -499,7 +475,6 @@ export const useWorkoutView = () => {
         // Active set handlers
         onIncrementActiveSet: handleIncrementActiveSet,
         onDecrementActiveSet: handleDecrementActiveSet,
-        onCompleteActiveExercise: handleCompleteActiveExercise,
         onEndActiveWorkout: handleEndActiveWorkout,
         onRemoveExerciseFromActiveSession: handleRemoveExerciseFromActiveSession,
         navigate,

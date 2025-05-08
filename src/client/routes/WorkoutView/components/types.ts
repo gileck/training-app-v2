@@ -63,7 +63,6 @@ export interface WorkoutViewProps {
     // Callbacks for active workout exercise manipulation
     onIncrementActiveSet: (exerciseId: string) => void;
     onDecrementActiveSet: (exerciseId: string) => void;
-    onCompleteActiveExercise: (exerciseId: string) => void;
     onEndActiveWorkout: () => void;
     onRemoveExerciseFromActiveSession: (exerciseId: string) => void;
 
