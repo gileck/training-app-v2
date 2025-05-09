@@ -40,10 +40,10 @@ import type { ExerciseDefinition, GetExerciseDefinitionByIdRequestParams } from 
 import { getExerciseDefinitionById } from '@/apis/exerciseDefinitions/client';
 import { getExerciseHistory } from '@/apis/exerciseHistory/client';
 import { GetExerciseHistoryRequest, ExerciseActivityEntry } from '@/apis/exerciseHistory/types';
-import { 
-    AddWeeklyNoteRequest, 
-    EditWeeklyNoteRequest, 
-    DeleteWeeklyNoteRequest, 
+import {
+    AddWeeklyNoteRequest,
+    EditWeeklyNoteRequest,
+    DeleteWeeklyNoteRequest,
     WeeklyNote
 } from '@/apis/weeklyProgress/types';
 import { addWeeklyNote, editWeeklyNote, deleteWeeklyNote } from '@/apis/weeklyProgress/client';
@@ -93,7 +93,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [historyData, setHistoryData] = useState<FormattedExerciseActivityEntry[]>([]);
-    
+
     // Only initialize state variables without setters to suppress unused variable warnings
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const [historyError, setHistoryError] = useState<string | null>(null);
@@ -121,9 +121,9 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                 const params: GetExerciseDefinitionByIdRequestParams = {
                     definitionId: definitionId
                 };
-                
+
                 const result = await getExerciseDefinitionById(params);
-                
+
                 const apiResult = result.data as ExerciseDefinition;
 
                 if (!apiResult) {
@@ -159,9 +159,9 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                 const params: GetExerciseHistoryRequest = {
                     exerciseId: exerciseId
                 };
-                
+
                 const result = await getExerciseHistory(params);
-                
+
                 const apiResult = result.data;
 
                 if (!apiResult) {
@@ -181,7 +181,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                     } catch (e) {
                         console.error('Error formatting activity date:', e);
                     }
-                    
+
                     return {
                         _id: entry.date, // Using date as ID
                         sets: entry.setsCompleted,
@@ -233,7 +233,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                 weekNumber,
                 note: newNote
             };
-            
+
             const result = await addWeeklyNote(params);
 
             if (!result.data || result.data.error) {
@@ -248,7 +248,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                 timestamp: result.data.date ? result.data.date.toString() : new Date().toISOString(),
                 date: result.data.date ? result.data.date.toString() : new Date().toISOString()
             };
-            
+
             setWeeklyNotes(prev => [...prev, newFormattedNote]);
             setNewNote('');
             setIsAddingNote(false);
@@ -274,9 +274,9 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                 noteId,
                 updatedNote: editedNoteText
             };
-            
+
             const result = await editWeeklyNote(params);
-            
+
             const apiResult = result.data as WeeklyNote;
 
             if (!apiResult) {
@@ -285,13 +285,13 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
             }
 
             // Update the local state with the edited note
-            const updatedNotes = weeklyNotes.map(note => 
-                note._id === noteId 
-                    ? { ...note, text: editedNoteText } 
+            const updatedNotes = weeklyNotes.map(note =>
+                note._id === noteId
+                    ? { ...note, text: editedNoteText }
                     : note
             );
             setWeeklyNotes(updatedNotes);
-            
+
             setEditingNoteId(null);
             setEditedNoteText('');
         } catch (err) {
@@ -315,9 +315,9 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                 weekNumber,
                 noteId
             };
-            
+
             const result = await deleteWeeklyNote(params);
-            
+
             if (!result.data.success) {
                 setNotesError('Failed to delete note');
                 return;
@@ -354,12 +354,12 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
         try {
             // Safely handle potentially invalid date strings
             const date = new Date(dateString);
-            
+
             // Check if date is valid before formatting
             if (isNaN(date.getTime())) {
                 return 'Invalid date';
             }
-            
+
             return new Intl.DateTimeFormat('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -413,12 +413,6 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                     </Typography>
                 </Box>
 
-                {definition?.description && (
-                    <Typography variant="body2" sx={{ mt: 1, color: alpha('#000000', 0.6) }}>
-                        {definition.description}
-                    </Typography>
-                )}
-
                 <IconButton
                     onClick={onClose}
                     sx={{
@@ -431,6 +425,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                             bgcolor: alpha(NEON_PURPLE, 0.05)
                         }
                     }}
+                    aria-label="close"
                 >
                     <CloseIcon />
                 </IconButton>

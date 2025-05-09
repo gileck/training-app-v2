@@ -1,11 +1,10 @@
 import { Collection, ObjectId } from 'mongodb';
 import { getDb } from '@/server/database';
-import { 
-  ExerciseDefinition, 
-  ExerciseDefinitionCreate, 
-  ExerciseDefinitionUpdate, 
+import {
+  ExerciseDefinition,
+  ExerciseDefinitionCreate,
+  ExerciseDefinitionUpdate,
   ExerciseDefinitionFilter,
-  ExerciseDefinitionOption
 } from './types';
 
 /**
@@ -45,18 +44,10 @@ export const findExerciseDefinitionById = async (
  * Get all exercise definitions as options (simplified format for selection lists)
  * @returns Array of exercise definition options
  */
-export const getAllExerciseDefinitionOptions = async (): Promise<ExerciseDefinitionOption[]> => {
+export const getAllExerciseDefinitionOptions = async (): Promise<ExerciseDefinition[]> => {
   const collection = await getExerciseDefinitionsCollection();
-  const definitions = await collection.find({}, {
-    projection: { _id: 1, name: 1, primaryMuscle: 1, type: 1 }
-  }).sort({ name: 1 }).toArray();
-  
-  return definitions.map(def => ({
-    _id: def._id.toString(),
-    name: def.name,
-    primaryMuscle: def.primaryMuscle,
-    type: def.type
-  }));
+  const definitions = await collection.find({}).sort({ name: 1 }).toArray();
+  return definitions;
 };
 
 /**
@@ -68,19 +59,19 @@ export const insertExerciseDefinition = async (
   definition: ExerciseDefinitionCreate
 ): Promise<ExerciseDefinition> => {
   const collection = await getExerciseDefinitionsCollection();
-  
+
   // Check if name already exists
   const existingDefinition = await collection.findOne({ name: definition.name });
   if (existingDefinition) {
     throw new Error(`Exercise definition with name "${definition.name}" already exists`);
   }
-  
+
   const result = await collection.insertOne(definition as ExerciseDefinition);
-  
+
   if (!result.insertedId) {
     throw new Error('Failed to insert exercise definition');
   }
-  
+
   return { ...definition, _id: result.insertedId } as ExerciseDefinition;
 };
 
@@ -96,25 +87,25 @@ export const updateExerciseDefinition = async (
 ): Promise<ExerciseDefinition | null> => {
   const collection = await getExerciseDefinitionsCollection();
   const idObj = typeof definitionId === 'string' ? new ObjectId(definitionId) : definitionId;
-  
+
   // If name is being updated, check if it already exists
   if (update.name) {
-    const existingDefinition = await collection.findOne({ 
-      name: update.name, 
-      _id: { $ne: idObj } 
+    const existingDefinition = await collection.findOne({
+      name: update.name,
+      _id: { $ne: idObj }
     });
-    
+
     if (existingDefinition) {
       throw new Error(`Exercise definition with name "${update.name}" already exists`);
     }
   }
-  
+
   const result = await collection.findOneAndUpdate(
     { _id: idObj },
     { $set: update },
     { returnDocument: 'after' }
   );
-  
+
   return result || null;
 };
 
@@ -128,7 +119,7 @@ export const deleteExerciseDefinition = async (
 ): Promise<boolean> => {
   const collection = await getExerciseDefinitionsCollection();
   const idObj = typeof definitionId === 'string' ? new ObjectId(definitionId) : definitionId;
-  
+
   const result = await collection.deleteOne({ _id: idObj });
   return result.deletedCount === 1;
 }; 

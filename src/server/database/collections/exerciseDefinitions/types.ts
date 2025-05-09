@@ -7,13 +7,13 @@ import { ObjectId } from 'mongodb';
 export interface ExerciseDefinition {
   _id: ObjectId;
   name: string;                // Indexed, Unique (e.g., "Bench Press")
-  imageUrl?: string;           // Optional
+  imageUrl: string;
   primaryMuscle: string;       // Primary muscle targeted
   secondaryMuscles: string[];  // Array of secondary muscles targeted
   bodyWeight: boolean;         // Whether it's a bodyweight exercise
   type: string;                // Exercise category/type
-  createdAt: Date;
-  updatedAt: Date;
+  static: boolean;             // Whether the exercise is static (e.g., a plank)
+
 }
 
 /**
@@ -29,16 +29,6 @@ export type ExerciseDefinitionCreate = Omit<ExerciseDefinition, '_id'>;
 export type ExerciseDefinitionUpdate = Partial<Omit<ExerciseDefinition, '_id' | 'createdAt'>> & {
   updatedAt: Date;
 };
-
-/**
- * Represents a simplified version of ExerciseDefinition for dropdown/selection lists
- */
-export interface ExerciseDefinitionOption {
-  _id: string;
-  name: string;
-  primaryMuscle: string;
-  type: string;
-}
 
 /**
  * Represents a filter for querying exercise definitions

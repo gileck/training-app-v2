@@ -8,7 +8,7 @@ import { getExerciseDefinitionById } from '@/apis/exerciseDefinitions/client';
 import { getAllSavedWorkouts, getSavedWorkoutDetails } from '@/apis/savedWorkouts/client';
 import type { ExerciseBase } from '@/apis/exercises/types';
 import type { TrainingPlan } from '@/apis/trainingPlans/types';
-import type { ExerciseDefinitionOption } from '@/apis/exerciseDefinitions/types';
+import type { ExerciseDefinition } from '@/apis/exerciseDefinitions/types';
 import type { WeeklyProgressBase } from '@/apis/weeklyProgress/types';
 import { WorkoutExercise } from '@/client/types/workout';
 import { EnhancedWorkout } from '../components/types';
@@ -18,13 +18,13 @@ import { EnhancedWorkout } from '../components/types';
 interface SavedWorkoutStructure {
     _id: string; // Saved Workout ID
     name: string;
-    exercises: ExerciseBase[]; 
+    exercises: ExerciseBase[];
 }
 // --- End New Structure Definitions ---
 
 // Helper function to create the definition map
-const createDefinitionMap = (defs: ExerciseDefinitionOption[]): Record<string, string> => {
-    return defs.reduce((acc: Record<string, string>, def: ExerciseDefinitionOption) => {
+const createDefinitionMap = (defs: ExerciseDefinition[]): Record<string, string> => {
+    return defs.reduce((acc: Record<string, string>, def: ExerciseDefinition) => {
         acc[def._id.toString()] = def.name;
         return acc;
     }, {});
@@ -112,7 +112,7 @@ export const useWorkoutView = () => {
             setPlanDetails(currentPlan);
 
             // Process Definitions directly into a map
-            const defMap = createDefinitionMap((definitionsRes.data && Array.isArray(definitionsRes.data)) ? definitionsRes.data : []);
+            const defMap = createDefinitionMap((definitionsRes.data && Array.isArray(definitionsRes.data)) ? definitionsRes.data as ExerciseDefinition[] : []);
 
             // Process Exercises
             if (!(exercisesRes.data && Array.isArray(exercisesRes.data))) {
@@ -137,18 +137,16 @@ export const useWorkoutView = () => {
 
             // Combine exercises with their progress, definition names, and definition details
             const exercisesWithDetails = planExercises.map((ex, index) => {
-                // Process progress data
                 const progressResult = progressResults[index];
                 let progressData: WeeklyProgressBase | undefined = undefined;
                 if (progressResult.status === 'fulfilled' && progressResult.value.data) {
-                    progressData = progressResult.value.data;
+                    progressData = progressResult.value.data as WeeklyProgressBase;
                 } else if (progressResult.status === 'rejected') {
                     console.warn(`Failed to fetch progress for exercise ${ex._id}:`, progressResult.reason);
                 }
 
-                // Process definition data
                 const definitionResult = definitionResults[index];
-                let definitionData = undefined;
+                let definitionData: Partial<Pick<ExerciseDefinition, 'primaryMuscle' | 'secondaryMuscles' | 'bodyWeight' | 'type' | 'imageUrl'> & { hasComments?: boolean }> | undefined = undefined;
                 if (definitionResult.status === 'fulfilled' && definitionResult.value.data) {
                     const def = definitionResult.value.data;
                     definitionData = {
@@ -163,7 +161,7 @@ export const useWorkoutView = () => {
 
                 return {
                     ...ex,
-                    name: defMap[ex.exerciseDefinitionId.toString()],
+                    name: defMap[ex.exerciseDefinitionId.toString()] || 'Unknown Exercise',
                     progress: progressData,
                     definition: definitionData
                 };
@@ -197,11 +195,11 @@ export const useWorkoutView = () => {
 
             const structuresPromises = savedWorkoutsListResponse.data.map(async (swHeader) => {
                 const detailsResponse = await getSavedWorkoutDetails({ workoutId: swHeader._id.toString() });
-                
+
                 if (!detailsResponse.data || !Array.isArray(detailsResponse.data.exercises)) {
                     console.error(`Failed to load exercise details for saved workout: ${swHeader.name}`);
                     // Return a structure that indicates an error or skip it
-                    return null; 
+                    return null;
                 }
                 // getSavedWorkoutDetailsResponse has exercises as ExerciseBase[]
                 return {
@@ -213,7 +211,7 @@ export const useWorkoutView = () => {
 
             const newSavedWorkoutStructures = (await Promise.all(structuresPromises))
                 .filter(structure => structure !== null) as SavedWorkoutStructure[];
-            
+
             setSavedWorkoutStructures(newSavedWorkoutStructures);
 
         } catch (err) {
@@ -248,7 +246,7 @@ export const useWorkoutView = () => {
     // The WorkoutTabContent should ensure it passes the correct exerciseId from the live WorkoutExercise.
     const handleSavedWorkoutExerciseSetCompletionUpdate = useCallback((
         workoutId: string, // workoutId might not be needed if exerciseId is sufficient
-        exerciseId: string, 
+        exerciseId: string,
         updatedProgress: WeeklyProgressBase
     ) => {
         handleSetCompletionUpdate(exerciseId, updatedProgress);
@@ -274,7 +272,7 @@ export const useWorkoutView = () => {
                     );
 
                     if (liveWorkoutExercise) {
-                        return liveWorkoutExercise; 
+                        return liveWorkoutExercise;
                     } else {
                         // This warning is more relevant now if a definition ID from a saved workout
                         // doesn't exist in any of the current plan's live exercises.
@@ -305,7 +303,7 @@ export const useWorkoutView = () => {
         const setsDone = ex.progress?.setsCompleted || 0;
         return setsDone >= setsPrescribed;
     }), [workoutExercises]);
-    
+
     const calculateProgressPercentage = useCallback(() => {
         if (workoutExercises.length === 0) return 0;
         const totalPossibleSets = workoutExercises.reduce((acc, ex) => acc + ex.sets, 0);
@@ -348,8 +346,8 @@ export const useWorkoutView = () => {
     const startActiveWorkout = useCallback((exercisesToStart: WorkoutExercise[], name?: string) => {
         setActiveWorkoutSession(exercisesToStart);
         setActiveWorkoutName(name || 'Active Workout');
-        setSelectedExercises([]); 
-        setShowSelectionMode(false); 
+        setSelectedExercises([]);
+        setShowSelectionMode(false);
         setActiveTabState(ACTIVE_WORKOUT_TAB_INDEX); // Explicitly switch tab
     }, [setActiveWorkoutSession, setActiveWorkoutName, setSelectedExercises, setShowSelectionMode, setActiveTabState]);
 
@@ -411,7 +409,7 @@ export const useWorkoutView = () => {
     const handleEndActiveWorkout = useCallback(() => {
         setActiveWorkoutSession(null);
         setActiveWorkoutName(null);
-        setActiveTabState(EXERCISES_TAB_INDEX); 
+        setActiveTabState(EXERCISES_TAB_INDEX);
     }, [setActiveWorkoutSession, setActiveWorkoutName, setActiveTabState]);
 
     const handleRemoveExerciseFromActiveSession = useCallback((exerciseIdToRemove: string) => {
@@ -420,7 +418,7 @@ export const useWorkoutView = () => {
             const updatedSession = prevSession.filter(ex => ex._id.toString() !== exerciseIdToRemove);
             if (updatedSession.length === 0) {
                 // If session becomes empty, end it and switch tabs
-                handleEndActiveWorkout(); 
+                handleEndActiveWorkout();
                 return null; // Or return empty array, then handleEndActiveWorkout will clear it
             }
             return updatedSession;

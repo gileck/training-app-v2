@@ -22,28 +22,38 @@ function mapToApiExerciseDefinition(definition: exerciseDefinitions.ExerciseDefi
         secondaryMuscles: definition.secondaryMuscles,
         bodyWeight: definition.bodyWeight,
         type: definition.type,
-        imageUrl: definition.imageUrl,
-        createdAt: definition.createdAt,
-        updatedAt: definition.updatedAt
-    } as ExerciseDefinition;
+        static: definition.static,
+        imageUrl: definition.imageUrl
+    };
 }
 
 /**
- * Fetches all exercise definitions (simplified for options list).
- * Corresponds to API: exerciseDefinitions/getAllOptions
+ * Fetches all exercise definitions.
+ * Now returns full ExerciseDefinition objects.
+ * API name might still be exerciseDefinitions/getAllOptions for backward compatibility,
+ * but the client-side function (e.g., in ExerciseFormDialog) should expect ExerciseDefinition[].
  */
 export const processGetAllOptions = async (): Promise<GetAllExerciseDefinitionsResponse> => {
     try {
-        // Use the new database layer to get options
-        const options = await exerciseDefinitions.getAllExerciseDefinitionOptions();
+        // This database layer function now needs to return full ExerciseDefinition-like objects
+        const definitionsFromDb = await exerciseDefinitions.getAllExerciseDefinitionOptions();
 
-        // Map to expected API response format
-        return options.map(opt => ({
-            _id: opt._id,
-            name: opt.name
+        // Map to ensure all fields align with the ExerciseDefinition type for the response.
+        // If definitionsFromDb already provides perfect ExerciseDefinition objects, this map might simplify.
+        return definitionsFromDb.map(def => ({
+            _id: def._id,
+            name: def.name,
+            imageUrl: def.imageUrl,
+            primaryMuscle: def.primaryMuscle,
+            secondaryMuscles: def.secondaryMuscles,
+            bodyWeight: def.bodyWeight,
+            type: def.type,
+            static: def.static
         }));
     } catch (error) {
         console.error('Error fetching exercise definitions:', error);
+        // Consider returning a structured error response instead of throwing directly
+        // For now, rethrow as per existing pattern.
         throw new Error('Failed to fetch exercise definitions');
     }
 };
@@ -57,20 +67,21 @@ export const processGetById = async (params: GetExerciseDefinitionByIdRequestPar
         const { definitionId } = params;
 
         if (!definitionId || !ObjectId.isValid(definitionId)) {
+            // Consider returning a structured error object instead of throwing
             throw new Error('Invalid Definition ID');
         }
 
-        // Use the new database layer to get definition by ID
-        const definition = await exerciseDefinitions.findExerciseDefinitionById(definitionId);
+        const definitionFromDb = await exerciseDefinitions.findExerciseDefinitionById(definitionId);
 
-        if (!definition) {
-            throw new Error('Exercise Definition not found');
+        if (!definitionFromDb) {
+            // Consider returning a structured error or null as per GetExerciseDefinitionByIdResponse
+            return null; // Matching GetExerciseDefinitionByIdResponse which allows null
         }
 
-        // Map to expected API response format
-        return mapToApiExerciseDefinition(definition);
+        return mapToApiExerciseDefinition(definitionFromDb);
     } catch (error) {
         console.error('Error fetching exercise definition:', error);
+        // Consider returning a structured error response
         throw new Error(`Failed to fetch exercise definition: ${error instanceof Error ? error.message : String(error)}`);
     }
 }; 

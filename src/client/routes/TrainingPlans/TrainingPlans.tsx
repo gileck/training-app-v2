@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, List, ListItem, ListItemText, IconButton, CircularProgress, Alert, Divider, Paper, Stack, Button, Tooltip } from '@mui/material';
+import { Box, Typography, IconButton, CircularProgress, Alert, Paper, Stack, Button, Tooltip, List, ListItem, CardContent, CardActions, Chip, Divider } from '@mui/material';
 import { Star as StarIcon, StarBorder as StarBorderIcon } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -10,6 +10,13 @@ import type { TrainingPlan } from '@/apis/trainingPlans/types';
 import { useAuth } from '@/client/context/AuthContext';
 import { useRouter } from '@/client/router';
 import AddTrainingPlanDialog from '@/client/components/AddTrainingPlanDialog';
+
+const formatDate = (date: Date | string | undefined): string => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric'
+    });
+};
 
 export const TrainingPlans: React.FC = () => {
     const [plans, setPlans] = useState<TrainingPlan[]>([]);
@@ -124,17 +131,23 @@ export const TrainingPlans: React.FC = () => {
     }
 
     return (
-        <Paper elevation={1} sx={{ margin: 2, padding: 2 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="h5" component="h1">
+        <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+            <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                justifyContent="space-between"
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                spacing={1}
+                sx={{ mb: 3 }}
+            >
+                <Typography variant="h4" component="h1" gutterBottom sx={{ mb: { xs: 2, sm: 0 } }}>
                     Training Plans
                 </Typography>
-                <Box>
+                <Stack direction="row" spacing={1}>
                     <Button
                         variant="outlined"
                         startIcon={<ListAltIcon />}
                         onClick={() => navigate('/saved-workouts')}
-                        sx={{ mr: 1 }}
+                        size="small"
                     >
                         Saved Workouts
                     </Button>
@@ -142,66 +155,97 @@ export const TrainingPlans: React.FC = () => {
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={handleAddPlanClick}
+                        size="small"
                     >
                         Add Plan
                     </Button>
-                </Box>
+                </Stack>
             </Stack>
 
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
             {plans.length === 0 && !error && (
-                <Typography sx={{ textAlign: 'center', p: 2 }}>
-                    You haven&apos;t created any training plans yet.
-                </Typography>
+                <Paper elevation={1} sx={{ textAlign: 'center', p: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                        No Training Plans Yet
+                    </Typography>
+                    <Typography color="text.secondary" paragraph>
+                        Get started by creating your first training plan.
+                    </Typography>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={handleAddPlanClick}
+                    >
+                        Create New Plan
+                    </Button>
+                </Paper>
             )}
 
             {plans.length > 0 && (
                 <List disablePadding>
                     {plans.map((plan, index) => (
                         <React.Fragment key={plan._id.toString()}>
-                            <ListItem
-                                secondaryAction={
-                                    <Stack direction="row" spacing={0.5}>
-                                        {!plan.isActive && (
-                                            <Tooltip title="Set as Active Plan">
-                                                <IconButton edge="end" aria-label="set active" onClick={(e) => { e.stopPropagation(); handleSetActive(plan._id.toString()); }}>
-                                                    <StarBorderIcon />
+                            <ListItem sx={{ display: 'block', p: 0, mb: plans.length - 1 === index ? 0 : 2 }}>
+                                <Paper elevation={2} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                    <CardContent sx={{ flexGrow: 1 }}>
+                                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1 }}>
+                                            <Typography variant="h6" component="div">
+                                                {plan.name}
+                                            </Typography>
+                                            {plan.isActive && (
+                                                <Tooltip title="Active Plan">
+                                                    <Chip
+                                                        icon={<StarIcon fontSize="small" />}
+                                                        label="Active"
+                                                        color="primary"
+                                                        size="small"
+                                                        sx={{ ml: 1, height: '24px', '.MuiChip-icon': { fontSize: '1rem' } }}
+                                                    />
+                                                </Tooltip>
+                                            )}
+                                        </Stack>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {`${plan.durationWeeks} Week${plan.durationWeeks !== 1 ? 's' : ''}`}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                                            Created: {formatDate(plan.createdAt)}
+                                        </Typography>
+                                    </CardContent>
+                                    <CardActions sx={{ justifyContent: 'flex-end', pt: 0, pb: 1, pr: 1 }}>
+                                        <Tooltip title={plan.isActive ? "Already Active" : "Set as Active Plan"}>
+                                            <span> {/* Span is needed for disabled IconButton tooltip */}
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) => { e.stopPropagation(); handleSetActive(plan._id.toString()); }}
+                                                    disabled={plan.isActive}
+                                                >
+                                                    {plan.isActive ? <StarIcon color="primary" /> : <StarBorderIcon />}
                                                 </IconButton>
-                                            </Tooltip>
-                                        )}
+                                            </span>
+                                        </Tooltip>
                                         <Tooltip title="Manage Exercises">
                                             <IconButton
-                                                edge="end"
-                                                aria-label="manage exercises"
+                                                size="small"
                                                 onClick={(e) => { e.stopPropagation(); handleManageExercisesClick(plan._id.toString()); }}
                                             >
                                                 <ListAltIcon />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Duplicate Plan">
-                                            <IconButton edge="end" aria-label="duplicate" onClick={(e) => { e.stopPropagation(); handleDuplicate(plan._id.toString()); }}>
+                                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDuplicate(plan._id.toString()); }}>
                                                 <ContentCopyIcon />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Delete Plan">
-                                            <IconButton edge="end" aria-label="delete" onClick={(e) => { e.stopPropagation(); handleDelete(plan._id.toString(), plan.name); }}>
+                                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDelete(plan._id.toString(), plan.name); }}>
                                                 <DeleteIcon />
                                             </IconButton>
                                         </Tooltip>
-                                    </Stack>
-                                }
-                            >
-                                {plan.isActive && (
-                                    <StarIcon color="primary" sx={{ mr: 1.5, verticalAlign: 'middle' }} />
-                                )}
-                                <ListItemText
-                                    primary={plan.name}
-                                    secondary={`${plan.durationWeeks} Week${plan.durationWeeks !== 1 ? 's' : ''}`}
-                                    sx={{ pl: plan.isActive ? 0 : 4.5 }}
-                                />
+                                    </CardActions>
+                                </Paper>
                             </ListItem>
-                            {index < plans.length - 1 && <Divider component="li" />}
+                            {index < plans.length - 1 && <Divider sx={{ mb: 2 }} component="li" />}
                         </React.Fragment>
                     ))}
                 </List>
@@ -212,6 +256,6 @@ export const TrainingPlans: React.FC = () => {
                 onClose={handleAddDialogClose}
                 onPlanCreated={handlePlanCreated}
             />
-        </Paper>
+        </Box>
     );
 }; 
