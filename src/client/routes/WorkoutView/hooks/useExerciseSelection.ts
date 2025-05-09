@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { WorkoutExercise } from '@/client/types/workout';
 
 export interface UseExerciseSelectionReturn {
@@ -18,21 +18,30 @@ export const useExerciseSelection = (
     const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
     const [showSelectionMode, setShowSelectionMode] = useState(false);
 
+    // Clear selections when activeWorkoutSession changes
+    useEffect(() => {
+        if (activeWorkoutSession) {
+            setSelectedExercises([]);
+            setShowSelectionMode(false);
+        }
+    }, [activeWorkoutSession]);
+
     const handleExerciseSelect = useCallback((exerciseId: string) => {
+        if (!showSelectionMode) return; // Only select if in selection mode
+
         setSelectedExercises(prev =>
             prev.includes(exerciseId)
                 ? prev.filter(id => id !== exerciseId)
                 : [...prev, exerciseId]
         );
-    }, []);
+    }, [showSelectionMode]);
 
     const toggleSelectionMode = useCallback(() => {
+        // Don't allow entering selection mode if there's an active workout
         if (activeWorkoutSession && !showSelectionMode) {
-            // If trying to enter selection mode while an active session exists, do nothing or show a message.
-            // For now, just preventing entering selection mode.
-            // console.log("Cannot enter selection mode while a workout is active.");
             return;
         }
+
         setShowSelectionMode(prev => {
             if (prev) { // If exiting selection mode, clear selections
                 setSelectedExercises([]);
@@ -48,7 +57,6 @@ export const useExerciseSelection = (
 
     const handleSelectAll = useCallback((exercisesToSelect: WorkoutExercise[]) => {
         if (activeWorkoutSession) {
-            // console.log("Cannot select all while a workout is active.");
             return;
         }
         const allIds = exercisesToSelect.map(ex => ex._id.toString());

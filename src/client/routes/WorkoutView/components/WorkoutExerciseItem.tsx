@@ -68,6 +68,8 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
         if ((e.target as HTMLElement).closest('button')) {
             return;
         }
+
+        // Only handle exercise selection if in selection mode and handler is provided
         if (showSelectionMode && handleExerciseSelect) {
             handleExerciseSelect(exerciseId);
         }

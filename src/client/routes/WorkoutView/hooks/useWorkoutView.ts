@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from '@/client/router';
 import type { WeeklyProgressBase } from '@/apis/weeklyProgress/types';
 import { usePlanExercises } from './usePlanExercises';
@@ -39,17 +39,9 @@ export const useWorkoutView = () => {
         setPlanId,
     } = usePlanExercises(initialPlanId, initialWeekNumber);
 
-    const {
-        selectedExercises,
-        showSelectionMode,
-        selectedExercisesDetails,
-        handleExerciseSelect,
-        toggleSelectionMode,
-        clearSelections,
-    } = useExerciseSelection(
-        workoutExercises,
-        null // Will be updated with activeWorkoutSession later
-    );
+    // Create a ref to hold the clearSelections function 
+    // that will be defined by useExerciseSelection
+    const clearSelectionsRef = useRef(() => { });
 
     const {
         activeWorkoutSession,
@@ -61,8 +53,25 @@ export const useWorkoutView = () => {
         onRemoveExerciseFromActiveSession,
     } = useActiveWorkoutSession(
         setActiveTabState,
-        clearSelections // Pass clearSelections as onWorkoutStart
+        useCallback(() => clearSelectionsRef.current(), []) // Use the ref's current value
     );
+
+    const {
+        selectedExercises,
+        showSelectionMode,
+        selectedExercisesDetails,
+        handleExerciseSelect,
+        toggleSelectionMode,
+        clearSelections,
+    } = useExerciseSelection(
+        workoutExercises,
+        activeWorkoutSession
+    );
+
+    // Update the clearSelections ref when it changes
+    useEffect(() => {
+        clearSelectionsRef.current = clearSelections;
+    }, [clearSelections]);
 
     const {
         savedWorkouts,
