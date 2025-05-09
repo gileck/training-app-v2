@@ -72,11 +72,11 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     const ACTIVE_WORKOUT_TAB_INDEX = 2;
 
     // Start selection mode by default
-    React.useEffect(() => {
-        if (!showSelectionMode) {
-            handleStartSelectionMode();
-        }
-    }, [showSelectionMode, handleStartSelectionMode]);
+    // React.useEffect(() => {
+    //     if (!showSelectionMode) {
+    //         handleStartSelectionMode();
+    //     }
+    // }, [showSelectionMode, handleStartSelectionMode]);
 
     const handleLocalWeekNavigate = (week: number) => {
         setIsWeekLoading(true);

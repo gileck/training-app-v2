@@ -56,6 +56,7 @@ export const useWorkoutView = () => {
         useCallback(() => clearSelectionsRef.current(), []) // Use the ref's current value
     );
 
+    // Pass true as the initial selection mode state
     const {
         selectedExercises,
         showSelectionMode,
@@ -63,9 +64,12 @@ export const useWorkoutView = () => {
         handleExerciseSelect,
         toggleSelectionMode,
         clearSelections,
+        // Unused, so commented out or removed
+        // handleSelectAll,
     } = useExerciseSelection(
         workoutExercises,
-        activeWorkoutSession
+        activeWorkoutSession,
+        true // <-- Initialize with selection mode ON
     );
 
     // Update the clearSelections ref when it changes

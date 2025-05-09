@@ -45,6 +45,16 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
     // Default isSelected to false if showSelectionMode is false or undefined
     const isSelected = showSelectionMode ? selectedExercises.includes(exerciseId) : false;
 
+    // Debug selection state
+    React.useEffect(() => {
+        console.log(`WorkoutExerciseItem ${exercise.name}:`, {
+            showSelectionMode,
+            isSelected,
+            exerciseId,
+            selectedExercises
+        });
+    }, [exercise.name, showSelectionMode, isSelected, exerciseId, selectedExercises]);
+
     const { isUpdating, handleSetCheckboxClick, handleCompleteAllSets } = useExerciseSetCompletion(
         planId,
         weekNumber,
@@ -64,6 +74,14 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
     const accentColor = getAccentColor();
 
     const handleCardClick = (e: React.MouseEvent) => {
+        // Debug card click
+        console.log("Card clicked", {
+            showSelectionMode,
+            hasHandler: !!handleExerciseSelect,
+            isButton: !!(e.target as HTMLElement).closest('button'),
+            target: e.target
+        });
+
         // Prevent click action if clicking on interactive elements like buttons
         if ((e.target as HTMLElement).closest('button')) {
             return;
@@ -71,6 +89,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
 
         // Only handle exercise selection if in selection mode and handler is provided
         if (showSelectionMode && handleExerciseSelect) {
+            console.log("Calling handleExerciseSelect with exerciseId:", exerciseId);
             handleExerciseSelect(exerciseId);
         }
     };
