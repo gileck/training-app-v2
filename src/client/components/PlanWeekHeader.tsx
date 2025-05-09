@@ -18,8 +18,8 @@ interface PlanWeekHeaderProps {
   onNavigate: (week: number) => void;
   isWeekLoading?: boolean;
   progressPercentage: number;
-  completedExercisesCount: number;
-  totalExercises: number;
+  completedSetsCount: number;
+  totalSetsCount: number;
 }
 
 const NEON_PURPLE = '#9C27B0';
@@ -32,8 +32,8 @@ export const PlanWeekHeader: React.FC<PlanWeekHeaderProps> = ({
   onNavigate,
   isWeekLoading = false,
   progressPercentage,
-  completedExercisesCount,
-  totalExercises
+  completedSetsCount,
+  totalSetsCount
 }) => {
   return (
     <Paper
@@ -110,7 +110,7 @@ export const PlanWeekHeader: React.FC<PlanWeekHeaderProps> = ({
           variant="body2"
           sx={{ color: alpha('#000', 0.7), mt: 1, textAlign: 'center', fontWeight: 400 }}
         >
-          {completedExercisesCount} of {totalExercises} exercises completed
+          {completedSetsCount} of {totalSetsCount} sets completed
         </Typography>
       </Box>
     </Paper>

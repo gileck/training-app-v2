@@ -63,8 +63,11 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
     };
     const accentColor = getAccentColor();
 
-    const handleHeaderClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleCardClick = (e: React.MouseEvent) => {
+        // Prevent click action if clicking on interactive elements like buttons
+        if ((e.target as HTMLElement).closest('button')) {
+            return;
+        }
         if (showSelectionMode && handleExerciseSelect) {
             handleExerciseSelect(exerciseId);
         }
@@ -74,6 +77,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
         <>
             <Paper
                 elevation={2}
+                onClick={handleCardClick}
                 sx={{
                     mb: 2.5,
                     bgcolor: LIGHT_CARD,
@@ -88,59 +92,18 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                         boxShadow: isSelected
                             ? `0 8px 16px ${alpha(NEON_PINK, 0.25)}`
                             : `0 8px 16px ${alpha(accentColor, 0.15)}`,
-                        transform: 'translateY(-3px)'
+                        transform: 'translateY(-3px)',
+                        cursor: showSelectionMode ? 'pointer' : 'default'
                     }
                 }}
             >
-                <Box
-                    onClick={handleHeaderClick}
-                    sx={{
-                        p: 1.5,
-                        bgcolor: isSelected ? alpha(NEON_PINK, 0.1) : alpha(accentColor, 0.05),
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderBottom: `1px solid ${isSelected ? alpha(NEON_PINK, 0.3) : alpha(accentColor, 0.1)}`,
-                        cursor: showSelectionMode ? 'pointer' : 'default' // Only show pointer if selectable
-                    }}
-                >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {isSelected && (
-                            <CheckCircleIcon sx={{ color: NEON_PINK }} />
-                        )}
-                        <Typography
-                            variant="subtitle1"
-                            sx={{
-                                fontWeight: 'bold',
-                                color: isSelected ? NEON_PINK : '#333',
-                                textShadow: isSelected
-                                    ? `0 0 1px ${alpha(NEON_PINK, 0.3)}`
-                                    : `0 0 1px ${alpha(accentColor, 0.3)}`
-                            }}
-                        >
-                            {exercise.name || `Exercise: ${exercise._id}`}
-                        </Typography>
-                        {isExerciseComplete && !isSelected && (
-                            <CheckCircleIcon sx={{ color: NEON_GREEN }} />
-                        )}
-                    </Box>
-                </Box>
-                <LinearProgress
-                    variant="determinate"
-                    value={progressPercent}
-                    sx={{
-                        height: 4,
-                        bgcolor: alpha(isSelected ? NEON_PINK : accentColor, 0.1),
-                        '& .MuiLinearProgress-bar': {
-                            bgcolor: isSelected ? NEON_PINK : accentColor
-                        }
-                    }}
-                />
-                <Box sx={{ p: 2, display: 'flex', gap: 2 }}>
+                {/* Main content area: Image on left, details on right */}
+                <Box sx={{ display: 'flex', p: 1.5, gap: 2 }}>
+                    {/* Image on the left */}
                     <Box
                         sx={{
-                            width: 80,
-                            height: 80,
+                            width: 100, // Adjusted width for the image
+                            height: 100, // Adjusted height for the image
                             position: 'relative',
                             borderRadius: 2,
                             overflow: 'hidden',
@@ -170,125 +133,148 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                             </Box>
                         )}
                     </Box>
-                    <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" sx={{ color: alpha('#000000', 0.7) }}>
-                            {exercise.reps} reps
-                            {exercise.definition?.bodyWeight ? ' (body weight)' : ''}
-                            {exercise.weight !== undefined && !exercise.definition?.bodyWeight && ` • ${exercise.weight}kg`}
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 1 }}>
-                            <Typography sx={{ color: alpha('#000000', 0.8), fontWeight: 'medium' }}>
-                                Sets: {setsDone}/{totalSets}
-                            </Typography>
-                            {exercise.definition?.hasComments && (
-                                <Chip
-                                    label="Comments"
-                                    size="small"
+
+                    {/* Details section on the right */}
+                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <Box> {/* Top part of details: Name, Reps, Sets */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Typography
+                                    variant="h6" // Larger for exercise name
                                     sx={{
-                                        height: 20,
-                                        fontSize: '0.65rem',
-                                        bgcolor: alpha(NEON_PINK, 0.1),
-                                        color: NEON_PINK,
-                                        border: `1px solid ${alpha(NEON_PINK, 0.2)}`
+                                        fontWeight: 'bold',
+                                        color: isSelected ? NEON_PINK : '#333',
+                                        mb: 0.5,
+                                        textShadow: isSelected
+                                            ? `0 0 1px ${alpha(NEON_PINK, 0.3)}`
+                                            : `0 0 1px ${alpha(accentColor, 0.3)}`
                                     }}
-                                />
-                            )}
+                                >
+                                    {exercise.name || `Exercise: ${exercise._id}`}
+                                </Typography>
+                                <IconButton
+                                    onClick={(e) => { e.stopPropagation(); handleOpenDetailModal(); }}
+                                    size="small"
+                                    sx={{ color: NEON_PURPLE, mt: -0.5 }} // Align with top
+                                >
+                                    <InfoIcon fontSize="small" />
+                                </IconButton>
+                            </Box>
+
+                            <Typography variant="body2" sx={{ color: alpha('#000000', 0.7), mb: 0.5 }}>
+                                {exercise.reps} reps
+                                {exercise.definition?.bodyWeight ? ' (body weight)' : ''}
+                                {exercise.weight !== undefined && !exercise.definition?.bodyWeight && ` • ${exercise.weight}kg`}
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <Typography sx={{ color: alpha('#000000', 0.8), fontWeight: 'medium' }}>
+                                    Sets: {setsDone}/{totalSets}
+                                </Typography>
+                                {isExerciseComplete && !isSelected && (
+                                    <CheckCircleIcon sx={{ color: NEON_GREEN, fontSize: '1.2rem' }} />
+                                )}
+                                {exercise.definition?.hasComments && (
+                                    <Chip
+                                        label="Comments"
+                                        size="small"
+                                        sx={{
+                                            height: 20,
+                                            fontSize: '0.65rem',
+                                            bgcolor: alpha(NEON_PINK, 0.1),
+                                            color: NEON_PINK,
+                                            border: `1px solid ${alpha(NEON_PINK, 0.2)}`
+                                        }}
+                                    />
+                                )}
+                            </Box>
                         </Box>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+
+                        {/* Progress bar moved here - below name/reps/sets */}
+                        <LinearProgress
+                            variant="determinate"
+                            value={progressPercent}
+                            sx={{
+                                height: 6, // Slightly thicker as per drawing
+                                borderRadius: 1,
+                                bgcolor: alpha(isSelected ? NEON_PINK : accentColor, 0.15),
+                                '& .MuiLinearProgress-bar': {
+                                    bgcolor: isSelected ? NEON_PINK : accentColor,
+                                    borderRadius: 1,
+                                },
+                                my: 1 // Margin top and bottom
+                            }}
+                        />
+                    </Box>
+                </Box>
+
+                {/* Controls and Chips Section - Revised as per new drawing */}
+                <Box sx={{ px: 1.5, pb: 0.5 }}>
+                    <Divider sx={{ bgcolor: alpha('#000000', 0.12), my: 1.5 }} />
+
+                    {/* First Row: Primary Muscle Chip + Controls */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', minWidth: 'fit-content' }}>
                             {exercise.definition?.primaryMuscle && (
                                 <Chip
                                     label={exercise.definition.primaryMuscle}
                                     size="small"
                                     sx={{
-                                        height: 22,
-                                        fontSize: '0.7rem',
-                                        bgcolor: alpha(NEON_BLUE, 0.1),
+                                        height: 24,
+                                        fontSize: '0.75rem',
+                                        bgcolor: alpha(NEON_BLUE, 0.15),
                                         color: NEON_BLUE,
-                                        border: `1px solid ${alpha(NEON_BLUE, 0.2)}`
+                                        border: `1px solid ${alpha(NEON_BLUE, 0.3)}`,
+                                        fontWeight: 500
                                     }}
                                 />
                             )}
-                            {exercise.definition?.secondaryMuscles?.map((muscle, index) => (
-                                <Chip
-                                    key={index}
-                                    label={muscle}
-                                    size="small"
-                                    sx={{
-                                        height: 22,
-                                        fontSize: '0.7rem',
-                                        bgcolor: alpha('#000000', 0.05),
-                                        color: alpha('#000000', 0.6),
-                                        border: `1px solid ${alpha('#000000', 0.1)}`
-                                    }}
-                                />
-                            ))}
+                            {/* Secondary muscles removed as per new design */}
                         </Box>
+
+                        <Stack direction="row" spacing={1}>
+                            <IconButton
+                                onClick={(e) => { e.stopPropagation(); handleSetCheckboxClick(exerciseId, setsDone - 1, setsDone, totalSets); }}
+                                size="small"
+                                disabled={isUpdating || setsDone <= 0}
+                                sx={{
+                                    color: '#333',
+                                    bgcolor: alpha('#000000', 0.05),
+                                    '&:hover': { bgcolor: alpha('#000000', 0.08) },
+                                    '&.Mui-disabled': { color: alpha('#000000', 0.3) },
+                                    width: 36, height: 36
+                                }}
+                            >
+                                <RemoveIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                                onClick={(e) => { e.stopPropagation(); handleSetCheckboxClick(exerciseId, setsDone + 1, setsDone, totalSets); }}
+                                size="medium"
+                                disabled={isUpdating || setsDone >= totalSets}
+                                sx={{
+                                    color: '#fff',
+                                    bgcolor: alpha(NEON_BLUE, 0.9),
+                                    '&:hover': { bgcolor: NEON_BLUE },
+                                    '&.Mui-disabled': { color: '#fff', bgcolor: alpha(NEON_BLUE, 0.4) },
+                                    width: 36, height: 36
+                                }}
+                            >
+                                <AddIcon />
+                            </IconButton>
+                            <IconButton
+                                onClick={(e) => { e.stopPropagation(); handleCompleteAllSets(exerciseId, setsDone, totalSets); }}
+                                size="small"
+                                disabled={isUpdating || setsDone >= totalSets}
+                                sx={{
+                                    color: '#fff',
+                                    bgcolor: alpha(NEON_GREEN, 0.9),
+                                    '&:hover': { bgcolor: NEON_GREEN },
+                                    '&.Mui-disabled': { color: '#fff', bgcolor: alpha(NEON_GREEN, 0.4) },
+                                    width: 36, height: 36
+                                }}
+                            >
+                                <DoneAllIcon fontSize="small" />
+                            </IconButton>
+                        </Stack>
                     </Box>
-                </Box>
-                <Divider sx={{ bgcolor: alpha('#000000', 0.05) }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1.5 }}>
-                    <IconButton
-                        onClick={handleOpenDetailModal}
-                        size="small"
-                        sx={{ color: NEON_PURPLE }}
-                    >
-                        <InfoIcon fontSize="small" />
-                    </IconButton>
-                    <Stack direction="row" spacing={1.5}>
-                        <IconButton
-                            onClick={() => handleSetCheckboxClick(exerciseId, setsDone - 2, setsDone, totalSets)}
-                            size="small"
-                            disabled={isUpdating || setsDone <= 0}
-                            sx={{
-                                color: '#333',
-                                bgcolor: alpha('#000000', 0.03),
-                                '&:hover': {
-                                    bgcolor: alpha('#000000', 0.06)
-                                },
-                                '&.Mui-disabled': {
-                                    color: alpha('#000000', 0.2)
-                                }
-                            }}
-                        >
-                            <RemoveIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                            onClick={() => handleSetCheckboxClick(exerciseId, setsDone, setsDone, totalSets)}
-                            size="small"
-                            disabled={isUpdating || setsDone >= totalSets}
-                            sx={{
-                                color: '#fff',
-                                bgcolor: alpha(NEON_BLUE, 0.8),
-                                '&:hover': {
-                                    bgcolor: NEON_BLUE
-                                },
-                                '&.Mui-disabled': {
-                                    color: '#fff',
-                                    bgcolor: alpha(NEON_BLUE, 0.4)
-                                }
-                            }}
-                        >
-                            <AddIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                            onClick={() => handleCompleteAllSets(exerciseId, setsDone, totalSets)}
-                            size="small"
-                            disabled={isUpdating || setsDone >= totalSets}
-                            sx={{
-                                color: '#fff',
-                                bgcolor: alpha(NEON_GREEN, 0.8),
-                                '&:hover': {
-                                    bgcolor: NEON_GREEN
-                                },
-                                '&.Mui-disabled': {
-                                    color: '#fff',
-                                    bgcolor: alpha(NEON_GREEN, 0.4)
-                                }
-                            }}
-                        >
-                            <DoneAllIcon fontSize="small" />
-                        </IconButton>
-                    </Stack>
                 </Box>
             </Paper>
             <ExerciseDetailModal

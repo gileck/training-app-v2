@@ -109,10 +109,10 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
 
     useEffect(() => {
         const fetchExerciseDefinition = async () => {
-            if (!exercise || !exercise.definition) return;
+            if (!exercise) return;
 
-            // Use the exercise definitionId if it exists
-            const definitionId = exercise._id.toString();
+            // Use the exerciseDefinitionId from the ExerciseBase part of WorkoutExercise
+            const definitionId = exercise.exerciseDefinitionId.toString();
 
             setIsLoading(true);
             setError(null);

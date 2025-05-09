@@ -15,7 +15,7 @@ import { WorkoutExerciseItem } from './WorkoutExerciseItem';
 
 // --- Color constants (assuming these are used by WorkoutExerciseItem too) ---
 const LIGHT_PAPER = '#F5F5F7';
-const NEON_BLUE = '#3D5AFE';
+// const NEON_BLUE = '#3D5AFE'; // Removed as it's unused
 const NEON_PINK = '#D500F9';
 
 export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
@@ -34,7 +34,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
         <Box>
             {/* Actions */}
             <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography
+                {/* <Typography
                     variant="h6"
                     sx={{
                         fontSize: { xs: '1.1rem', sm: '1.25rem' },
@@ -43,9 +43,9 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
                     }}
                 >
                     Exercises
-                </Typography>
+                </Typography> */}
 
-                {selectedExercises.length > 0 && (
+                {/* {selectedExercises.length > 0 && (
                     <Chip
                         label={`${selectedExercises.length} Selected`}
                         onDelete={() => {
@@ -66,7 +66,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
                             }
                         }}
                     />
-                )}
+                )} */}
             </Box>
 
             {/* Exercises list */}
@@ -90,7 +90,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
                 <Box>
                     {/* Active Exercises */}
                     <Box sx={{ mb: 4 }}>
-                        {activeExercises.length > 0 && (
+                        {/* {activeExercises.length > 0 && (
                             <Typography
                                 variant="subtitle1"
                                 sx={{
@@ -104,7 +104,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
                             >
                                 Active Exercises
                             </Typography>
-                        )}
+                        )} */}
                         {activeExercises.map((exercise) => (
                             <WorkoutExerciseItem
                                 key={exercise._id.toString()}

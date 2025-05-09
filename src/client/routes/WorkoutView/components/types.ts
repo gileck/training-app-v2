@@ -49,6 +49,8 @@ export interface WorkoutViewProps {
     progressPercentage: number;
     totalExercises: number;
     completedExercisesCount: number;
+    completedSetsCount: number;
+    totalSetsCount: number;
     savedWorkouts: EnhancedWorkout[];
     isWorkoutsLoading: boolean;
 
@@ -94,12 +96,6 @@ export interface WeekNavigatorProps {
     maxWeeks: number;
     onNavigate: (week: number) => void;
     isWeekLoading?: boolean;
-}
-
-export interface WeeklyProgressDisplayProps {
-    progressPercentage: number;
-    completedExercisesCount: number;
-    totalExercises: number;
 }
 
 export interface MainTabsProps {

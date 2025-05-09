@@ -36,6 +36,8 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     progressPercentage,
     totalExercises,
     completedExercisesCount,
+    completedSetsCount,
+    totalSetsCount,
     savedWorkouts,
     isWorkoutsLoading,
 
@@ -144,7 +146,7 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
     // The `planId` variable here is now effectively string, and `planDetails` is WorkoutDetails.
 
     return (
-        <Box sx={{ p: { xs: 1, sm: 2, md: 3 }, bgcolor: LIGHT_BG, color: '#333', minHeight: '100vh' }}>
+        <Box sx={{ p: { xs: 0, sm: 2, md: 3 }, bgcolor: LIGHT_BG, color: '#333', minHeight: '100vh' }}>
             {planHeaderOutputComponent}
 
             {planDetails && planDetails.durationWeeks > 0 && (
@@ -154,20 +156,20 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
                     onNavigate={handleLocalWeekNavigate}
                     isWeekLoading={isWeekLoading}
                     progressPercentage={progressPercentage}
-                    completedExercisesCount={completedExercisesCount}
-                    totalExercises={totalExercises}
+                    completedSetsCount={completedSetsCount}
+                    totalSetsCount={totalSetsCount}
                 />
             )}
 
             <Tabs
                 value={activeTab}
                 onChange={handleTabChange}
-                sx={{ mb: 3, '& .MuiTabs-indicator': { backgroundColor: NEON_PURPLE } }}
+                sx={{ '& .MuiTabs-indicator': { backgroundColor: NEON_PURPLE } }}
             >
                 <Tab label="Exercises" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === EXERCISES_TAB_INDEX ? NEON_PURPLE : alpha('#000000', 0.6), '&.Mui-selected': { color: NEON_PURPLE } }} />
                 <Tab label="Workouts" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === WORKOUTS_TAB_INDEX ? NEON_PURPLE : alpha('#000000', 0.6), '&.Mui-selected': { color: NEON_PURPLE } }} />
-                <Tab 
-                    label="Active Workout" 
+                <Tab
+                    label="Active Workout"
                     disabled={!activeWorkoutSession || activeWorkoutSession.length === 0}
                     sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === ACTIVE_WORKOUT_TAB_INDEX ? NEON_PURPLE : alpha('#000000', 0.6), '&.Mui-selected': { color: NEON_PURPLE } }}
                 />
@@ -175,24 +177,24 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
 
             {activeTab === EXERCISES_TAB_INDEX && (
                 <ExerciseTabContent
-                    planId={planId} weekNumber={weekNumber} activeExercises={activeExercises} completedExercises={completedExercises} 
+                    planId={planId} weekNumber={weekNumber} activeExercises={activeExercises} completedExercises={completedExercises}
                     showCompleted={showCompleted} selectedExercises={selectedExercises} showSelectionMode={showSelectionMode}
-                    handleSetCompletionUpdate={handleSetCompletionUpdate} handleExerciseSelect={handleExerciseSelect} 
+                    handleSetCompletionUpdate={handleSetCompletionUpdate} handleExerciseSelect={handleExerciseSelect}
                     toggleShowCompleted={toggleShowCompleted}
                 />
             )}
             {activeTab === WORKOUTS_TAB_INDEX && (
                 <WorkoutTabContent
                     planId={planId} weekNumber={weekNumber} savedWorkouts={savedWorkouts} isWorkoutsLoading={isWorkoutsLoading}
-                    toggleWorkoutExpanded={toggleWorkoutExpanded} 
+                    toggleWorkoutExpanded={toggleWorkoutExpanded}
                     handleSavedWorkoutExerciseSetCompletionUpdate={handleSavedWorkoutExerciseSetCompletionUpdate}
                     startActiveWorkout={startActiveWorkout}
                 />
             )}
             {activeTab === ACTIVE_WORKOUT_TAB_INDEX && activeWorkoutSession && activeWorkoutSession.length > 0 && (
-                <ActiveWorkoutContent 
-                    exercises={activeWorkoutSession} 
-                    workoutName={activeWorkoutName} 
+                <ActiveWorkoutContent
+                    exercises={activeWorkoutSession}
+                    workoutName={activeWorkoutName}
                     onIncrementSet={onIncrementActiveSet}
                     onDecrementSet={onDecrementActiveSet}
                     onEndWorkout={onEndActiveWorkout}
@@ -204,7 +206,7 @@ export const NeonLightWorkoutView: React.FC<WorkoutViewProps> = ({
             {showSelectionMode && selectedExercises.length > 0 && activeTab === EXERCISES_TAB_INDEX && (
                 <SelectedExercisesBar
                     selectedExercises={selectedExercises}
-                    activeTab={activeTab} 
+                    activeTab={activeTab}
                     handleStartWorkout={handleStartWorkout} // This will now replace the active session if one exists
                 />
             )}
