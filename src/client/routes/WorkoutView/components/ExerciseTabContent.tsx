@@ -4,7 +4,6 @@ import {
     Typography,
     Button,
     Paper,
-    Chip,
     alpha
 } from '@mui/material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -16,7 +15,7 @@ import { WorkoutExerciseItem } from './WorkoutExerciseItem';
 // --- Color constants (assuming these are used by WorkoutExerciseItem too) ---
 const LIGHT_PAPER = '#F5F5F7';
 // const NEON_BLUE = '#3D5AFE'; // Removed as it's unused
-const NEON_PINK = '#D500F9';
+// const NEON_PINK = '#D500F9'; // Removed as it's unused
 
 export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
     planId,
