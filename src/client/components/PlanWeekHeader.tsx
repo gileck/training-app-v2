@@ -5,7 +5,6 @@ import {
   Stack,
   Typography,
   IconButton,
-  CircularProgress,
   LinearProgress,
   alpha,
   keyframes
@@ -187,9 +186,6 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
           <ArrowBackIcon />
         </IconButton>
         <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          {isWeekLoading && (
-            <CircularProgress size={24} sx={{ color: NEON_BLUE, position: 'absolute', left: -36, mx: 'auto' }} />
-          )}
           <Typography
             variant="h6"
             sx={{
@@ -252,40 +248,31 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
         </Stack>
         <LinearProgress
           variant="determinate"
-          value={progressPercentage > 100 ? 100 : progressPercentage}
+          value={progressPercentage}
           sx={{
-            height: 8,
-            borderRadius: 4,
-            bgcolor: alpha(isCompleted ? NEON_GREEN : NEON_BLUE, 0.1),
+            height: 10,
+            borderRadius: 2,
+            bgcolor: alpha(isCompleted ? NEON_GREEN : NEON_BLUE, 0.15),
             '& .MuiLinearProgress-bar': {
               bgcolor: isCompleted ? NEON_GREEN : NEON_BLUE,
-              borderRadius: 4,
-              ...(showAnimation && {
-                backgroundImage: `linear-gradient(90deg, ${NEON_GREEN} 0%, ${alpha(NEON_GREEN, 0.7)} 50%, ${NEON_GREEN} 100%)`,
+              borderRadius: 2,
+              transition: 'transform .4s linear',
+              ...(showAnimation && isCompleted && {
+                animation: `${shimmerAnimation} 2s infinite`,
+                backgroundImage: `linear-gradient(to right, ${alpha(NEON_GREEN, 0.15)} 0%, ${alpha(NEON_GREEN, 0.5)} 50%, ${alpha(NEON_GREEN, 0.15)} 100%)`,
                 backgroundSize: '200% 100%',
-                animation: `${shimmerAnimation} 1.5s infinite linear`,
               }),
             }
           }}
         />
-        <Typography
-          variant="body2"
-          sx={{
-            color: alpha('#000', 0.7),
-            mt: 1,
-            textAlign: 'center',
-            fontWeight: isCompleted ? 500 : 400,
-            ...(showAnimation && isCompleted && {
-              color: NEON_GREEN,
-              fontWeight: 600,
-              transition: 'all 0.3s ease-in-out',
-            })
-          }}
-        >
-          {completedSetsCount} of {totalSetsCount} sets completed
-          {isCompleted && !showAnimation && " 🎉"}
-          {showAnimation && isCompleted && " 🤩"}
-        </Typography>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
+          <Typography variant="body2" sx={{ color: '#555', fontWeight: 500 }}>
+            Sets: {completedSetsCount}/{totalSetsCount}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#555', fontWeight: 500 }}>
+            {isCompleted ? 'Week Complete!' : 'Keep Going!'}
+          </Typography>
+        </Stack>
       </Box>
     </Paper>
   );

@@ -53,7 +53,10 @@ export const useWorkoutView = () => {
         onRemoveExerciseFromActiveSession,
     } = useActiveWorkoutSession(
         setActiveTabState,
-        useCallback(() => clearSelectionsRef.current(), []) // Use the ref's current value
+        useCallback(() => clearSelectionsRef.current(), []),
+        planId,             // Pass planId as currentPlanId
+        weekNumber,         // Pass weekNumber as currentWeekNumber
+        handleSetCompletionUpdate // Pass handleSetCompletionUpdate as onMainSetCompletionUpdate
     );
 
     // Pass true as the initial selection mode state
@@ -84,8 +87,7 @@ export const useWorkoutView = () => {
         toggleWorkoutExpanded,
     } = useSavedWorkoutsData(
         planId,
-        workoutExercises,
-        handleSetCompletionUpdate
+        workoutExercises
     );
 
     const {
@@ -114,7 +116,7 @@ export const useWorkoutView = () => {
         if (selectedExercisesDetails.length > 0) {
             startActiveWorkout(
                 selectedExercisesDetails,
-                'Selected Workout'
+                'Workout'
             );
         }
     }, [selectedExercisesDetails, startActiveWorkout]);
@@ -149,15 +151,21 @@ export const useWorkoutView = () => {
         setIsSavingWorkout(true);
         setSaveError(null);
         try {
+            // Ensure planId is available for the workout
+            if (!planId) {
+                setSaveError("Cannot save workout: Training Plan ID is missing.");
+                setIsSavingWorkout(false);
+                return;
+            }
             await createSavedWorkout({
                 name,
                 exerciseIds: selectedExercisesDetails.map(ex => ex._id.toString()),
+                trainingPlanId: planId
             });
-            // Optionally, refresh saved workouts list or give feedback
-            fetchSavedWorkoutStructures(); // Refresh the list of saved workouts
-            clearSelections(); // Clear selection after saving
+            fetchSavedWorkoutStructures();
+            clearSelections(); // Clear selection after saving from selection bar
         } catch (err) {
-            console.error("Failed to save workout:", err);
+            console.error("Failed to save workout from selection:", err);
             setSaveError(err instanceof Error ? err.message : "Could not save workout");
         } finally {
             setIsSavingWorkout(false);
@@ -165,7 +173,50 @@ export const useWorkoutView = () => {
     }, [
         selectedExercisesDetails,
         clearSelections,
-        fetchSavedWorkoutStructures
+        fetchSavedWorkoutStructures,
+        planId
+    ]);
+
+    const handleSaveActiveSessionAsNewWorkout = useCallback(async (name: string) => {
+        if (!activeWorkoutSession || activeWorkoutSession.length === 0) {
+            setSaveError("No exercises in the current session to save.");
+            return;
+        }
+        setIsSavingWorkout(true);
+        setSaveError(null);
+        try {
+            // Ensure planId is available for the workout
+            if (!planId) {
+                setSaveError("Cannot save workout: Training Plan ID is missing.");
+                setIsSavingWorkout(false);
+                return;
+            }
+            const newWorkout = await createSavedWorkout({
+                name,
+                exerciseIds: activeWorkoutSession.map(ex => ex._id.toString()),
+                trainingPlanId: planId
+            });
+            await fetchSavedWorkoutStructures(); // Refresh saved workouts list
+            // Optionally, restart the current session with the new name to reflect its saved state
+            // This will also clear the "Save Workout" button condition if it depends on the default name
+            if (newWorkout && newWorkout.data) { // Assuming createSavedWorkout returns the new workout data
+                // To properly update the UI and potentially the workout ID for progress tracking,
+                // we might need to adjust how activeWorkoutSession handles IDs or re-fetch exercise details.
+                // For now, just updating the name.
+                startActiveWorkout(activeWorkoutSession, name); // Restart with new name
+            }
+            // No need to call clearSelections() here as it's about the active session not the selection bar
+        } catch (err) {
+            console.error("Failed to save active session:", err);
+            setSaveError(err instanceof Error ? err.message : "Could not save active session");
+        } finally {
+            setIsSavingWorkout(false);
+        }
+    }, [
+        activeWorkoutSession,
+        fetchSavedWorkoutStructures,
+        startActiveWorkout,
+        planId
     ]);
 
     return {
@@ -231,6 +282,7 @@ export const useWorkoutView = () => {
         isSavingWorkout,
         saveError,
         handleSaveWorkout,
+        handleSaveActiveSessionAsNewWorkout,
 
         // Constants
         EXERCISES_TAB_INDEX,

@@ -4,10 +4,10 @@ import { Settings } from './Settings';
 import { FileManager } from './FileManager';
 import { AIMonitoring } from './AIMonitoring';
 import { TrainingPlans } from './TrainingPlans';
-import { ManagePlanExercises } from './ManagePlanExercises';
+import { ManageTrainingPlanPage } from './ManageTrainingPlanPage';
 import { WorkoutView } from './WorkoutView';
 import { WorkoutPage } from './WorkoutPage';
-import { SavedWorkouts } from './SavedWorkouts';
+import { ManageWorkouts } from './ManageWorkouts';
 import { createRoutes } from '../router';
 import { ProgressView } from './ProgressView';
 // Define routes
@@ -15,7 +15,7 @@ export const routes = createRoutes({
   '/': WorkoutView,
   '/ai-chat': AIChat,
   '/training-plans': TrainingPlans,
-  '/training-plans/:planId/exercises': ManagePlanExercises,
+  '/training-plans/:planId/exercises': ManageTrainingPlanPage,
   '/workout/:planId/:weekNumber': WorkoutView,
   '/settings': Settings,
   '/file-manager': FileManager,
@@ -23,6 +23,6 @@ export const routes = createRoutes({
   '/not-found': NotFound,
   '/training-plans/:planId/weeks/:weekNumber/workout': WorkoutPage,
   '/workout-page': WorkoutPage,
-  '/saved-workouts': SavedWorkouts,
+  '/manage-workouts': ManageWorkouts,
   '/progress-view': ProgressView
 });

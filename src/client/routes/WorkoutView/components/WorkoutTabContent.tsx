@@ -4,7 +4,6 @@ import {
     Typography,
     Button,
     Paper,
-    CircularProgress,
     alpha,
     IconButton,
     LinearProgress,
@@ -12,12 +11,15 @@ import {
 } from '@mui/material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import SettingsIcon from '@mui/icons-material/Settings';
+import { useRouter } from '@/client/router';
 
 import { WorkoutTabContentProps, EnhancedWorkout } from './types';
 import { WeeklyProgressBase } from '../../../../apis/weeklyProgress/types';
 import { WorkoutExercise } from '../../../types/workout';
 
 import { WorkoutExerciseItem } from './WorkoutExerciseItem';
+import { WorkoutItemSkeleton } from './WorkoutItemSkeleton';
 
 // --- Color constants ---
 const LIGHT_PAPER = '#F5F5F7';
@@ -70,7 +72,7 @@ const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, 
                         </Typography>
                     </Box>
                 </Box>
-                <Button 
+                <Button
                     variant="contained"
                     size="small"
                     onClick={(e) => {
@@ -82,12 +84,12 @@ const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, 
                         }
                     }}
                     sx={{
-                        bgcolor: NEON_GREEN, 
+                        bgcolor: NEON_GREEN,
                         color: 'white',
-                        textTransform: 'none', 
-                        fontWeight: 'bold', 
-                        borderRadius: 2, 
-                        px: 2, 
+                        textTransform: 'none',
+                        fontWeight: 'bold',
+                        borderRadius: 2,
+                        px: 2,
                         ml: 1,
                         '&:hover': { bgcolor: alpha(NEON_GREEN, 0.85) }
                     }}
@@ -150,44 +152,36 @@ export const WorkoutTabContent: React.FC<WorkoutTabContentProps> = ({
     handleSavedWorkoutExerciseSetCompletionUpdate,
     startActiveWorkout
 }) => {
-    return (
-        <Box>
-            {/* Workouts header */}
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography
-                    variant="h6"
-                    sx={{
-                        fontSize: { xs: '1.1rem', sm: '1.25rem' },
-                        fontWeight: 'bold',
-                        color: '#333'
-                    }}
-                >
-                    Saved Workouts
-                </Typography>
+    const { navigate } = useRouter();
 
+    return (
+        <Box sx={{ py: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
                 <Button
                     variant="contained"
-                    size="small"
+                    onClick={() => navigate('/manage-workouts')}
+                    startIcon={<SettingsIcon />}
                     sx={{
                         bgcolor: NEON_BLUE,
                         textTransform: 'none',
                         fontWeight: 'bold',
-                        borderRadius: 8,
+                        borderRadius: 2,
                         px: 2,
                         '&:hover': {
                             bgcolor: alpha(NEON_BLUE, 0.9)
                         }
                     }}
-                // onClick={() => navigate('/create-workout')} // Or handle via callback
                 >
-                    Create New
+                    Manage Workouts
                 </Button>
             </Box>
 
             {/* Workouts list */}
             {isWorkoutsLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 8 }}>
-                    <CircularProgress sx={{ color: NEON_BLUE }} />
+                <Box sx={{ mt: 0, mb: 2 }}>
+                    <WorkoutItemSkeleton />
+                    <WorkoutItemSkeleton />
+                    <WorkoutItemSkeleton />
                 </Box>
             ) : savedWorkouts.length === 0 ? (
                 <Paper

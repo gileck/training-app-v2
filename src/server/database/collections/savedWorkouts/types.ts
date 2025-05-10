@@ -13,6 +13,7 @@ export interface SavedWorkout {
   tags?: string[];     // Optional array of tags
   createdAt: Date;
   updatedAt: Date;
+  planId: ObjectId;
 }
 
 /**
@@ -50,4 +51,5 @@ export interface SavedWorkoutFilter {
   userId?: ObjectId;
   name?: string | RegExp;
   tags?: { $in: string[] };
+  planId?: ObjectId;
 } 

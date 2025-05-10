@@ -15,7 +15,10 @@ import {
   getAllApiName as savedWorkoutsGetAllApiName,
   createApiName as savedWorkoutsCreateApiName,
   deleteApiName as savedWorkoutsDeleteApiName,
-  getDetailsApiName as savedWorkoutsGetDetailsApiName
+  getDetailsApiName as savedWorkoutsGetDetailsApiName,
+  addExerciseApiName as savedWorkoutsAddExerciseApiName,
+  removeExerciseApiName as savedWorkoutsRemoveExerciseApiName,
+  renameApiName as savedWorkoutsRenameApiName
 } from './savedWorkouts/index';
 import * as savedWorkoutsServer from './savedWorkouts/server';
 
@@ -58,4 +61,7 @@ export const apiHandlers: ApiHandlers = {
   [savedWorkoutsCreateApiName]: { process: savedWorkoutsServer.createSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [savedWorkoutsDeleteApiName]: { process: savedWorkoutsServer.deleteSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [savedWorkoutsGetDetailsApiName]: { process: savedWorkoutsServer.getSavedWorkoutDetails as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [savedWorkoutsAddExerciseApiName]: { process: savedWorkoutsServer.addExerciseToSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [savedWorkoutsRemoveExerciseApiName]: { process: savedWorkoutsServer.removeExerciseFromSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [savedWorkoutsRenameApiName]: { process: savedWorkoutsServer.renameSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> }
 };

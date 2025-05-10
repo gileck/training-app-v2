@@ -1,14 +1,29 @@
 import React from 'react';
-import { Box } from '@mui/material';
+// import { Box, CircularProgress, Typography } from '@mui/material'; // Commented out as they are unused
+import { NeonLightWorkoutView } from './components/MainView';
+// import { useWorkoutView } from './hooks/useWorkoutView'; // No longer used here
 
-import { useWorkoutView } from './hooks/useWorkoutView';
-import { NeonLightWorkoutView } from './components';
+export const WorkoutView: React.FC = () => {
+    // const workoutViewProps = useWorkoutView(); // Hook is called in NeonLightWorkoutView
 
-export const WorkoutView = () => {
-    const workoutViewProps = useWorkoutView();
+    // if (workoutViewProps.isLoading && !workoutViewProps.planDetails) {
+    //     return (
+    //         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    //             <CircularProgress />
+    //         </Box>
+    //     );
+    // }
+
+    // if (workoutViewProps.error && !workoutViewProps.isLoading) {
+    //     return (
+    //         <Box sx={{ p: 3, textAlign: 'center' }}>
+    //             <Typography variant="h6" color="error">Error</Typography>
+    //             <Typography>{workoutViewProps.error}</Typography>
+    //         </Box>
+    //     );
+    // }
+
     return (
-        <Box>
-            <NeonLightWorkoutView {...workoutViewProps} />
-        </Box>
+        <NeonLightWorkoutView /> // Render without props
     );
 }; 

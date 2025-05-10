@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { WorkoutExercise } from '@/client/types/workout';
 
 export interface UseExerciseSelectionReturn {
@@ -12,27 +12,22 @@ export interface UseExerciseSelectionReturn {
 }
 
 export const useExerciseSelection = (
-    allWorkoutExercises: WorkoutExercise[], // All exercises available for selection
-    activeWorkoutSession: WorkoutExercise[] | null, // To prevent selection if active workout
-    initialSelectionMode: boolean = false // Optional parameter to set initial selection mode
+    allWorkoutExercises: WorkoutExercise[],
+    activeWorkoutSession: WorkoutExercise[] | null,
+    initialSelectionMode: boolean = false
 ): UseExerciseSelectionReturn => {
     const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
     const [showSelectionMode, setShowSelectionMode] = useState(initialSelectionMode);
 
-    // Clear selections when activeWorkoutSession changes
-    useEffect(() => {
-        if (activeWorkoutSession) {
-            setSelectedExercises([]);
-            setShowSelectionMode(false);
-        }
-    }, [activeWorkoutSession]);
+    // Effect to manage selection mode based on active workout removed,
+    // as we now want to allow selection even if a workout is active.
+    // The initialSelectionMode prop will set the default state.
 
     const handleExerciseSelect = useCallback((exerciseId: string) => {
-        if (!showSelectionMode) return;
+        if (!showSelectionMode) return; // Still respect if user manually turned off selection mode
 
         setSelectedExercises(prev => {
             const isAlreadySelected = prev.includes(exerciseId);
-
             if (isAlreadySelected) {
                 return prev.filter(id => id !== exerciseId);
             } else {
@@ -42,34 +37,31 @@ export const useExerciseSelection = (
     }, [showSelectionMode]);
 
     const toggleSelectionMode = useCallback(() => {
-        // Don't allow entering selection mode if there's an active workout
-        if (activeWorkoutSession && !showSelectionMode) {
-            return;
-        }
-
+        // Guard preventing toggle during active workout is removed.
         setShowSelectionMode(prev => {
-            if (prev) { // If exiting selection mode, clear selections
-                setSelectedExercises([]);
+            const newMode = !prev;
+            if (prev && newMode === false) { // If user is manually turning OFF selection mode
+                setSelectedExercises([]); // Clear selections when turning off selection mode
             }
-            return !prev;
+            return newMode;
         });
-    }, [activeWorkoutSession, showSelectionMode]);
+    }, []); // Removed activeWorkoutSession from dependencies
 
     const clearSelections = useCallback(() => {
         setSelectedExercises([]);
-        setShowSelectionMode(false);
+        // We don't necessarily turn off selection mode here, 
+        // as clearing might be for re-selecting.
+        // User can use toggleSelectionMode to explicitly turn it off.
     }, []);
 
     const handleSelectAll = useCallback((exercisesToSelect: WorkoutExercise[]) => {
-        if (activeWorkoutSession) {
-            return;
-        }
+        // Guard preventing select all during active workout is removed.
         const allIds = exercisesToSelect.map(ex => ex._id.toString());
         setSelectedExercises(allIds);
         if (!showSelectionMode && allIds.length > 0) {
-            setShowSelectionMode(true);
+            setShowSelectionMode(true); // Automatically enter selection mode if not already in it
         }
-    }, [activeWorkoutSession, showSelectionMode]);
+    }, [showSelectionMode]);
 
     const selectedExercisesDetails = allWorkoutExercises.filter(ex => selectedExercises.includes(ex._id.toString()));
 

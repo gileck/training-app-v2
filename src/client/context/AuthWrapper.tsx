@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { Box, CircularProgress, Modal, Typography, Paper } from '@mui/material';
-import LoginForm from '../components/LoginForm'; // Corrected path
+import { Modal, Typography, Paper } from '@mui/material';
+import LoginForm from '../components/LoginForm';
 
 interface AuthWrapperProps {
     children: ReactNode;
@@ -12,11 +12,12 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
 
     if (isLoading) {
         // Show a loading spinner centered on the screen
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress />
-            </Box>
-        );
+        return <></>
+
+        // <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        //     <CircularProgress />
+        // </Box>
+        // );
     }
 
     if (!isAuthenticated) {

@@ -11,6 +11,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { ExerciseTabContentProps } from './types';
 import { WorkoutExerciseItem } from './WorkoutExerciseItem';
+import { WorkoutExerciseItemSkeleton } from './WorkoutExerciseItemSkeleton';
 
 // --- Color constants (assuming these are used by WorkoutExerciseItem too) ---
 const LIGHT_PAPER = '#F5F5F7';
@@ -25,10 +26,21 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
     showCompleted,
     selectedExercises,
     showSelectionMode,
+    isLoading,
     handleSetCompletionUpdate,
     handleExerciseSelect,
     toggleShowCompleted
 }) => {
+    if (isLoading) {
+        return (
+            <Box sx={{ pt: 3 }}>
+                {[...Array(3)].map((_, index) => (
+                    <WorkoutExerciseItemSkeleton key={`skeleton-${index}`} />
+                ))}
+            </Box>
+        );
+    }
+
     return (
         <Box>
             {/* Actions */}

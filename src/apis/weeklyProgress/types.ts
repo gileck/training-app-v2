@@ -4,17 +4,17 @@ import { ObjectId } from 'mongodb';
 
 // Represents a note within the weekly progress
 export interface WeeklyNote {
-    noteId: ObjectId; // Use ObjectId for DB, map to string for client if needed
+    noteId: string | ObjectId; // Use ObjectId for DB, map to string for client if needed
     date: Date;
     note: string;
 }
 
 // Represents the WeeklyProgress document structure
 export interface WeeklyProgressBase {
-    _id: ObjectId;
-    userId: ObjectId;
-    planId: ObjectId;
-    exerciseId: ObjectId;
+    _id: string | ObjectId;
+    userId: string | ObjectId;
+    planId: string | ObjectId;
+    exerciseId: string | ObjectId;
     weekNumber: number; // Ensure this is number
     setsCompleted: number;
     isExerciseDone: boolean;
@@ -71,7 +71,7 @@ export type AddWeeklyNoteRequest = {
     note: string; // The text of the note
 };
 // Returns the newly added note or the updated progress doc
-export type AddWeeklyNoteResponse = WeeklyNote & {error?: string}; // Or WeeklyProgressBase
+export type AddWeeklyNoteResponse = WeeklyNote & { error?: string }; // Or WeeklyProgressBase
 
 // PUT /weekly-progress/notes/:noteId (Edit Note)
 export type EditWeeklyNoteRequest = {

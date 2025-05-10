@@ -328,14 +328,25 @@ export const WorkoutPage: React.FC = () => {
 
     // Handler for saving the workout
     const handleSaveWorkout = async (name: string) => {
+        setIsSaveDialogOpen(false);
+        if (!name.trim()) {
+            setError("Workout name cannot be empty.");
+            return;
+        }
         try {
+            // Ensure planId is available and valid before calling createSavedWorkout
+            if (!planId) {
+                setError("Cannot save workout without a valid Training Plan ID.");
+                return;
+            }
             const response = await createSavedWorkout({
                 name,
-                exerciseIds: workoutExercises.map(ex => ex._id.toString())
+                exerciseIds: workoutExercises.map(ex => ex._id.toString()),
+                trainingPlanId: planId
             });
-
             if (response.data && 'error' in response.data) {
-                throw new Error(response.data.error);
+                setError(response.data.error);
+                return;
             }
 
             // Store the saved workout info
@@ -345,9 +356,6 @@ export const WorkoutPage: React.FC = () => {
                     id: response.data._id.toString()
                 });
             }
-
-            // Close the dialog
-            setIsSaveDialogOpen(false);
 
             return true;
         } catch (err) {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getAllSavedWorkouts, getSavedWorkoutDetails } from '@/apis/savedWorkouts/client';
+import type { SavedWorkout as ApiSavedWorkout } from '@/apis/savedWorkouts/types';
 import type { ExerciseBase } from '@/apis/exercises/types';
 import { WorkoutExercise } from '@/client/types/workout';
 import { EnhancedWorkout } from '../components/types'; // Assuming this type is still relevant or will be adjusted
@@ -22,8 +23,7 @@ export interface UseSavedWorkoutsDataReturn {
 
 export const useSavedWorkoutsData = (
     planId: string | undefined,
-    workoutExercises: WorkoutExercise[],
-    onSetCompletionUpdate: (exerciseId: string, updatedProgress: any) => void // More specific type needed
+    workoutExercises: WorkoutExercise[]
 ): UseSavedWorkoutsDataReturn => {
     const [savedWorkoutStructures, setSavedWorkoutStructures] = useState<SavedWorkoutStructure[]>([]);
     const [isWorkoutsLoading, setIsWorkoutsLoading] = useState(false);
@@ -39,13 +39,13 @@ export const useSavedWorkoutsData = (
         setIsWorkoutsLoading(true);
         setError(null);
         try {
-            const savedWorkoutsListResponse = await getAllSavedWorkouts();
+            const savedWorkoutsListResponse = await getAllSavedWorkouts({});
 
             if (!savedWorkoutsListResponse.data || !Array.isArray(savedWorkoutsListResponse.data)) {
                 throw new Error('Failed to fetch the list of saved workouts.');
             }
 
-            const structuresPromises = savedWorkoutsListResponse.data.map(async (swHeader) => {
+            const structuresPromises = savedWorkoutsListResponse.data.map(async (swHeader: ApiSavedWorkout) => {
                 const detailsResponse = await getSavedWorkoutDetails({ workoutId: swHeader._id.toString() });
 
                 if (!detailsResponse.data || !Array.isArray(detailsResponse.data.exercises)) {
@@ -60,7 +60,7 @@ export const useSavedWorkoutsData = (
             });
 
             const newSavedWorkoutStructures = (await Promise.all(structuresPromises))
-                .filter(structure => structure !== null) as SavedWorkoutStructure[];
+                .filter((structure: SavedWorkoutStructure | null) => structure !== null) as SavedWorkoutStructure[];
 
             setSavedWorkoutStructures(newSavedWorkoutStructures);
 

@@ -17,6 +17,6 @@ export const menuItems: NavItem[] = [
   { path: '/file-manager', label: 'Files', icon: <FolderIcon /> },
   { path: '/settings', label: 'Settings', icon: <SettingsIcon /> },
   { path: '/ai-monitoring', label: 'AI Monitoring', icon: <InsightsIcon /> },
-  { path: '/saved-workouts', label: 'Saved Workouts', icon: <FolderIcon /> },
+  { path: '/manage-workouts', label: 'Manage Workouts', icon: <FolderIcon /> },
   { path: '/progress-view', label: 'Progress View', icon: <BarChartIcon /> },
 ];

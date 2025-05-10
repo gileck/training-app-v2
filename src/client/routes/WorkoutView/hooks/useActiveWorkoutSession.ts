@@ -17,8 +17,10 @@ export interface UseActiveWorkoutSessionReturn {
 
 export const useActiveWorkoutSession = (
     setActiveTabState: (tabIndex: number) => void,
-    // Callback to clear selections when a workout starts
-    onWorkoutStart?: () => void
+    onWorkoutStart: (() => void) | undefined,
+    currentPlanId: string | undefined,
+    currentWeekNumber: number,
+    onMainSetCompletionUpdate?: (exerciseId: string, updatedProgress: WeeklyProgressBase) => void // Changed Partial<WeeklyProgressBase> to WeeklyProgressBase
 ): UseActiveWorkoutSessionReturn => {
     const [activeWorkoutSession, setActiveWorkoutSession] = useState<WorkoutExercise[] | null>(null);
     const [activeWorkoutName, setActiveWorkoutName] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export const useActiveWorkoutSession = (
         setActiveWorkoutSession(exercisesToStart);
         setActiveWorkoutName(name || 'Active Workout');
         if (onWorkoutStart) {
-            onWorkoutStart(); // Clear selections, hide selection mode etc.
+            onWorkoutStart();
         }
         setActiveTabState(ACTIVE_WORKOUT_TAB_INDEX);
     }, [setActiveTabState, onWorkoutStart]);
@@ -38,76 +40,65 @@ export const useActiveWorkoutSession = (
         setActiveTabState(EXERCISES_TAB_INDEX);
     }, [setActiveTabState]);
 
-    const onIncrementActiveSet = useCallback((exerciseId: string) => {
+    const updateExerciseProgress = useCallback((exerciseId: string, isIncrement: boolean) => {
         setActiveWorkoutSession(prevSession => {
             if (!prevSession) return null;
-            return prevSession.map(ex => {
+
+            let newlyUpdatedExerciseForCallback: WorkoutExercise | null = null;
+
+            const newSession = prevSession.map(ex => {
                 if (ex._id.toString() === exerciseId) {
-                    let progressToUse: WeeklyProgressBase;
-                    if (!ex.progress) {
-                        // console.warn(`Exercise ${exerciseId} is missing progress. Initializing.`);
-                        progressToUse = {
-                            _id: 'temp-id-' + Date.now() as any, // Temporary client-side ID, cast to any to match ObjectId expectation
-                            userId: ex.userId.toString() as any, // TODO: Ensure ObjectId compatibility
-                            planId: ex.trainingPlanId.toString() as any, // TODO: Ensure ObjectId compatibility
-                            exerciseId: ex._id.toString() as any, // TODO: Ensure ObjectId compatibility
-                            weekNumber: 0, // Placeholder, should come from context
-                            setsCompleted: 0,
-                            repsPerSet: Array(ex.sets).fill(0),
-                            weightPerSet: Array(ex.sets).fill(0),
-                            weeklyNotes: [],
-                            isExerciseDone: false,
-                            lastUpdatedAt: new Date(),
-                            createdAt: new Date(),
-                        } as WeeklyProgressBase; // Cast needed due to temp _id and any casts for ObjectId fields
-                    } else {
-                        progressToUse = ex.progress;
+                    const baseProgress = ex.progress || {
+                        _id: crypto.randomUUID(),
+                        exerciseId: ex._id.toString(),
+                        setsCompleted: 0,
+                        repsPerSet: Array(ex.sets || 0).fill(0),
+                        weightPerSet: Array(ex.sets || 0).fill(0),
+                        isExerciseDone: false,
+                        lastUpdatedAt: new Date(),
+                        createdAt: new Date(),
+                        userId: ex.userId?.toString() || crypto.randomUUID(),
+                        planId: currentPlanId || crypto.randomUUID(),
+                        weekNumber: currentWeekNumber,
+                        weeklyNotes: []
+                    } as WeeklyProgressBase;
+
+                    let newSetsCompleted = baseProgress.setsCompleted || 0;
+                    if (isIncrement && newSetsCompleted < ex.sets) {
+                        newSetsCompleted++;
+                    } else if (!isIncrement && newSetsCompleted > 0) {
+                        newSetsCompleted--;
                     }
 
-                    const currentSetsCompleted = progressToUse.setsCompleted || 0;
-                    if (currentSetsCompleted < ex.sets) {
-                        return {
-                            ...ex,
-                            progress: {
-                                ...progressToUse,
-                                setsCompleted: currentSetsCompleted + 1,
-                                lastUpdatedAt: new Date(),
-                                isExerciseDone: (currentSetsCompleted + 1) >= ex.sets,
-                            },
-                        };
+                    newlyUpdatedExerciseForCallback = {
+                        ...ex,
+                        progress: {
+                            ...baseProgress,
+                            setsCompleted: newSetsCompleted,
+                            lastUpdatedAt: new Date(),
+                            isExerciseDone: newSetsCompleted >= ex.sets,
+                        } as WeeklyProgressBase,
+                    };
+
+                    if (newlyUpdatedExerciseForCallback.progress && onMainSetCompletionUpdate && currentPlanId) {
+                        onMainSetCompletionUpdate(exerciseId, newlyUpdatedExerciseForCallback.progress as WeeklyProgressBase);
                     }
+                    return newlyUpdatedExerciseForCallback;
                 }
                 return ex;
             });
+            return newSession;
         });
-    }, []);
+        // No direct return value of the updated exercise here
+    }, [currentPlanId, currentWeekNumber, onMainSetCompletionUpdate]); // Added onMainSetCompletionUpdate
+
+    const onIncrementActiveSet = useCallback((exerciseId: string) => {
+        updateExerciseProgress(exerciseId, true);
+    }, [updateExerciseProgress]);
 
     const onDecrementActiveSet = useCallback((exerciseId: string) => {
-        setActiveWorkoutSession(prevSession => {
-            if (!prevSession) return null;
-            return prevSession.map(ex => {
-                if (ex._id.toString() === exerciseId) {
-                    if (!ex.progress) {
-                        // console.warn(`Exercise ${exerciseId} is missing progress for decrement.`);
-                        return ex;
-                    }
-                    const currentSetsCompleted = ex.progress.setsCompleted || 0;
-                    if (currentSetsCompleted > 0) {
-                        return {
-                            ...ex,
-                            progress: {
-                                ...ex.progress,
-                                setsCompleted: currentSetsCompleted - 1,
-                                lastUpdatedAt: new Date(),
-                                isExerciseDone: false,
-                            },
-                        };
-                    }
-                }
-                return ex;
-            });
-        });
-    }, []);
+        updateExerciseProgress(exerciseId, false);
+    }, [updateExerciseProgress]);
 
     const onRemoveExerciseFromActiveSession = useCallback((exerciseIdToRemove: string) => {
         setActiveWorkoutSession(prevSession => {
@@ -127,7 +118,7 @@ export const useActiveWorkoutSession = (
         startActiveWorkout,
         onIncrementActiveSet,
         onDecrementActiveSet,
-        onEndActiveWorkout: handleEndActiveWorkout, // Renamed for clarity from original hook
+        onEndActiveWorkout: handleEndActiveWorkout,
         onRemoveExerciseFromActiveSession,
     };
 }; 

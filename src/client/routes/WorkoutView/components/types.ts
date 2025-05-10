@@ -26,15 +26,6 @@ export interface LoadingErrorDisplayProps {
     isWorkoutsLoading: boolean;
 }
 
-export interface PlanHeaderProps {
-    planId?: string;
-    weekNumber?: number;
-    planDetails?: WorkoutDetails | null;
-    isLoading?: boolean;
-    error?: string | null;
-    navigate: (path: string) => void;
-}
-
 export interface WorkoutViewProps {
     planId?: string;
     weekNumber: number;
@@ -128,6 +119,7 @@ export interface ExerciseTabContentProps {
     showCompleted: boolean;
     selectedExercises: string[];
     showSelectionMode: boolean;
+    isLoading?: boolean;
     handleSetCompletionUpdate: (exerciseId: string, updatedProgress: WeeklyProgressBase) => void;
     handleExerciseSelect: (exerciseId: string) => void;
     toggleShowCompleted: () => void;

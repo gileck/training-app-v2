@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import type { ObjectId } from 'mongodb';
 
 // Basic User Structure (adjust based on actual user data needed)
 export interface User {
