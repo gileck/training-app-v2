@@ -48,9 +48,6 @@ export type GetSavedWorkoutDetailsResponse = SavedWorkoutWithExercises | null; /
 export interface AddExerciseToSavedWorkoutRequest {
     workoutId: string;
     exerciseDefinitionId: string;
-    sets: number;
-    reps: number; // Assuming reps will be a number here, but DB stores as string. Conversion in server handler.
-    order?: number; // Optional, server can determine if not provided
 }
 
 export type AddExerciseToSavedWorkoutResponse = SavedWorkoutWithExercises | { error: string };

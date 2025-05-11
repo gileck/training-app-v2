@@ -1,0 +1,1 @@
+export const GENERIC_IMAGE_PLACEHOLDER = "/images/exercises/placeholder-generic.png"; 

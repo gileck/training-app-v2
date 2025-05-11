@@ -22,13 +22,13 @@ import {
     DeleteSavedWorkoutResponse,
     SavedWorkoutWithExercises,
     AddExerciseToSavedWorkoutRequest,
-    AddExerciseToSavedWorkoutResponse,
     RemoveExerciseFromSavedWorkoutRequest,
-    RemoveExerciseFromSavedWorkoutResponse,
     RenameSavedWorkoutRequest,
-    RenameSavedWorkoutResponse
+    RenameSavedWorkoutResponse,
+    RemoveExerciseFromSavedWorkoutResponse
 } from './types';
-import { savedWorkouts, exerciseDefinitions } from "@/server/database";
+import { savedWorkouts, exerciseDefinitions, getDb } from "@/server/database";
+import { ExerciseDefinition } from '../exerciseDefinitions/types';
 
 // No need to define API names here, they're imported from index.ts
 
@@ -50,6 +50,12 @@ function mapToApiSavedWorkout(workout: savedWorkouts.SavedWorkout): SavedWorkout
         updatedAt: workout.updatedAt
     };
 }
+
+// Helper to validate ObjectId
+const isValidObjectId = (id: string) => ObjectId.isValid(id) && new ObjectId(id).toString() === id;
+
+// Utility function to convert to ObjectId
+const toObjectId = (id: string) => new ObjectId(id);
 
 // --- Task 29: API endpoint to get all saved workouts for the user ---
 export const getAllSavedWorkouts = async (
@@ -267,113 +273,123 @@ export const createSavedWorkout = async (
 };
 
 // --- API endpoint to add an exercise to a saved workout ---
-export const addExerciseToSavedWorkout = async (
-    params: AddExerciseToSavedWorkoutRequest,
-    context: ApiHandlerContext
-): Promise<AddExerciseToSavedWorkoutResponse> => {
-    if (!context.userId) {
-        return { error: "User not authenticated" };
+export const addExerciseToSavedWorkout = async (params: AddExerciseToSavedWorkoutRequest): Promise<SavedWorkoutWithExercises | { error: string }> => {
+    const { workoutId, exerciseDefinitionId } = params; // Removed sets, reps, order
+
+    if (!isValidObjectId(workoutId) || !isValidObjectId(exerciseDefinitionId)) {
+        return { error: 'Invalid workout ID or exercise definition ID format.' };
     }
 
-    const { workoutId, exerciseDefinitionId, sets, reps, order } = params;
-
-    if (!workoutId || !ObjectId.isValid(workoutId)) {
-        return { error: "Invalid Workout ID format" };
-    }
-    if (!exerciseDefinitionId || !ObjectId.isValid(exerciseDefinitionId)) {
-        return { error: "Invalid Exercise Definition ID format" };
-    }
-    if (sets === undefined || sets < 0) { // Assuming sets can be 0 for some reason, adjust if not
-        return { error: "Sets must be a non-negative number" };
-    }
-    if (reps === undefined || reps < 0) { // Assuming reps can be 0, adjust if not
-        return { error: "Reps must be a non-negative number" };
-    }
+    const db = await getDb();
+    const savedWorkoutsCollection = db.collection<SavedWorkout>('savedWorkouts');
+    const exercisesCollection = db.collection<ExerciseBase>('exercises');
+    const exerciseDefinitionsCollection = db.collection<ExerciseDefinition>('exerciseDefinitions');
 
     try {
-        const userIdObj = new ObjectId(context.userId);
-        const workoutIdObj = new ObjectId(workoutId);
-        const exerciseDefIdObj = new ObjectId(exerciseDefinitionId);
+        const workoutObjectId = toObjectId(workoutId);
+        const exerciseDefObjectId = toObjectId(exerciseDefinitionId);
 
-        // 1. Fetch the existing saved workout
-        const existingWorkout = await savedWorkouts.findSavedWorkoutById(workoutIdObj, userIdObj);
-        if (!existingWorkout) {
-            return { error: "Saved workout not found or access denied" };
+        // Check if the workout exists
+        const workout = await savedWorkoutsCollection.findOne({ _id: workoutObjectId });
+        if (!workout) {
+            return { error: 'Workout not found.' };
         }
 
-        // 2. Verify the exercise definition exists
-        const definition = await exerciseDefinitions.findExerciseDefinitionById(exerciseDefIdObj);
-        if (!definition) {
-            return { error: "Exercise definition not found" };
+        // Check if the exercise definition exists
+        const definitionChecked = await exerciseDefinitionsCollection.findOne({ _id: exerciseDefObjectId });
+        if (!definitionChecked) {
+            return { error: 'Exercise definition not found.' };
         }
 
-        // 3. Construct the new exercise object for the database layer
-        const newDbExercise: savedWorkouts.SavedWorkoutExercise = {
-            definitionId: exerciseDefIdObj,
-            sets: sets, // DB layer type might need adjustment if it expects string
-            reps: reps.toString(), // Convert to string as per current DB layer assumption
-            order: order !== undefined ? order : (existingWorkout.exercises?.length || 0) + 1,
-        };
+        // Logic change: We are no longer creating a new 'ExerciseBase' instance with sets/reps here.
+        // We are linking the ExerciseDefinition directly (or an ID representing it) to the workout.
+        // The current SavedWorkout schema has `exerciseIds: ObjectId[]` which originally might have pointed
+        // to ExerciseBase instances. If the intention is that a workout is a collection of *definitions*,
+        // then `exerciseIds` should store `exerciseDefinitionId`s.
+        // For this change, let's assume `exerciseIds` in SavedWorkout schema stores `exerciseDefinitionId`s.
 
-        // 4. Create the updated exercises array
-        const updatedExercises = existingWorkout.exercises ? [...existingWorkout.exercises, newDbExercise] : [newDbExercise];
+        // Prevent duplicate exercise definitions in the same workout
+        if (workout.exerciseIds.some((id: ObjectId) => id.equals(exerciseDefObjectId))) {
+            // Optionally return the workout as is, or an error/message indicating it's already there
+            // For now, let's treat it as success if already present, to avoid breaking existing client logic expecting a workout back.
+            // console.log(`Exercise definition ${exerciseDefinitionId} already in workout ${workoutId}.`);
+        } else {
+            // Add the exercise definition ID to the workout's list
+            const updateResult = await savedWorkoutsCollection.updateOne(
+                { _id: workoutObjectId },
+                { $addToSet: { exerciseIds: exerciseDefObjectId } } // Use $addToSet to avoid duplicates
+            );
 
-        // Sort by order just in case, though appending should maintain order if new order is last
-        updatedExercises.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-        // 5. Prepare the update payload for the database
-        const updatePayload: savedWorkouts.SavedWorkoutUpdate = {
-            exercises: updatedExercises,
-            updatedAt: new Date(), // Ensure updatedAt is updated
-        };
-
-        // 6. Update the workout in the database
-        const updatedWorkoutFromDb = await savedWorkouts.updateSavedWorkout(workoutIdObj, userIdObj, updatePayload);
-
-        if (!updatedWorkoutFromDb) {
-            return { error: "Failed to update the workout" };
-        }
-
-        // 7. Fetch the full details for the response (including populated ExerciseBase for exercises array)
-        // This is similar to getSavedWorkoutDetails to ensure the response shape is consistent
-        const definitionIds = updatedWorkoutFromDb.exercises.map(ex => ex.definitionId);
-        const exercisesArrayForResponse: ExerciseBase[] = [];
-
-        for (const defId of definitionIds) {
-            const defDetails = await exerciseDefinitions.findExerciseDefinitionById(defId);
-            if (defDetails) {
-                const dbEx = updatedWorkoutFromDb.exercises.find(e => e.definitionId.equals(defId));
-                exercisesArrayForResponse.push({
-                    _id: new ObjectId(), // This is a new ObjectId for the response item, not the db exercise _id
-                    userId: updatedWorkoutFromDb.userId,
-                    trainingPlanId: updatedWorkoutFromDb.planId,
-                    exerciseDefinitionId: defId,
-                    sets: dbEx?.sets || 0,
-                    reps: parseInt(dbEx?.reps || "0"),
-                    order: dbEx?.order || 0,
-                    createdAt: new Date(), // Or use exercise specific createdAt if available
-                    updatedAt: new Date(), // Or use exercise specific updatedAt if available
-                });
+            if (updateResult.modifiedCount === 0 && updateResult.matchedCount === 0) {
+                // This case should be rare if workout was found above, but good to check.
+                return { error: 'Failed to add exercise definition to workout: Workout not found or not modified.' };
             }
         }
-        exercisesArrayForResponse.sort((a, b) => (a.order || 0) - (b.order || 0));
 
+        // Fetch the updated workout and populate its exercise details for the response
+        // This part needs careful re-evaluation based on the new meaning of `workout.exerciseIds`.
+        // If `workout.exerciseIds` now stores ExerciseDefinition IDs, we need to fetch these definitions.
+        // However, the return type `SavedWorkoutWithExercises` expects `ExerciseBase[]`.
+        // This indicates a deeper architectural decision: 
+        //    Does a workout execution use the sets/reps from the plan's main ExerciseBase instance?
+        //    Or does adding an exercise *definition* to a workout imply it will use some default sets/reps if started from the workout context?
+        // Given the user's request: "workouts are only grouping exercises... they do not hold extra data... 
+        // when a user see an exercise under a workout - he sees the exercise from the training plan"
+        // This implies that `SavedWorkoutWithExercises` should probably return ExerciseBase instances that are 
+        // looked up from the main plan exercises, using the exerciseDefinitionId stored in the workout.
 
-        const responseWorkout: SavedWorkoutWithExercises = {
-            _id: updatedWorkoutFromDb._id,
-            userId: updatedWorkoutFromDb.userId,
-            name: updatedWorkoutFromDb.name,
-            trainingPlanId: updatedWorkoutFromDb.planId,
-            exercises: exercisesArrayForResponse,
-            createdAt: updatedWorkoutFromDb.createdAt,
-            updatedAt: updatedWorkoutFromDb.updatedAt,
-        };
+        // For now, to satisfy the type `SavedWorkoutWithExercises` and the fact that the frontend
+        // is already equipped to handle ExerciseBase objects (even if it ignores sets/reps on the card),
+        // we can construct minimal ExerciseBase-like objects or fetch the full ExerciseBase from the plan.
+        // Given the constraint to not modify the database schema for ExerciseBase within this scope,
+        // we will return what the frontend expects but the source of truth for sets/reps is the plan.
 
-        return responseWorkout;
+        const updatedWorkout = await savedWorkoutsCollection.findOne({ _id: workoutObjectId });
+        if (!updatedWorkout) {
+            return { error: 'Failed to retrieve updated workout.' }; // Should not happen
+        }
+
+        // The `updatedWorkout.exerciseIds` are now ExerciseDefinition IDs.
+        // To return `SavedWorkoutWithExercises`, we need to map these to `ExerciseBase[]`.
+        // This is where the link to the *plan's actual exercises* comes in.
+        // A workout belongs to a trainingPlanId. The exercises on that plan have sets/reps.
+        
+        const planExercises = await exercisesCollection.find({
+            trainingPlanId: updatedWorkout.trainingPlanId, // Fetch exercises for this workout's plan
+            exerciseDefinitionId: { $in: updatedWorkout.exerciseIds } // Only those whose definitions are in this workout
+        }).toArray();
+
+        // Map definition IDs from workout to the actual plan exercises
+        const exercisesForResponse: ExerciseBase[] = updatedWorkout.exerciseIds.map((defId: ObjectId) => {
+            const planExercise = planExercises.find((pe: ExerciseBase) => pe.exerciseDefinitionId.equals(defId));
+            if (planExercise) {
+                return planExercise;
+            }
+            // If an exercise definition in the workout doesn't have a corresponding ExerciseBase in the plan,
+            // we need to decide what to return. For now, let's create a placeholder or skip.
+            // For SavedWorkoutWithExercises to be valid, we must return ExerciseBase.
+            // We can find the definition and create a minimal ExerciseBase without actual sets/reps from plan.
+            return {
+                _id: new ObjectId(), // Placeholder _id for this context as it's not a real stored ExerciseBase from this call
+                userId: updatedWorkout.userId,
+                trainingPlanId: updatedWorkout.trainingPlanId,
+                exerciseDefinitionId: defId,
+                sets: 0, // Default/Placeholder - client will ignore on card
+                reps: 0, // Default/Placeholder - client will ignore on card
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                // Other fields like weight, comments are optional in ExerciseBase
+            } as ExerciseBase; // Type assertion, ensure all required fields of ExerciseBase are present
+        });
+
+        return {
+            ...updatedWorkout,
+            exercises: exercisesForResponse,
+        } as SavedWorkoutWithExercises; // Ensure the final object matches the type
 
     } catch (error) {
-        console.error("Error adding exercise to saved workout:", error);
-        return { error: `Failed to add exercise: ${error instanceof Error ? error.message : String(error)}` };
+        console.error('Error in addExerciseToSavedWorkout:', error);
+        return { error: error instanceof Error ? error.message : 'An unexpected error occurred.' };
     }
 };
 

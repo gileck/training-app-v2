@@ -159,8 +159,9 @@ export const WorkoutTabContent: React.FC<WorkoutTabContentProps> = ({
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
                 <Button
                     variant="contained"
-                    onClick={() => navigate('/manage-workouts')}
+                    onClick={() => navigate(`/training-plans/${planId}/workouts`)}
                     startIcon={<SettingsIcon />}
+                    disabled={!planId}
                     sx={{
                         bgcolor: NEON_BLUE,
                         textTransform: 'none',
