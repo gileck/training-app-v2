@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Tabs, Tab, Paper, Typography, Button, Alert, /* CircularProgress, */ alpha } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Button, Alert, /* CircularProgress, */ alpha } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useWorkoutView } from '../hooks/useWorkoutView';
 import { ExerciseTabContent } from './ExerciseTabContent';
@@ -7,7 +7,6 @@ import { WorkoutTabContent } from './WorkoutTabContent';
 import { ActiveWorkoutContent } from './ActiveWorkoutContent';
 import { PlanWeekHeader } from '@/client/components/PlanWeekHeader';
 import { PlanWeekHeaderSkeleton } from '@/client/components/PlanWeekHeaderSkeleton';
-import { WorkoutExerciseItemSkeleton } from './WorkoutExerciseItemSkeleton';
 import { SelectedExercisesBar } from './SelectedExercisesBar';
 
 // --- Color constants for the light theme --- //
@@ -15,7 +14,7 @@ const LIGHT_BG = '#FFFFFF';
 const NEON_PURPLE = '#9C27B0';
 
 // Main Component
-export const NeonLightWorkoutView: React.FC = () => {
+export const MainView: React.FC = () => {
     const {
         planId,
         weekNumber,
@@ -60,6 +59,9 @@ export const NeonLightWorkoutView: React.FC = () => {
     // Determine overall loading state for the main page structure
     // isLoading will be true if plan data is loading AND there are no plan details yet, or no planId
     const isLoadingPageStructure = isPlanDataLoading && (!planDetails || !planId);
+    if (isLoadingPageStructure) {
+        return (<></>);
+    }
     const isWeekLoading = isPlanDataLoading && !!planDetails && !!planId && activeExercises.length === 0;
 
     // If there is no planId, show a message and a button to navigate to training plans.
@@ -128,25 +130,6 @@ export const NeonLightWorkoutView: React.FC = () => {
                 >
                     Back to Plans
                 </Button>
-            </Box>
-        );
-    }
-
-    if (isLoadingPageStructure) {
-        return (
-            <Box sx={{ p: { xs: 1, sm: 2 } }}>
-                {/* No PlanHeaderSkeleton here anymore */}
-                <PlanWeekHeaderSkeleton />
-                <Paper elevation={1} sx={{ mb: 2, borderTop: `1px solid ${alpha('#000000', 0.12)}` }}>
-                    <Tabs value={activeTab} onChange={handleTabChange} centered variant="fullWidth">
-                        <Tab label="Exercises" disabled />
-                        <Tab label="Workouts" disabled />
-                        <Tab label="Active Session" disabled />
-                    </Tabs>
-                </Paper>
-                <Box>
-                    {[...Array(3)].map((_, i) => <WorkoutExerciseItemSkeleton key={i} />)}
-                </Box>
             </Box>
         );
     }

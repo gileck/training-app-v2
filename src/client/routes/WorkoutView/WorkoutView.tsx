@@ -1,6 +1,6 @@
 import React from 'react';
 // import { Box, CircularProgress, Typography } from '@mui/material'; // Commented out as they are unused
-import { NeonLightWorkoutView } from './components/MainView';
+import { MainView } from './components/MainView';
 // import { useWorkoutView } from './hooks/useWorkoutView'; // No longer used here
 
 export const WorkoutView: React.FC = () => {
@@ -24,6 +24,6 @@ export const WorkoutView: React.FC = () => {
     // }
 
     return (
-        <NeonLightWorkoutView /> // Render without props
+        <MainView /> // Render without props
     );
 }; 
