@@ -20,13 +20,8 @@ export interface SavedWorkout {
  * Represents an exercise within a saved workout
  */
 export interface SavedWorkoutExercise {
-  definitionId: ObjectId; // Reference to exerciseDefinitions._id
-  sets: number;           // Integer
-  reps: string;           // e.g., "12", "8-12", "AMRAP"
-  weight?: string;        // Optional, e.g., "10kg", "Bodyweight"
-  durationSeconds?: number; // Optional, Integer
-  notes?: string;         // Optional
-  order: number;          // Integer
+  exerciseId: ObjectId; // Reference to exercises._id
+  order: number; // Integer
 }
 
 /**

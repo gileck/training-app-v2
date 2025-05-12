@@ -1,19 +1,25 @@
 import { ObjectId } from 'mongodb';
 import { ExerciseBase } from '../exercises/types';
 
+// Exercise within a saved workout
+export interface SavedWorkoutExercise {
+    exerciseId: ObjectId; // Reference to exercises._id
+    order: number; // Integer
+}
+
 // Base type for Saved Workout
 export interface SavedWorkout {
     _id: ObjectId;
     userId: ObjectId;
     name: string;
-    exerciseIds: ObjectId[]; // References to exercises
-    trainingPlanId: ObjectId; // Added trainingPlanId
+    exercises: SavedWorkoutExercise[]; // Array of exercises with their order
+    trainingPlanId: ObjectId; // Reference to trainingPlans._id
     createdAt: Date;
     updatedAt: Date;
 }
 
 // Extended interface including exercise details (for API responses)
-export interface SavedWorkoutWithExercises extends Omit<SavedWorkout, 'exerciseIds' | 'trainingPlanId'> {
+export interface SavedWorkoutWithExercises extends Omit<SavedWorkout, 'exercises' | 'trainingPlanId'> {
     exercises: ExerciseBase[]; // Full exercise objects
     trainingPlanId: ObjectId; // Added trainingPlanId explicitly
 }
@@ -47,15 +53,15 @@ export type GetSavedWorkoutDetailsResponse = SavedWorkoutWithExercises | null; /
 // --- API Types for Add Exercise to Saved Workout --- //
 export interface AddExerciseToSavedWorkoutRequest {
     workoutId: string;
-    exerciseDefinitionId: string;
+    exerciseId: string; // Changed from exerciseDefinitionId to exerciseId
 }
 
-export type AddExerciseToSavedWorkoutResponse = SavedWorkoutWithExercises | { error: string };
+export type AddExerciseToSavedWorkoutResponse = { success: boolean; message: string; } | { error: string };
 
 // --- API Types for Remove Exercise from Saved Workout --- //
 export interface RemoveExerciseFromSavedWorkoutRequest {
     workoutId: string;
-    exerciseDefinitionIdToRemove: string; // The ExerciseDefinition ID to remove
+    exerciseIdToRemove: string; // Changed from exerciseDefinitionIdToRemove to match our updated schema
 }
 
 export type RemoveExerciseFromSavedWorkoutResponse = SavedWorkoutWithExercises | { error: string };

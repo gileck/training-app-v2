@@ -103,6 +103,7 @@ export const ManageTrainingPlanPage: React.FC = () => {
         savedWorkout_isLoadingDialogExercises,
         savedWorkout_dialogPlanContextError,
         savedWorkout_filteredDefinitionsForDialog,
+        savedWorkout_planExercises,
         savedWorkout_handleConfirmAddExercise,
         savedWorkout_isAddingSingleExercise,
         savedWorkout_handleRemoveExercise,
@@ -381,6 +382,7 @@ export const ManageTrainingPlanPage: React.FC = () => {
                         isLoadingDialogExercises={savedWorkout_isLoadingDialogExercises}
                         dialogPlanContextError={savedWorkout_dialogPlanContextError}
                         filteredDefinitionsForDialog={savedWorkout_filteredDefinitionsForDialog}
+                        planExercises={savedWorkout_planExercises} // Add the new planExercises prop
                         onConfirmAddExercise={savedWorkout_handleConfirmAddExercise}
                         isAddingSingleExercise={savedWorkout_isAddingSingleExercise}
                     />

@@ -71,7 +71,12 @@ export interface UseManageTrainingPlanPageReturn {
     savedWorkout_isLoadingDialogExercises: boolean;
     savedWorkout_dialogPlanContextError: string | null;
     savedWorkout_filteredDefinitionsForDialog: ApiExerciseDefinition[];
-    savedWorkout_handleConfirmAddExercise: (definitionToAdd: ApiExerciseDefinition) => Promise<void>;
+    savedWorkout_planExercises: Array<{
+        exerciseId: string;
+        definitionId: string;
+        definition: ApiExerciseDefinition;
+    }>;
+    savedWorkout_handleConfirmAddExercise: (exerciseId: string) => Promise<void>;
     savedWorkout_isAddingSingleExercise: boolean;
     savedWorkout_handleRemoveExercise: (workoutIdToRemoveFrom: string, exerciseDefIdToRemove: string) => Promise<void>;
     savedWorkout_isRemovingExercise: string | null; 

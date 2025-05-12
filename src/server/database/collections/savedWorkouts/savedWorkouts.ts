@@ -146,4 +146,58 @@ export const findSavedWorkoutsByTags = async (
     userId: userIdObj,
     tags: { $in: tags }
   }).sort({ updatedAt: -1 }).toArray();
+};
+
+/**
+ * Add an exercise to a saved workout
+ * @param workoutId - The ID of the saved workout
+ * @param userId - The ID of the user (for permission check)
+ * @param exerciseId - The ID of the exercise to add
+ * @returns The updated saved workout or null if not found
+ */
+export const addExerciseToSavedWorkout = async (
+  workoutId: ObjectId | string,
+  userId: ObjectId | string,
+  exerciseId: ObjectId | string
+): Promise<SavedWorkout | null> => {
+  const collection = await getSavedWorkoutsCollection();
+  const workoutIdObj = typeof workoutId === 'string' ? new ObjectId(workoutId) : workoutId;
+  const userIdObj = typeof userId === 'string' ? new ObjectId(userId) : userId;
+  const exerciseIdObj = typeof exerciseId === 'string' ? new ObjectId(exerciseId) : exerciseId;
+
+  // First, find the workout to check permissions and get current exercises
+  const workout = await findSavedWorkoutById(workoutIdObj, userIdObj);
+  if (!workout) {
+    return null;
+  }
+
+  // Check if the exercise is already in the workout
+  const exerciseExists = workout.exercises.some(exercise => 
+    exercise.exerciseId.equals(exerciseIdObj)
+  );
+
+  // If exercise already exists, return the workout unchanged
+  if (exerciseExists) {
+    return workout;
+  }
+
+  // Determine the next order number
+  const nextOrder = workout.exercises.length > 0 ? 
+    Math.max(...workout.exercises.map(e => e.order)) + 1 : 1;
+
+  // Add the exercise to the workout
+  const result = await collection.findOneAndUpdate(
+    { _id: workoutIdObj, userId: userIdObj },
+    { 
+      $push: { 
+        exercises: { 
+          exerciseId: exerciseIdObj,
+          order: nextOrder 
+        } 
+      } 
+    },
+    { returnDocument: 'after' }
+  );
+  
+  return result || null;
 }; 

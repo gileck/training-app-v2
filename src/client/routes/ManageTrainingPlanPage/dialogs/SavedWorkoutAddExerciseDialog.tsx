@@ -25,6 +25,13 @@ import BrokenImageIcon from '@mui/icons-material/BrokenImage';
 import type { ExerciseDefinition as ApiExerciseDefinition } from '@/apis/exerciseDefinitions/types';
 import type { ClientWorkoutDisplay } from '../types';
 
+// Exercise with definition for display
+interface ExerciseWithDefinition {
+    exerciseId: string;
+    definitionId: string;
+    definition: ApiExerciseDefinition;
+}
+
 interface SavedWorkoutAddExerciseDialogProps {
     open: boolean;
     onClose: () => void;
@@ -34,7 +41,8 @@ interface SavedWorkoutAddExerciseDialogProps {
     isLoadingDialogExercises: boolean;
     dialogPlanContextError: string | null;
     filteredDefinitionsForDialog: ApiExerciseDefinition[];
-    onConfirmAddExercise: (definition: ApiExerciseDefinition) => void;
+    planExercises: ExerciseWithDefinition[]; // New prop for exercises with their definitions
+    onConfirmAddExercise: (exerciseId: string) => void;
     isAddingSingleExercise: boolean;
 }
 
@@ -47,10 +55,22 @@ export const SavedWorkoutAddExerciseDialog: React.FC<SavedWorkoutAddExerciseDial
     isLoadingDialogExercises,
     dialogPlanContextError,
     filteredDefinitionsForDialog,
+    planExercises,
     onConfirmAddExercise,
     isAddingSingleExercise,
 }) => {
     const theme = useTheme();
+    
+    // Filter exercises based on the search term
+    const filteredExercises = React.useMemo(() => {
+        if (!searchTerm.trim()) {
+            return planExercises;
+        }
+        return planExercises.filter(exercise => 
+            exercise.definition.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [planExercises, searchTerm]);
+    
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { height: '80vh', borderRadius: '12px' } }}>
             <AppBar sx={{ position: 'relative', bgcolor: alpha(theme.palette.success.light, 0.1), boxShadow: 'none' }}>
@@ -75,22 +95,27 @@ export const SavedWorkoutAddExerciseDialog: React.FC<SavedWorkoutAddExerciseDial
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}><CircularProgress sx={{ color: theme.palette.success.main }} /></Box>
                 ) : dialogPlanContextError ? (
                     <Typography sx={{ textAlign: 'center', mt: 2, color: alpha(theme.palette.error.main, 0.9) }}>{dialogPlanContextError}</Typography>
-                ) : filteredDefinitionsForDialog.length === 0 ? (
+                ) : filteredExercises.length === 0 ? (
                     <Typography sx={{ textAlign: 'center', mt: 2, color: alpha('#000000', 0.7) }}>No exercises found.</Typography>
                 ) : (
                     <List dense sx={{ overflowY: 'auto', flexGrow: 1 }}>
-                        {filteredDefinitionsForDialog.map((def) => (
+                        {filteredExercises.map((exercise) => (
                             <ListItemButton 
-                                key={def._id.toString()} 
-                                onClick={() => onConfirmAddExercise(def)} 
-                                disabled={isAddingSingleExercise || Boolean(workoutToAddExerciseTo && workoutToAddExerciseTo.exercises?.some(ex => ex.exerciseDefinitionId.toString() === def._id.toString()))} 
+                                key={exercise.exerciseId} 
+                                onClick={() => onConfirmAddExercise(exercise.exerciseId)} 
+                                disabled={isAddingSingleExercise || Boolean(workoutToAddExerciseTo && workoutToAddExerciseTo.exercises?.some(ex => ex._id.toString() === exercise.exerciseId))} 
                                 sx={{ mb: 0.5, borderRadius: '8px' }}
                             >
                                 {isAddingSingleExercise && <CircularProgress size={20} sx={{ mr: 1 }} />}
                                 <ListItemIcon sx={{ minWidth: 48, mr: 1.5, display: 'flex', alignItems: 'center' }}>
-                                    {def.imageUrl ? <Avatar src={def.imageUrl} variant="rounded" sx={{ width: 36, height: 36 }}><BrokenImageIcon /></Avatar> : <Avatar variant="rounded" sx={{ width: 36, height: 36 }}><FitnessCenterIcon /></Avatar>}
+                                    {exercise.definition.imageUrl ? 
+                                        <Avatar src={exercise.definition.imageUrl} variant="rounded" sx={{ width: 36, height: 36 }}><BrokenImageIcon /></Avatar> : 
+                                        <Avatar variant="rounded" sx={{ width: 36, height: 36 }}><FitnessCenterIcon /></Avatar>}
                                 </ListItemIcon>
-                                <ListItemText primary={def.name} primaryTypographyProps={{ fontWeight: 500 }} />
+                                <ListItemText 
+                                    primary={exercise.definition.name} 
+                                    primaryTypographyProps={{ fontWeight: 500 }} 
+                                />
                             </ListItemButton>
                         ))}
                     </List>
