@@ -204,7 +204,7 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
                     <Typography variant="body2">
                         Showing {paginatedDefinitions.length > 0 ? paginatedDefinitions.length : 0} of {filteredDefinitions.length} exercises
                     </Typography>
-                    <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
+                    {/* <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
                         <InputLabel id="items-per-page-label">Show</InputLabel>
                         <Select
                             labelId="items-per-page-label"
@@ -223,7 +223,7 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
                                 All ({filteredDefinitions.length})
                             </MenuItem>
                         </Select>
-                    </FormControl>
+                    </FormControl> */}
                 </Box>
 
                 {isLoadingDefinitions && (

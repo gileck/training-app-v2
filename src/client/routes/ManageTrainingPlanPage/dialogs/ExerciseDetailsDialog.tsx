@@ -75,7 +75,7 @@ export const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({
         const currentDefinitionId = isEditMode ? exerciseToEdit!.exerciseDefinitionId.toString() : exerciseDefinition._id.toString();
 
         const setsNum = parseInt(sets, 10);
-        const repsNum = reps ? parseInt(reps, 10) : 0; // Default to 0 if reps is empty (e.g. for static exercises)
+        const repsNum = reps ? parseInt(reps, 10) : 0
         const durationNum = durationSeconds ? parseInt(durationSeconds, 10) : 0; // Default to 0 if duration is empty
 
         const isStaticExercise = exerciseDefinition?.static === true;
@@ -158,7 +158,7 @@ export const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({
                     exerciseDefinitionId: currentDefinitionId,
                     sets: setsNum,
                     reps: finalReps,
-                    durationSeconds: finalDuration,
+                    durationSeconds: finalDuration ? finalDuration : undefined,
                     ...(weightNum !== undefined && { weight: weightNum }),
                     ...(comments && { comments }),
                 };

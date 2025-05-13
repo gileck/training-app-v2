@@ -125,6 +125,8 @@ export const ManageTrainingPlanPage: React.FC = () => {
         setNewWorkoutDialog_searchTerm,
     } = useManageTrainingPlanPage();
 
+    console.log('exercises', exercises);
+
     const pageTitle = isPageLoading
         ? "Loading Plan Content..."
         : planDetails?.name
@@ -280,16 +282,22 @@ export const ManageTrainingPlanPage: React.FC = () => {
                                             <Box sx={{ flexGrow: 1 }}>
                                                 <Typography variant="h6" component="h2" sx={{ fontWeight: '600', color: theme.palette.primary.main, fontSize: '1.1rem' }}>{workout.name}</Typography>
                                                 {(workout.exercises && workout.exercises.length > 0 || savedWorkout_expandedWorkoutId === workout._id && workout.exercises && workout.exercises.length === 0) && (
+                                                    <Box>
                                                     <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.75rem' }}>
                                                         {workout.exercises ? workout.exercises.length : 0} {workout.exercises && workout.exercises.length === 1 ? 'exercise' : 'exercises'}
                                                     </Typography>
+                                                    <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.75rem' }}>
+                                                    {workout.exercises ? workout.exercises.reduce((total, exercise) => total + (exercise.sets || 0), 0) : 0} sets
+                                                    </Typography>
+                                                    </Box>
+                                                    
                                                 )}
                                             </Box>
-                                            <IconButton size="small" sx={{ color: theme.palette.primary.main }}>
+                                            {/* <IconButton size="small" sx={{ color: theme.palette.primary.main }}>
                                                 {savedWorkout_expandedWorkoutId === workout._id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                                            </IconButton>
+                                            </IconButton> */}
                                         </Box>
-                                        <Collapse in={savedWorkout_expandedWorkoutId === workout._id} timeout="auto" unmountOnExit sx={{ px: 0 }}>
+                                        <Collapse in={true} timeout="auto" unmountOnExit sx={{ px: 0 }}>
                                             <Divider sx={{ mx: 0, bgcolor: alpha(theme.palette.primary.main, 0.15) }} />
                                             <Box sx={{ p: 2 }}>
                                                 {workout.exercisesError ? (<Typography color="error" sx={{ my: 1, fontSize: '0.875rem' }}>{workout.exercisesError}</Typography>
