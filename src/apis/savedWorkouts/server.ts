@@ -28,8 +28,7 @@ import {
     RenameSavedWorkoutRequest,
     RenameSavedWorkoutResponse,
 } from './types';
-import { savedWorkouts, exerciseDefinitions, exercises, getDb } from "@/server/database";
-import { ExerciseDefinition } from '../exerciseDefinitions/types';
+import { savedWorkouts, exerciseDefinitions, exercises } from "@/server/database";
 
 // No need to define API names here, they're imported from index.ts
 
@@ -53,7 +52,6 @@ function mapToApiSavedWorkout(workout: savedWorkouts.SavedWorkout): SavedWorkout
 const isValidObjectId = (id: string) => ObjectId.isValid(id) && new ObjectId(id).toString() === id;
 
 // Utility function to convert to ObjectId
-const toObjectId = (id: string) => new ObjectId(id);
 
 // --- Task 29: API endpoint to get all saved workouts for the user ---
 export const getAllSavedWorkouts = async (

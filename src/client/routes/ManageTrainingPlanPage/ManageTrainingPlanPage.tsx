@@ -102,10 +102,7 @@ export const ManageTrainingPlanPage: React.FC = () => {
         savedWorkout_setSearchTerm,
         savedWorkout_isLoadingDialogExercises,
         savedWorkout_dialogPlanContextError,
-        savedWorkout_filteredDefinitionsForDialog,
         savedWorkout_planExercises,
-        savedWorkout_handleConfirmAddExercise,
-        savedWorkout_isAddingSingleExercise,
         savedWorkout_handleRemoveExercise,
         savedWorkout_isRemovingExercise,
         savedWorkout_isAddWorkoutDialogOpen,
@@ -115,6 +112,17 @@ export const ManageTrainingPlanPage: React.FC = () => {
         savedWorkout_setNewWorkoutNameForAdd,
         savedWorkout_addWorkoutError,
         savedWorkout_handleConfirmAddNewWorkout,
+        savedWorkout_selectedExerciseIds,
+        savedWorkout_handleToggleExerciseSelection,
+        savedWorkout_handleConfirmAddMultipleExercises,
+        savedWorkout_isAddingMultipleExercises,
+        newWorkoutDialog_selectedExerciseIds,
+        newWorkoutDialog_planExercises,
+        newWorkoutDialog_isLoadingExercises,
+        newWorkoutDialog_errorLoadingExercises,
+        newWorkoutDialog_handleToggleExerciseSelection,
+        newWorkoutDialog_searchTerm,
+        setNewWorkoutDialog_searchTerm,
     } = useManageTrainingPlanPage();
 
     const pageTitle = isPageLoading
@@ -290,10 +298,10 @@ export const ManageTrainingPlanPage: React.FC = () => {
                                                         {workout.exercises.map((exercise, index) => {
                                                             const definition = savedWorkout_exerciseDefinitionMap.get(exercise.exerciseDefinitionId.toString());
                                                             return (
-                                                                <ListItem key={`${workout._id}-${exercise.exerciseDefinitionId.toString()}-${index}`} sx={{ bgcolor: theme.palette.grey[100], mb: 1, borderRadius: '8px', p: 1, border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`, minHeight: '50px' }}
+                                                                <ListItem key={`${workout._id}-${exercise._id.toString()}-${index}`} sx={{ bgcolor: theme.palette.grey[100], mb: 1, borderRadius: '8px', p: 1, border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`, minHeight: '50px' }}
                                                                     secondaryAction={ (
-                                                                        <IconButton edge="end" aria-label="remove exercise" onClick={() => savedWorkout_handleRemoveExercise(workout._id, exercise.exerciseDefinitionId.toString())} size="small" sx={{ color: alpha(theme.palette.error.main, 0.7), '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) } }} disabled={savedWorkout_isRemovingExercise === `${workout._id}_${exercise.exerciseDefinitionId.toString()}`}>
-                                                                            {savedWorkout_isRemovingExercise === `${workout._id}_${exercise.exerciseDefinitionId.toString()}` ? <RemoveCircleOutlineIcon fontSize="small" /> : <RemoveCircleOutlineIcon fontSize="small" />}
+                                                                        <IconButton edge="end" aria-label="remove exercise" onClick={() => savedWorkout_handleRemoveExercise(workout._id, exercise._id.toString())} size="small" sx={{ color: alpha(theme.palette.error.main, 0.7), '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) } }} disabled={savedWorkout_isRemovingExercise === `${workout._id}_${exercise._id.toString()}`}>
+                                                                            {savedWorkout_isRemovingExercise === `${workout._id}_${exercise._id.toString()}` ? <RemoveCircleOutlineIcon fontSize="small" /> : <RemoveCircleOutlineIcon fontSize="small" />}
                                                                         </IconButton>
                                                                     )}>
                                                                     <ListItemIcon sx={{ minWidth: 48, mr: 1.5, display: 'flex', alignItems: 'center' }}>
@@ -381,10 +389,11 @@ export const ManageTrainingPlanPage: React.FC = () => {
                         onSearchTermChange={savedWorkout_setSearchTerm}
                         isLoadingDialogExercises={savedWorkout_isLoadingDialogExercises}
                         dialogPlanContextError={savedWorkout_dialogPlanContextError}
-                        filteredDefinitionsForDialog={savedWorkout_filteredDefinitionsForDialog}
-                        planExercises={savedWorkout_planExercises} // Add the new planExercises prop
-                        onConfirmAddExercise={savedWorkout_handleConfirmAddExercise}
-                        isAddingSingleExercise={savedWorkout_isAddingSingleExercise}
+                        planExercises={savedWorkout_planExercises}
+                        selectedExerciseIds={savedWorkout_selectedExerciseIds}
+                        onToggleExerciseSelection={savedWorkout_handleToggleExerciseSelection}
+                        onConfirmAddMultipleExercises={savedWorkout_handleConfirmAddMultipleExercises}
+                        isAddingMultipleExercises={savedWorkout_isAddingMultipleExercises}
                     />
                     <SavedWorkoutAddWorkoutDialog
                         open={savedWorkout_isAddWorkoutDialogOpen}
@@ -394,7 +403,14 @@ export const ManageTrainingPlanPage: React.FC = () => {
                         newWorkoutName={savedWorkout_newWorkoutNameForAdd}
                         onNewWorkoutNameChange={savedWorkout_setNewWorkoutNameForAdd}
                         addWorkoutError={savedWorkout_addWorkoutError}
-                        isProcessing={isPageLoading}
+                        isProcessing={isPageLoading || newWorkoutDialog_isLoadingExercises}
+                        searchTerm={newWorkoutDialog_searchTerm}
+                        onSearchTermChange={setNewWorkoutDialog_searchTerm}
+                        planExercises={newWorkoutDialog_planExercises}
+                        isLoadingExercises={newWorkoutDialog_isLoadingExercises}
+                        errorLoadingExercises={newWorkoutDialog_errorLoadingExercises}
+                        selectedExerciseIds={newWorkoutDialog_selectedExerciseIds}
+                        onToggleExerciseSelection={newWorkoutDialog_handleToggleExerciseSelection}
                     />
                 </>
             )}

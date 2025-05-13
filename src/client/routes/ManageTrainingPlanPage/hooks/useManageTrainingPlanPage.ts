@@ -87,9 +87,19 @@ export const useManageTrainingPlanPage = (): UseManageTrainingPlanPageReturn => 
     const [savedWorkout_isAddWorkoutDialogOpen, setSavedWorkout_isAddWorkoutDialogOpen] = useState(false);
     const [savedWorkout_newWorkoutNameForAdd, setSavedWorkout_newWorkoutNameForAdd] = useState('');
     const [savedWorkout_addWorkoutError, setSavedWorkout_addWorkoutError] = useState<string | null>(null);
-    const [savedWorkout_isAddingSingleExercise, setSavedWorkout_isAddingSingleExercise] = useState(false);
     const [savedWorkout_isRemovingExercise, setSavedWorkout_isRemovingExercise] = useState<string | null>(null);
     const [savedWorkout_isRenamingWorkoutId, setSavedWorkout_isRenamingWorkoutId] = useState<string | null>(null);
+    
+    // New state for multi-select in AddExerciseDialog
+    const [savedWorkout_selectedExerciseIds, setSavedWorkout_selectedExerciseIds] = useState<Set<string>>(new Set());
+    const [savedWorkout_isAddingMultipleExercises, setSavedWorkout_isAddingMultipleExercises] = useState(false);
+    
+    // New state for exercise selection in AddNewWorkoutDialog
+    const [newWorkoutDialog_selectedExerciseIds, setNewWorkoutDialog_selectedExerciseIds] = useState<Set<string>>(new Set());
+    const [newWorkoutDialog_planExercises, setNewWorkoutDialog_planExercises] = useState<Array<{ exerciseId: string; definitionId: string; definition: ApiExerciseDefinition; }>>([]);
+    const [newWorkoutDialog_isLoadingExercises, setNewWorkoutDialog_isLoadingExercises] = useState(false);
+    const [newWorkoutDialog_errorLoadingExercises, setNewWorkoutDialog_errorLoadingExercises] = useState<string | null>(null);
+    const [newWorkoutDialog_searchTerm, setNewWorkoutDialog_searchTerm] = useState('');
     
     const [availableTrainingPlans, setAvailableTrainingPlans] = useState<ApiTrainingPlan[]>([]);
     const [isLoadingTrainingPlans, setIsLoadingTrainingPlans] = useState(false);
@@ -474,20 +484,17 @@ export const useManageTrainingPlanPage = (): UseManageTrainingPlanPageReturn => 
 
     const savedWorkout_handleOpenAddExerciseDialog = async (targetWorkout: ClientWorkoutDisplay) => {
         setSavedWorkout_workoutToAddExerciseTo(targetWorkout);
-        setSavedWorkout_searchTerm('');
+        setSavedWorkout_searchTerm(''); // Clear search term for this dialog
         setSavedWorkout_dialogPlanContextError(null);
         setSavedWorkout_addExerciseDialogOpen(true);
         setSavedWorkout_isLoadingDialogExercises(true);
-        setSavedWorkout_dialogExerciseList([]);
-        
-        // Reset the plan exercises list
-        setSavedWorkout_planExercises([]);
+        setSavedWorkout_dialogExerciseList([]); // Old list, potentially remove if not used elsewhere
+        setSavedWorkout_planExercises([]); // Clear specific list for this dialog
 
         const currentPlanId = planId;
 
         if (currentPlanId) {
             try {
-                // 1. First make sure we have all definitions loaded
                 let definitionsToFilter: ApiExerciseDefinition[] = savedWorkout_allExerciseDefinitions.length > 0
                     ? savedWorkout_allExerciseDefinitions
                     : definitions.length > 0
@@ -499,7 +506,7 @@ export const useManageTrainingPlanPage = (): UseManageTrainingPlanPageReturn => 
                     if (defsResponse.data && Array.isArray(defsResponse.data)) {
                         const freshDefs = defsResponse.data as ApiExerciseDefinition[];
                         setSavedWorkout_allExerciseDefinitions(freshDefs);
-                        if (definitions.length === 0) setDefinitions(freshDefs); // Keep main definitions in sync if empty
+                        if (definitions.length === 0) setDefinitions(freshDefs);
                         definitionsToFilter = freshDefs;
                     } else {
                         setSavedWorkout_dialogPlanContextError('Could not load exercise definitions.');
@@ -508,11 +515,8 @@ export const useManageTrainingPlanPage = (): UseManageTrainingPlanPageReturn => 
                     }
                 }
                 
-                // 2. Fetch the actual exercises for this plan
                 let planExercisesToUse = exercises.length > 0 ? exercises : [];
-                
-                if (planExercisesToUse.length === 0) {
-                    // Need to fetch the exercises for this plan
+                if (planExercisesToUse.length === 0 && currentPlanId) {
                     const exercisesResponse = await getExercises({ trainingPlanId: currentPlanId });
                     if (exercisesResponse.data && Array.isArray(exercisesResponse.data)) {
                         planExercisesToUse = exercisesResponse.data;
@@ -523,94 +527,121 @@ export const useManageTrainingPlanPage = (): UseManageTrainingPlanPageReturn => 
                     }
                 }
                 
-                // 3. Create the combined exercise + definition objects for the dialog
                 const exercisesWithDefinitions = planExercisesToUse.map(exercise => {
                     const definitionId = exercise.exerciseDefinitionId.toString();
-                    const definition = definitionsToFilter.find(def => def._id.toString() === definitionId);
-                    
-                    // If we don't find the definition, create a basic placeholder with required fields
-                    const fallbackDefinition: ApiExerciseDefinition = definition || {
-                        _id: exercise.exerciseDefinitionId,
-                        name: 'Unknown Exercise',
-                        imageUrl: '',
-                        primaryMuscle: '',
-                        secondaryMuscles: [],
-                        bodyWeight: false,
-                        type: '',
-                        static: false
+                    const definitionDetail = definitionsToFilter.find(def => def._id.toString() === definitionId);
+                    const fallbackDefinition: ApiExerciseDefinition = definitionDetail || {
+                        _id: exercise.exerciseDefinitionId, name: 'Unknown Exercise', imageUrl: '', primaryMuscle: '', secondaryMuscles: [], bodyWeight: false, type: '', static: false
                     };
-                    
-                    return {
-                        exerciseId: exercise._id.toString(),
-                        definitionId,
-                        definition: fallbackDefinition
-                    };
+                    return { exerciseId: exercise._id.toString(), definitionId, definition: fallbackDefinition };
                 });
                 
-                setSavedWorkout_planExercises(exercisesWithDefinitions);
-                
-                // Also set filtered definitions for backward compatibility
-                const planExerciseDefIds = new Set(planExercisesToUse.map(e => e.exerciseDefinitionId.toString()));
-                const filteredForPlanContext = definitionsToFilter.filter(def => planExerciseDefIds.has(def._id.toString()));
+                setSavedWorkout_planExercises(exercisesWithDefinitions); // For AddExerciseToWorkoutDialog
 
-                if (filteredForPlanContext.length === 0) {
-                    setSavedWorkout_dialogPlanContextError("No exercises from the current plan are available to add. Ensure exercises are added to the plan first.");
-                } else {
-                    setSavedWorkout_dialogExerciseList(filteredForPlanContext);
+                if (exercisesWithDefinitions.length === 0) {
+                    setSavedWorkout_dialogPlanContextError("No exercises available from the current plan to add.");
                 }
+
             } catch (fetchErr) {
-                console.error(`Error preparing exercise definitions for dialog:`, fetchErr);
+                console.error(`Error preparing exercises for AddExerciseToWorkoutDialog:`, fetchErr);
                 setSavedWorkout_dialogPlanContextError('Error loading exercise details. Please try again.');
             }
         } else {
             setSavedWorkout_dialogPlanContextError('Plan context is missing. Cannot load exercises.');
         }
-        
         setSavedWorkout_isLoadingDialogExercises(false);
     };
 
     const savedWorkout_handleCloseAddExerciseDialog = () => {
         setSavedWorkout_addExerciseDialogOpen(false);
         setSavedWorkout_workoutToAddExerciseTo(null);
-        // Do not clear dialogExerciseList here if we want to keep it cached for next open
-        setSavedWorkout_dialogPlanContextError(null);
+        setSavedWorkout_selectedExerciseIds(new Set()); // Clear selections on close
+        setSavedWorkout_searchTerm(''); // Clear search on close
+        setSavedWorkout_dialogPlanContextError(null); // Clear any specific errors
     };
 
-    const savedWorkout_handleConfirmAddExercise = async (exerciseId: string) => {
-        if (!savedWorkout_workoutToAddExerciseTo) return;
-        setSavedWorkout_isAddingSingleExercise(true);
-        setSavedWorkout_error(null); setSavedWorkout_successMessage(null);
-        try {
-            const requestParams: AddExerciseToSavedWorkoutRequest = {
-                workoutId: savedWorkout_workoutToAddExerciseTo._id.toString(),
-                exerciseId: exerciseId,
-            };
-            const response = await addExerciseToSavedWorkout(requestParams);
-            if (response.data && 'error' in response.data) {
-                setSavedWorkout_error(`Failed to add exercise: ${response.data.error}`);
-            } else if (response.data) { // Assuming response.data implies success
-                await loadInitialPageData(); // Reload all data
-                setSavedWorkout_successMessage('Exercise added successfully!');
-                // Consider if dialog should close automatically. For now, it does via UI interaction.
-                // savedWorkout_handleCloseAddExerciseDialog(); // If auto-close is desired
+    // Handler for toggling exercise selection in AddExerciseDialog (for existing workouts)
+    const savedWorkout_handleToggleExerciseSelection = (exerciseId: string) => {
+        setSavedWorkout_selectedExerciseIds(prevSelectedIds => {
+            const newSelectedIds = new Set(prevSelectedIds);
+            if (newSelectedIds.has(exerciseId)) {
+                newSelectedIds.delete(exerciseId);
             } else {
-                setSavedWorkout_error('Failed to add exercise: No data returned');
+                newSelectedIds.add(exerciseId);
             }
-        } catch (err) {
-            console.error('Error adding exercise via API:', err);
-            setSavedWorkout_error(`An error occurred: ${err instanceof Error ? err.message : String(err)}`);
-        } finally {
-            setSavedWorkout_isAddingSingleExercise(false);
-            clearMessages();
-        }
+            return newSelectedIds;
+        });
     };
 
-    const savedWorkout_handleRemoveExercise = async (workoutIdToRemoveFrom: string, exerciseDefIdToRemove: string) => {
-        const removingKey = `${workoutIdToRemoveFrom}_${exerciseDefIdToRemove}`;
+    // Handler for toggling exercise selection in AddNewWorkoutDialog
+    const newWorkoutDialog_handleToggleExerciseSelection = (exerciseId: string) => {
+        setNewWorkoutDialog_selectedExerciseIds(prevSelectedIds => {
+            const newSelectedIds = new Set(prevSelectedIds);
+            if (newSelectedIds.has(exerciseId)) {
+                newSelectedIds.delete(exerciseId);
+            } else {
+                newSelectedIds.add(exerciseId);
+            }
+            return newSelectedIds;
+        });
+    };
+
+    // New handler for confirming addition of multiple selected exercises
+    const savedWorkout_handleConfirmAddMultipleExercises = async () => {
+        if (!savedWorkout_workoutToAddExerciseTo || savedWorkout_selectedExerciseIds.size === 0) return;
+
+        setSavedWorkout_isAddingMultipleExercises(true);
+        setSavedWorkout_error(null);
+        setSavedWorkout_successMessage(null);
+
+        const workoutId = savedWorkout_workoutToAddExerciseTo._id.toString();
+        const exerciseIdsToAdd = Array.from(savedWorkout_selectedExerciseIds);
+        let successes = 0;
+        const errors: string[] = [];
+
+        for (const exerciseId of exerciseIdsToAdd) {
+            try {
+                const requestParams: AddExerciseToSavedWorkoutRequest = { workoutId, exerciseId };
+                const response = await addExerciseToSavedWorkout(requestParams);
+                if (response.data && 'error' in response.data) {
+                    errors.push(`Failed to add ${exerciseId}: ${response.data.error}`);
+                } else if (response.data?.success) {
+                    successes++;
+                } else {
+                    errors.push(response.data?.message || `Failed to add ${exerciseId}: Unknown issue`);
+                }
+            } catch (err) {
+                errors.push(`Error adding ${exerciseId}: ${err instanceof Error ? err.message : String(err)}`);
+                console.error(`Error adding exercise ${exerciseId} via API:`, err);
+            }
+        }
+
+        setSavedWorkout_isAddingMultipleExercises(false);
+
+        if (errors.length === 0 && successes > 0) {
+            setSavedWorkout_successMessage(`${successes} exercise${successes > 1 ? 's' : ''} added successfully to ${savedWorkout_workoutToAddExerciseTo.name}!`);
+            await loadInitialPageData(); // Reload data
+            savedWorkout_handleCloseAddExerciseDialog(); // Close dialog
+        } else {
+            const errorMsg = errors.join('; ');
+            setSavedWorkout_error(errorMsg || 'An unknown error occurred while adding exercises.');
+            if (successes > 0) { // Partial success
+                setSavedWorkout_successMessage(`Successfully added ${successes} exercise${successes > 1 ? 's' : ''}. Some exercises failed.`);
+                await loadInitialPageData(); // Reload data as some might have been added
+                 // Do not close dialog on partial success, let user see errors and remaining selections.
+                 // Consider clearing only successfully added exercises from selection.
+                 // For simplicity now, we keep dialog open and selections as is.
+            }
+        }
+        clearMessages();
+    };
+
+    const savedWorkout_handleRemoveExercise = async (workoutIdToRemoveFrom: string, exerciseIdToRemove: string) => {
+        const removingKey = `${workoutIdToRemoveFrom}_${exerciseIdToRemove}`;
         setSavedWorkout_isRemovingExercise(removingKey);
         setSavedWorkout_error(null); setSavedWorkout_successMessage(null);
         try {
-            const requestParams: RemoveExerciseFromSavedWorkoutRequest = { workoutId: workoutIdToRemoveFrom, exerciseIdToRemove: exerciseDefIdToRemove };
+            const requestParams: RemoveExerciseFromSavedWorkoutRequest = { workoutId: workoutIdToRemoveFrom, exerciseIdToRemove: exerciseIdToRemove };
             const response = await removeExerciseFromSavedWorkoutApi(requestParams);
             if (response.data && 'error' in response.data) {
                 setSavedWorkout_error(`Failed to remove exercise: ${response.data.error}`);
@@ -629,27 +660,90 @@ export const useManageTrainingPlanPage = (): UseManageTrainingPlanPageReturn => 
         }
     };
 
-    const savedWorkout_filteredDefinitionsForDialog = useMemo(() => {
-        if (savedWorkout_isLoadingDialogExercises) return [];
-        if (!savedWorkout_searchTerm) return savedWorkout_dialogExerciseList;
-        return savedWorkout_dialogExerciseList.filter(def =>
-            def.name.toLowerCase().includes(savedWorkout_searchTerm.toLowerCase())
-        );
-    }, [savedWorkout_dialogExerciseList, savedWorkout_searchTerm, savedWorkout_isLoadingDialogExercises]);
-
-    const savedWorkout_handleOpenAddWorkoutDialog = () => {
+    const savedWorkout_handleOpenAddWorkoutDialog = async () => { // Made async
         if (availableTrainingPlans.length === 0 && !isLoadingTrainingPlans) {
-            fetchAvailableTrainingPlans(); // Ensure plans are loaded if not already
+            fetchAvailableTrainingPlans();
         }
         setSavedWorkout_newWorkoutNameForAdd('');
         setSavedWorkout_addWorkoutError(null);
-        setSavedWorkout_isAddWorkoutDialogOpen(true);
+        // Reset and load exercises for this dialog
+        setNewWorkoutDialog_selectedExerciseIds(new Set());
+        setNewWorkoutDialog_planExercises([]);
+        setNewWorkoutDialog_isLoadingExercises(true);
+        setNewWorkoutDialog_errorLoadingExercises(null);
+
+        const currentPlanId = planId;
+        if (currentPlanId) {
+            try {
+                // Copied/adapted logic from savedWorkout_handleOpenAddExerciseDialog
+                let definitionsToFilter: ApiExerciseDefinition[] = savedWorkout_allExerciseDefinitions.length > 0
+                    ? savedWorkout_allExerciseDefinitions
+                    : definitions.length > 0
+                        ? definitions
+                        : [];
+
+                if (definitionsToFilter.length === 0) {
+                    const defsResponse = await getAllExerciseDefinitionOptions();
+                    if (defsResponse.data && Array.isArray(defsResponse.data)) {
+                        const freshDefs = defsResponse.data as ApiExerciseDefinition[];
+                        setSavedWorkout_allExerciseDefinitions(freshDefs); // Keep this shared cache up-to-date
+                        if (definitions.length === 0) setDefinitions(freshDefs); // Keep main definitions in sync
+                        definitionsToFilter = freshDefs;
+                    } else {
+                        setNewWorkoutDialog_errorLoadingExercises('Could not load exercise definitions.');
+                        setNewWorkoutDialog_isLoadingExercises(false);
+                        setSavedWorkout_isAddWorkoutDialogOpen(true); // Still open dialog to show error
+                        return;
+                    }
+                }
+                
+                let planExercisesToUse = exercises.length > 0 ? exercises : [];
+                if (planExercisesToUse.length === 0 && currentPlanId) {
+                    const exercisesResponse = await getExercises({ trainingPlanId: currentPlanId });
+                    if (exercisesResponse.data && Array.isArray(exercisesResponse.data)) {
+                        planExercisesToUse = exercisesResponse.data;
+                    } else {
+                        setNewWorkoutDialog_errorLoadingExercises('Could not load plan exercises.');
+                        setNewWorkoutDialog_isLoadingExercises(false);
+                        setSavedWorkout_isAddWorkoutDialogOpen(true);
+                        return;
+                    }
+                }
+                
+                const exercisesWithDefinitions = planExercisesToUse.map(exercise => {
+                    const definitionId = exercise.exerciseDefinitionId.toString();
+                    const definitionDetail = definitionsToFilter.find(def => def._id.toString() === definitionId);
+                    const fallbackDefinition: ApiExerciseDefinition = definitionDetail || {
+                        _id: exercise.exerciseDefinitionId, name: 'Unknown Exercise', imageUrl: '', primaryMuscle: '', secondaryMuscles: [], bodyWeight: false, type: '', static: false
+                    };
+                    return { exerciseId: exercise._id.toString(), definitionId, definition: fallbackDefinition };
+                });
+                
+                setNewWorkoutDialog_planExercises(exercisesWithDefinitions);
+                if (exercisesWithDefinitions.length === 0) {
+                    setNewWorkoutDialog_errorLoadingExercises("No exercises available in the current plan to add to a new workout.");
+                }
+
+            } catch (fetchErr) {
+                console.error(`Error preparing exercises for AddNewWorkoutDialog:`, fetchErr);
+                setNewWorkoutDialog_errorLoadingExercises('Error loading exercise details. Please try again.');
+            }
+        } else {
+            setNewWorkoutDialog_errorLoadingExercises('Plan context is missing. Cannot load exercises for new workout.');
+        }
+        
+        setNewWorkoutDialog_isLoadingExercises(false);
+        setSavedWorkout_isAddWorkoutDialogOpen(true); // Open the dialog
     };
     
     const savedWorkout_handleCloseAddWorkoutDialog = () => {
         setSavedWorkout_isAddWorkoutDialogOpen(false);
         setSavedWorkout_newWorkoutNameForAdd('');
         setSavedWorkout_addWorkoutError(null);
+        setNewWorkoutDialog_selectedExerciseIds(new Set()); // Clear selections for this dialog
+        setNewWorkoutDialog_planExercises([]); // Clear exercises for this dialog
+        setNewWorkoutDialog_errorLoadingExercises(null); // Clear error for this dialog
+        setNewWorkoutDialog_searchTerm(''); // Clear search term for this dialog
     };
 
     const savedWorkout_handleConfirmAddNewWorkout = async () => {
@@ -668,10 +762,11 @@ export const useManageTrainingPlanPage = (): UseManageTrainingPlanPageReturn => 
         // For example: setIsCreatingWorkout(true);
 
         try {
+            const selectedExerciseIdsArray = Array.from(newWorkoutDialog_selectedExerciseIds);
             const response = await createSavedWorkout({
                 name: savedWorkout_newWorkoutNameForAdd.trim(),
                 trainingPlanId: planId,
-                exerciseIds: [] // Initially empty
+                exerciseIds: selectedExerciseIdsArray, // Pass selected exercise IDs
             });
 
             if (response.data && 'error' in response.data) {
@@ -759,12 +854,13 @@ export const useManageTrainingPlanPage = (): UseManageTrainingPlanPageReturn => 
         savedWorkout_dialogExerciseList,
         savedWorkout_isLoadingDialogExercises,
         savedWorkout_dialogPlanContextError,
-        savedWorkout_filteredDefinitionsForDialog,
         savedWorkout_planExercises,
-        savedWorkout_handleConfirmAddExercise,
-        savedWorkout_isAddingSingleExercise,
         savedWorkout_handleRemoveExercise,
         savedWorkout_isRemovingExercise,
+        savedWorkout_selectedExerciseIds,
+        savedWorkout_handleToggleExerciseSelection,
+        savedWorkout_handleConfirmAddMultipleExercises,
+        savedWorkout_isAddingMultipleExercises,
         savedWorkout_isAddWorkoutDialogOpen,
         savedWorkout_handleOpenAddWorkoutDialog,
         savedWorkout_handleCloseAddWorkoutDialog,
@@ -772,6 +868,15 @@ export const useManageTrainingPlanPage = (): UseManageTrainingPlanPageReturn => 
         savedWorkout_setNewWorkoutNameForAdd: setSavedWorkout_newWorkoutNameForAdd,
         savedWorkout_addWorkoutError,
         savedWorkout_handleConfirmAddNewWorkout,
+        
+        // For New Workout Dialog exercise selection
+        newWorkoutDialog_selectedExerciseIds,
+        newWorkoutDialog_planExercises,
+        newWorkoutDialog_isLoadingExercises,
+        newWorkoutDialog_errorLoadingExercises,
+        newWorkoutDialog_handleToggleExerciseSelection,
+        newWorkoutDialog_searchTerm,
+        setNewWorkoutDialog_searchTerm,
         
         // Shared/General
         loadInitialPageData, // Expose if manual refresh is needed from UI

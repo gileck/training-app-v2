@@ -70,15 +70,12 @@ export interface UseManageTrainingPlanPageReturn {
     savedWorkout_dialogExerciseList: ApiExerciseDefinition[];
     savedWorkout_isLoadingDialogExercises: boolean;
     savedWorkout_dialogPlanContextError: string | null;
-    savedWorkout_filteredDefinitionsForDialog: ApiExerciseDefinition[];
     savedWorkout_planExercises: Array<{
         exerciseId: string;
         definitionId: string;
         definition: ApiExerciseDefinition;
     }>;
-    savedWorkout_handleConfirmAddExercise: (exerciseId: string) => Promise<void>;
-    savedWorkout_isAddingSingleExercise: boolean;
-    savedWorkout_handleRemoveExercise: (workoutIdToRemoveFrom: string, exerciseDefIdToRemove: string) => Promise<void>;
+    savedWorkout_handleRemoveExercise: (workoutIdToRemoveFrom: string, exerciseIdToRemove: string) => Promise<void>;
     savedWorkout_isRemovingExercise: string | null; 
     savedWorkout_isAddWorkoutDialogOpen: boolean;
     savedWorkout_handleOpenAddWorkoutDialog: () => void;
@@ -87,6 +84,25 @@ export interface UseManageTrainingPlanPageReturn {
     savedWorkout_setNewWorkoutNameForAdd: React.Dispatch<React.SetStateAction<string>>;
     savedWorkout_addWorkoutError: string | null;
     savedWorkout_handleConfirmAddNewWorkout: () => Promise<void>;
+
+    // New properties for multi-select in AddExerciseDialog (for existing workouts)
+    savedWorkout_selectedExerciseIds: Set<string>;
+    savedWorkout_handleToggleExerciseSelection: (exerciseId: string) => void;
+    savedWorkout_handleConfirmAddMultipleExercises: () => Promise<void>;
+    savedWorkout_isAddingMultipleExercises: boolean;
+
+    // New properties for exercise selection in AddNewWorkoutDialog
+    newWorkoutDialog_selectedExerciseIds: Set<string>;
+    newWorkoutDialog_planExercises: Array<{
+        exerciseId: string;
+        definitionId: string;
+        definition: ApiExerciseDefinition;
+    }>;
+    newWorkoutDialog_isLoadingExercises: boolean;
+    newWorkoutDialog_errorLoadingExercises: string | null;
+    newWorkoutDialog_handleToggleExerciseSelection: (exerciseId: string) => void;
+    newWorkoutDialog_searchTerm: string;
+    setNewWorkoutDialog_searchTerm: React.Dispatch<React.SetStateAction<string>>;
 
     // Shared/General
     loadInitialPageData: () => Promise<void>;

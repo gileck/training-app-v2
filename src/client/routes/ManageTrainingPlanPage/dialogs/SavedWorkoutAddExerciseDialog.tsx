@@ -17,6 +17,9 @@ import {
     Avatar,
     useTheme,
     alpha,
+    Checkbox,
+    Button,
+    DialogActions,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
@@ -40,10 +43,13 @@ interface SavedWorkoutAddExerciseDialogProps {
     onSearchTermChange: (term: string) => void;
     isLoadingDialogExercises: boolean;
     dialogPlanContextError: string | null;
-    filteredDefinitionsForDialog: ApiExerciseDefinition[];
-    planExercises: ExerciseWithDefinition[]; // New prop for exercises with their definitions
-    onConfirmAddExercise: (exerciseId: string) => void;
-    isAddingSingleExercise: boolean;
+    planExercises: ExerciseWithDefinition[];
+
+    // New props for multi-select
+    selectedExerciseIds: Set<string>;
+    onToggleExerciseSelection: (exerciseId: string) => void;
+    onConfirmAddMultipleExercises: () => void;
+    isAddingMultipleExercises: boolean;
 }
 
 export const SavedWorkoutAddExerciseDialog: React.FC<SavedWorkoutAddExerciseDialogProps> = ({
@@ -54,10 +60,11 @@ export const SavedWorkoutAddExerciseDialog: React.FC<SavedWorkoutAddExerciseDial
     onSearchTermChange,
     isLoadingDialogExercises,
     dialogPlanContextError,
-    filteredDefinitionsForDialog,
     planExercises,
-    onConfirmAddExercise,
-    isAddingSingleExercise,
+    selectedExerciseIds,
+    onToggleExerciseSelection,
+    onConfirmAddMultipleExercises,
+    isAddingMultipleExercises,
 }) => {
     const theme = useTheme();
     
@@ -72,14 +79,14 @@ export const SavedWorkoutAddExerciseDialog: React.FC<SavedWorkoutAddExerciseDial
     }, [planExercises, searchTerm]);
     
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { height: '80vh', borderRadius: '12px' } }}>
+        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { height: '80vh', borderRadius: '12px', display: 'flex', flexDirection: 'column' } }}>
             <AppBar sx={{ position: 'relative', bgcolor: alpha(theme.palette.success.light, 0.1), boxShadow: 'none' }}>
                 <Toolbar>
                     <Typography sx={{ ml: 2, flex: 1, color: theme.palette.success.dark, fontWeight: 'bold' }} variant="h6" component="div">Add Exercise to {workoutToAddExerciseTo?.name || 'Workout'}</Typography>
                     <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close" sx={{ color: theme.palette.success.dark }}><CloseIcon /></IconButton>
                 </Toolbar>
             </AppBar>
-            <DialogContent sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+            <DialogContent sx={{ p: 2, display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
                 <TextField 
                     fullWidth 
                     variant="outlined" 
@@ -96,31 +103,69 @@ export const SavedWorkoutAddExerciseDialog: React.FC<SavedWorkoutAddExerciseDial
                 ) : dialogPlanContextError ? (
                     <Typography sx={{ textAlign: 'center', mt: 2, color: alpha(theme.palette.error.main, 0.9) }}>{dialogPlanContextError}</Typography>
                 ) : filteredExercises.length === 0 ? (
-                    <Typography sx={{ textAlign: 'center', mt: 2, color: alpha('#000000', 0.7) }}>No exercises found.</Typography>
+                    <Typography sx={{ textAlign: 'center', mt: 2, color: alpha('#000000', 0.7) }}>No exercises found or all exercises from the plan are already in this workout.</Typography>
                 ) : (
-                    <List dense sx={{ overflowY: 'auto', flexGrow: 1 }}>
-                        {filteredExercises.map((exercise) => (
-                            <ListItemButton 
-                                key={exercise.exerciseId} 
-                                onClick={() => onConfirmAddExercise(exercise.exerciseId)} 
-                                disabled={isAddingSingleExercise || Boolean(workoutToAddExerciseTo && workoutToAddExerciseTo.exercises?.some(ex => ex._id.toString() === exercise.exerciseId))} 
-                                sx={{ mb: 0.5, borderRadius: '8px' }}
-                            >
-                                {isAddingSingleExercise && <CircularProgress size={20} sx={{ mr: 1 }} />}
-                                <ListItemIcon sx={{ minWidth: 48, mr: 1.5, display: 'flex', alignItems: 'center' }}>
-                                    {exercise.definition.imageUrl ? 
-                                        <Avatar src={exercise.definition.imageUrl} variant="rounded" sx={{ width: 36, height: 36 }}><BrokenImageIcon /></Avatar> : 
-                                        <Avatar variant="rounded" sx={{ width: 36, height: 36 }}><FitnessCenterIcon /></Avatar>}
-                                </ListItemIcon>
-                                <ListItemText 
-                                    primary={exercise.definition.name} 
-                                    primaryTypographyProps={{ fontWeight: 500 }} 
-                                />
-                            </ListItemButton>
-                        ))}
+                    <List dense sx={{ overflowY: 'auto', flexGrow: 1, pr: 1 }}>
+                        {filteredExercises.map((exercise) => {
+                            const isSelected = selectedExerciseIds.has(exercise.exerciseId);
+                            const isAlreadyInWorkout = Boolean(workoutToAddExerciseTo && workoutToAddExerciseTo.exercises?.some(ex => ex._id.toString() === exercise.exerciseId));
+                            const isDisabled = isAddingMultipleExercises || isAlreadyInWorkout;
+
+                            return (
+                                <ListItemButton 
+                                    key={exercise.exerciseId} 
+                                    disabled={isDisabled}
+                                    selected={isSelected}
+                                    sx={{
+                                        mb: 0.5, 
+                                        borderRadius: '8px',
+                                        opacity: isAlreadyInWorkout ? 0.6 : 1,
+                                        bgcolor: isSelected ? alpha(theme.palette.success.light, 0.2) : undefined,
+                                    }}
+                                >
+                                    <ListItemIcon sx={{ minWidth: 'auto', mr: 1.5 }}>
+                                        <Checkbox
+                                            edge="start"
+                                            checked={isSelected || isAlreadyInWorkout}
+                                            disabled={isDisabled}
+                                            onChange={() => {
+                                                if (!isAlreadyInWorkout) {
+                                                    onToggleExerciseSelection(exercise.exerciseId);
+                                                }
+                                            }}
+                                            inputProps={{ 'aria-labelledby': `checkbox-list-label-${exercise.exerciseId}` }}
+                                            color="success"
+                                        />
+                                    </ListItemIcon>
+                                    <ListItemIcon sx={{ minWidth: 48, mr: 1.5, display: 'flex', alignItems: 'center' }}>
+                                        {exercise.definition.imageUrl ? 
+                                            <Avatar src={exercise.definition.imageUrl} variant="rounded" sx={{ width: 36, height: 36 }}><BrokenImageIcon /></Avatar> : 
+                                            <Avatar variant="rounded" sx={{ width: 36, height: 36 }}><FitnessCenterIcon /></Avatar>}
+                                    </ListItemIcon>
+                                    <ListItemText 
+                                        id={`checkbox-list-label-${exercise.exerciseId}`}
+                                        primary={exercise.definition.name} 
+                                        primaryTypographyProps={{ fontWeight: 500, color: isAlreadyInWorkout ? theme.palette.text.disabled : theme.palette.text.primary }}
+                                        secondary={isAlreadyInWorkout ? "Already in workout" : null}
+                                    />
+                                </ListItemButton>
+                            );
+                        })}
                     </List>
                 )}
             </DialogContent>
+            <DialogActions sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+                <Button onClick={onClose} color="inherit">Cancel</Button>
+                <Button 
+                    onClick={onConfirmAddMultipleExercises} 
+                    variant="contained" 
+                    color="success"
+                    disabled={isAddingMultipleExercises || selectedExerciseIds.size === 0 || isLoadingDialogExercises}
+                    startIcon={isAddingMultipleExercises ? <CircularProgress size={20} color="inherit" /> : null}
+                >
+                    Add Selected ({selectedExerciseIds.size})
+                </Button>
+            </DialogActions>
         </Dialog>
     );
 }; 
