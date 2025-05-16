@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Box, Typography, Button, LinearProgress, alpha, Paper, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, LinearProgress, alpha, Paper, CircularProgress, Alert, IconButton } from '@mui/material';
 import { WorkoutExercise } from '@/client/types/workout';
 import { LargeExerciseCard } from './LargeExerciseCard';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; // For completion indication
 import SaveIcon from '@mui/icons-material/Save'; // Icon for Save button
+import ExitToAppIcon from '@mui/icons-material/ExitToApp'; // Icon for End workout
 import { SaveWorkoutDialog } from './SaveWorkoutDialog'; // Import the new dialog
 
 // Neon color constants
 const NEON_BLUE = '#3D5AFE';
 const NEON_GREEN = '#00C853';
 const LIGHT_PAPER_BG = '#F5F5F7'; // Background for the new Paper header
-const NEUTRAL_BUTTON_BORDER = alpha('#000000', 0.23); // For default end workout button
 const DEFAULT_CUSTOM_WORKOUT_NAME = 'Workout'; // Default name from useWorkoutView
 
 interface ActiveWorkoutContentProps {
@@ -83,9 +83,42 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
                     p: { xs: 1.5, sm: 2 }
                 }}
             >
-                <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', textAlign: 'center', color: alpha('#000000', 0.85), mb: 1.5 }}>
-                    {currentWorkoutName}
-                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    {showSaveButton && (
+                        <IconButton
+                            color="primary"
+                            onClick={() => setIsSaveDialogOpen(true)}
+                            disabled={isSavingWorkout}
+                            sx={{
+                                bgcolor: alpha(NEON_BLUE, 0.1),
+                                '&:hover': { bgcolor: alpha(NEON_BLUE, 0.2) }
+                            }}
+                            size="small"
+                        >
+                            {isSavingWorkout ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                        </IconButton>
+                    )}
+                    {!showSaveButton && <Box sx={{ width: 40 }} />}
+
+                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', color: alpha('#000000', 0.85) }}>
+                        {currentWorkoutName}
+                    </Typography>
+
+                    <IconButton
+                        color={isWorkoutComplete ? "success" : "default"}
+                        onClick={onEndWorkout}
+                        disabled={isSavingWorkout}
+                        sx={{
+                            bgcolor: isWorkoutComplete ? alpha(NEON_GREEN, 0.1) : alpha('#000000', 0.05),
+                            '&:hover': {
+                                bgcolor: isWorkoutComplete ? alpha(NEON_GREEN, 0.2) : alpha('#000000', 0.1)
+                            }
+                        }}
+                        size="small"
+                    >
+                        <ExitToAppIcon />
+                    </IconButton>
+                </Box>
 
                 <LinearProgress
                     variant="determinate"
@@ -113,54 +146,6 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
             {saveError && !isSaveDialogOpen && (
                 <Alert severity="error" sx={{ mb: 2, mx: 1 }}>{saveError}</Alert>
             )}
-
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mb: 2.5, px: 1 }}>
-                {showSaveButton && (
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={isSavingWorkout ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-                        onClick={() => setIsSaveDialogOpen(true)}
-                        disabled={isSavingWorkout}
-                        sx={{
-                            textTransform: 'none',
-                            fontWeight: 'bold',
-                            bgcolor: NEON_BLUE,
-                            color: 'white',
-                            minWidth: '150px',
-                            py: 0.8,
-                            borderRadius: 2,
-                            '&:hover': {
-                                bgcolor: alpha(NEON_BLUE, 0.85)
-                            }
-                        }}
-                    >
-                        {isSavingWorkout && !isSaveDialogOpen ? 'Saving...' : 'Save Workout'}
-                    </Button>
-                )}
-                <Button
-                    variant={isWorkoutComplete ? "contained" : "outlined"}
-                    color={isWorkoutComplete ? "success" : "inherit"}
-                    onClick={onEndWorkout}
-                    disabled={isSavingWorkout}
-                    sx={{
-                        textTransform: 'none',
-                        fontWeight: 'bold',
-                        borderColor: isWorkoutComplete ? undefined : NEUTRAL_BUTTON_BORDER,
-                        bgcolor: isWorkoutComplete ? NEON_GREEN : undefined,
-                        color: isWorkoutComplete ? 'white' : undefined,
-                        minWidth: '150px',
-                        py: 0.8,
-                        borderRadius: 2,
-                        '&:hover': {
-                            bgcolor: isWorkoutComplete ? alpha(NEON_GREEN, 0.85) : undefined,
-                            borderColor: isWorkoutComplete ? undefined : alpha(NEUTRAL_BUTTON_BORDER, 0.7)
-                        }
-                    }}
-                >
-                    {isWorkoutComplete ? 'Finish Workout' : 'End Workout'}
-                </Button>
-            </Box>
 
             <SaveWorkoutDialog
                 open={isSaveDialogOpen}
