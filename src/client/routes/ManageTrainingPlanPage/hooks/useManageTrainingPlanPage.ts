@@ -117,7 +117,7 @@ export const useManageTrainingPlanPage = () => {
             pageActions.setError("Training Plan ID missing from route parameters.");
             pageActions.setIsPageLoading(false);
         }
-    }, [planId, routeParams, pageActions, loadInitialPageData]);
+    }, [planId, routeParams, pageActions]);
 
     // Create computed values with minimal dependencies
     const definitionsMapMPE = useMemo(() =>

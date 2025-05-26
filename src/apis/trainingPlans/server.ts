@@ -178,6 +178,7 @@ export const deleteTrainingPlan = async (params: DeleteTrainingPlanRequest, cont
     if (!params.planId) {
         return { success: false, message: "Plan ID is required." };
     }
+
     if (!ObjectId.isValid(params.planId)) {
         return { success: false, message: "Invalid Plan ID format." };
     }
@@ -189,7 +190,7 @@ export const deleteTrainingPlan = async (params: DeleteTrainingPlanRequest, cont
         if (deleted) {
             return { success: true, message: "Training plan and associated data deleted." };
         } else {
-            return { success: false, message: "Training plan not found or access denied (during delete)." };
+            return { success: false, message: "Training plan not found or access denied." };
         }
     } catch (error) {
         console.error("Error deleting training plan:", error);
@@ -275,7 +276,7 @@ export const getActiveTrainingPlan = async (
     if (!context.userId) {
         return { error: "Unauthorized", plan: null };
     }
-    
+
     try {
         // Use the database layer to get the active training plan
         const activePlan = await trainingPlans.findActiveTrainingPlan(context.userId);

@@ -10,6 +10,7 @@ import type { TrainingPlan } from '@/apis/trainingPlans/types';
 import { useAuth } from '@/client/context/AuthContext';
 import { useRouter } from '@/client/router';
 import AddTrainingPlanDialog from '@/client/components/AddTrainingPlanDialog';
+import { ConfirmationDialog } from '@/client/components/ConfirmationDialog';
 
 const formatDate = (date: Date | string | undefined): string => {
     if (!date) return 'N/A';
@@ -23,6 +24,15 @@ export const TrainingPlans: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{
+        open: boolean;
+        planId: string;
+        planName: string;
+    }>({
+        open: false,
+        planId: '',
+        planName: ''
+    });
     const { isAuthenticated } = useAuth();
     const { navigate } = useRouter();
 
@@ -55,9 +65,16 @@ export const TrainingPlans: React.FC = () => {
     }, [fetchPlans]);
 
     const handleDelete = useCallback(async (planId: string, planName: string) => {
-        if (!window.confirm(`Are you sure you want to delete the plan "${planName}"? This cannot be undone.`)) {
-            return;
-        }
+        setDeleteConfirmation({
+            open: true,
+            planId,
+            planName
+        });
+    }, []);
+
+    const handleDeleteConfirm = useCallback(async () => {
+        const { planId } = deleteConfirmation;
+        setDeleteConfirmation({ open: false, planId: '', planName: '' });
         setError(null);
         try {
             const response = await deleteTrainingPlan({ planId });
@@ -74,7 +91,11 @@ export const TrainingPlans: React.FC = () => {
             console.error("Failed to delete training plan:", err);
             setError(err instanceof Error ? err.message : "An unknown error occurred during deletion.");
         }
-    }, [fetchPlans, plans]);
+    }, [deleteConfirmation, fetchPlans, plans]);
+
+    const handleDeleteCancel = useCallback(() => {
+        setDeleteConfirmation({ open: false, planId: '', planName: '' });
+    }, []);
 
     const handleDuplicate = useCallback(async (planId: string) => {
         setError(null);
@@ -255,6 +276,17 @@ export const TrainingPlans: React.FC = () => {
                 open={isAddDialogOpen}
                 onClose={handleAddDialogClose}
                 onPlanCreated={handlePlanCreated}
+            />
+
+            <ConfirmationDialog
+                open={deleteConfirmation.open}
+                title="Delete Training Plan"
+                message={`Are you sure you want to delete the plan "${deleteConfirmation.planName}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={handleDeleteConfirm}
+                onCancel={handleDeleteCancel}
+                severity="error"
             />
         </Box>
     );

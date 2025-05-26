@@ -1,10 +1,10 @@
 import { Collection, ObjectId } from 'mongodb';
 import { getDb, getMongoClient } from '@/server/database';
-import { 
-  TrainingPlan, 
-  TrainingPlanCreate, 
-  TrainingPlanUpdate, 
-  TrainingPlanFilter 
+import {
+  TrainingPlan,
+  TrainingPlanCreate,
+  TrainingPlanUpdate,
+  TrainingPlanFilter
 } from './types';
 
 /**
@@ -13,6 +13,30 @@ import {
 const getTrainingPlansCollection = async (): Promise<Collection<TrainingPlan>> => {
   const db = await getDb();
   return db.collection<TrainingPlan>('trainingPlans');
+};
+
+/**
+ * Get a reference to the exercises collection
+ */
+const getExercisesCollection = async (): Promise<Collection> => {
+  const db = await getDb();
+  return db.collection('exercises');
+};
+
+/**
+ * Get a reference to the weeklyProgress collection
+ */
+const getWeeklyProgressCollection = async (): Promise<Collection> => {
+  const db = await getDb();
+  return db.collection('weeklyProgress');
+};
+
+/**
+ * Get a reference to the exerciseActivityLog collection
+ */
+const getExerciseActivityLogCollection = async (): Promise<Collection> => {
+  const db = await getDb();
+  return db.collection('exerciseActivityLog');
 };
 
 /**
@@ -27,7 +51,7 @@ export const findTrainingPlansForUser = async (
 ): Promise<TrainingPlan[]> => {
   const collection = await getTrainingPlansCollection();
   const userIdObj = typeof userId === 'string' ? new ObjectId(userId) : userId;
-  
+
   return collection.find({
     userId: userIdObj,
     ...filter
@@ -47,7 +71,7 @@ export const findTrainingPlanById = async (
   const collection = await getTrainingPlansCollection();
   const idObj = typeof planId === 'string' ? new ObjectId(planId) : planId;
   const userIdObj = typeof userId === 'string' ? new ObjectId(userId) : userId;
-  
+
   return collection.findOne({ _id: idObj, userId: userIdObj });
 };
 
@@ -61,7 +85,7 @@ export const findActiveTrainingPlan = async (
 ): Promise<TrainingPlan | null> => {
   const collection = await getTrainingPlansCollection();
   const userIdObj = typeof userId === 'string' ? new ObjectId(userId) : userId;
-  
+
   return collection.findOne({ userId: userIdObj, isActive: true });
 };
 
@@ -72,7 +96,7 @@ export const findActiveTrainingPlan = async (
  */
 export const insertTrainingPlan = async (plan: TrainingPlanCreate): Promise<TrainingPlan> => {
   const collection = await getTrainingPlansCollection();
-  
+
   // If this plan is active, ensure no other active plans for this user
   if (plan.isActive) {
     await collection.updateMany(
@@ -80,13 +104,13 @@ export const insertTrainingPlan = async (plan: TrainingPlanCreate): Promise<Trai
       { $set: { isActive: false, updatedAt: new Date() } }
     );
   }
-  
+
   const result = await collection.insertOne(plan as TrainingPlan);
-  
+
   if (!result.insertedId) {
     throw new Error('Failed to insert training plan');
   }
-  
+
   return { ...plan, _id: result.insertedId } as TrainingPlan;
 };
 
@@ -105,7 +129,7 @@ export const updateTrainingPlan = async (
   const collection = await getTrainingPlansCollection();
   const idObj = typeof planId === 'string' ? new ObjectId(planId) : planId;
   const userIdObj = typeof userId === 'string' ? new ObjectId(userId) : userId;
-  
+
   // If updating to active, ensure no other active plans for this user
   if (update.isActive) {
     await collection.updateMany(
@@ -113,13 +137,13 @@ export const updateTrainingPlan = async (
       { $set: { isActive: false, updatedAt: update.updatedAt } }
     );
   }
-  
+
   const result = await collection.findOneAndUpdate(
     { _id: idObj, userId: userIdObj },
     { $set: update },
     { returnDocument: 'after' }
   );
-  
+
   return result || null;
 };
 
@@ -133,48 +157,47 @@ export const setTrainingPlanActive = async (
   planId: ObjectId | string,
   userId: ObjectId | string
 ): Promise<TrainingPlan | null> => {
-  const db = await getDb();
   const idObj = typeof planId === 'string' ? new ObjectId(planId) : planId;
   const userIdObj = typeof userId === 'string' ? new ObjectId(userId) : userId;
   const now = new Date();
-  
+
   // Use a session to ensure atomicity
   const client = await getMongoClient();
   const session = client.startSession();
-  
+
   try {
     let updatedPlan: TrainingPlan | null = null;
-    
+
     await session.withTransaction(async () => {
-      const collection = db.collection<TrainingPlan>('trainingPlans');
-      
+      const collection = await getTrainingPlansCollection();
+
       // First verify the plan exists and belongs to the user
       const plan = await collection.findOne(
         { _id: idObj, userId: userIdObj },
         { session }
       );
-      
+
       if (!plan) {
         throw new Error('Training plan not found or access denied');
       }
-      
+
       // Deactivate all other plans for this user
       await collection.updateMany(
         { userId: userIdObj, isActive: true, _id: { $ne: idObj } },
         { $set: { isActive: false, updatedAt: now } },
         { session }
       );
-      
+
       // Set the specified plan as active
       const result = await collection.findOneAndUpdate(
         { _id: idObj, userId: userIdObj },
         { $set: { isActive: true, updatedAt: now } },
         { returnDocument: 'after', session }
       );
-      
+
       updatedPlan = result;
     });
-    
+
     return updatedPlan;
   } finally {
     await session.endSession();
@@ -193,61 +216,65 @@ export const deleteTrainingPlan = async (
 ): Promise<boolean> => {
   const idObj = typeof planId === 'string' ? new ObjectId(planId) : planId;
   const userIdObj = typeof userId === 'string' ? new ObjectId(userId) : userId;
-  
+
   // Use a session to ensure all related collections are cleaned up
   const client = await getMongoClient();
   const session = client.startSession();
   let deleted = false;
-  
+
   try {
     await session.withTransaction(async () => {
-      const db = client.db();
-      
+      const trainingPlansCollection = await getTrainingPlansCollection();
+      const exercisesCollection = await getExercisesCollection();
+      const weeklyProgressCollection = await getWeeklyProgressCollection();
+      const exerciseActivityLogCollection = await getExerciseActivityLogCollection();
+
       // 1. Verify ownership & existence of the plan itself
-      const plan = await db.collection('trainingPlans').findOne(
-        { _id: idObj, userId: userIdObj }, 
+      const plan = await trainingPlansCollection.findOne(
+        { _id: idObj, userId: userIdObj },
         { session }
       );
-      
+
       if (!plan) {
-        throw new Error('Training plan not found or access denied');
+        // Return false instead of throwing error - plan not found or access denied
+        return;
       }
-      
+
       // 2. Get exerciseIds BEFORE deleting exercises
-      const exerciseIds = await db.collection('exercises')
+      const exerciseIds = await exercisesCollection
         .find({ planId: idObj }, { projection: { _id: 1 }, session })
         .map(ex => ex._id)
         .toArray();
-      
+
       // 3. Delete associated Exercises
-      await db.collection('exercises').deleteMany(
-        { planId: idObj }, 
+      await exercisesCollection.deleteMany(
+        { planId: idObj },
         { session }
       );
-      
+
       // 4. Delete associated Weekly Progress
-      await db.collection('weeklyProgress').deleteMany(
-        { planId: idObj, userId: userIdObj }, 
+      await weeklyProgressCollection.deleteMany(
+        { planId: idObj, userId: userIdObj },
         { session }
       );
-      
+
       // 5. Delete associated Daily Logs
       if (exerciseIds.length > 0) {
-        await db.collection('exerciseActivityLog').deleteMany(
-          { exerciseId: { $in: exerciseIds }, userId: userIdObj }, 
+        await exerciseActivityLogCollection.deleteMany(
+          { exerciseId: { $in: exerciseIds }, userId: userIdObj },
           { session }
         );
       }
-      
+
       // 6. Delete the Training Plan itself
-      const deleteResult = await db.collection('trainingPlans').deleteOne(
-        { _id: idObj, userId: userIdObj }, 
+      const deleteResult = await trainingPlansCollection.deleteOne(
+        { _id: idObj, userId: userIdObj },
         { session }
       );
-      
+
       deleted = deleteResult.deletedCount === 1;
     });
-    
+
     return deleted;
   } catch (error) {
     console.error('Error deleting training plan:', error);
@@ -271,26 +298,27 @@ export const duplicateTrainingPlan = async (
 ): Promise<TrainingPlan | null> => {
   const idObj = typeof planId === 'string' ? new ObjectId(planId) : planId;
   const userIdObj = typeof userId === 'string' ? new ObjectId(userId) : userId;
-  
+
   // Use a session to ensure all related collections are duplicated
   const client = await getMongoClient();
   const session = client.startSession();
   let newPlan: TrainingPlan | null = null;
-  
+
   try {
     await session.withTransaction(async () => {
-      const db = client.db();
-      
+      const trainingPlansCollection = await getTrainingPlansCollection();
+      const exercisesCollection = await getExercisesCollection();
+
       // 1. Find the source plan
-      const sourcePlan = await db.collection<TrainingPlan>('trainingPlans').findOne(
-        { _id: idObj, userId: userIdObj }, 
+      const sourcePlan = await trainingPlansCollection.findOne(
+        { _id: idObj, userId: userIdObj },
         { session }
       );
-      
+
       if (!sourcePlan) {
         throw new Error('Source training plan not found or access denied');
       }
-      
+
       // 2. Create a new plan
       const now = new Date();
       const newPlanDoc: TrainingPlanCreate = {
@@ -301,20 +329,20 @@ export const duplicateTrainingPlan = async (
         createdAt: now,
         updatedAt: now
       };
-      
-      const insertResult = await db.collection<TrainingPlan>('trainingPlans').insertOne(
-        newPlanDoc as TrainingPlan, 
+
+      const insertResult = await trainingPlansCollection.insertOne(
+        newPlanDoc as TrainingPlan,
         { session }
       );
-      
+
       const newPlanId = insertResult.insertedId;
       newPlan = { ...newPlanDoc, _id: newPlanId } as TrainingPlan;
-      
+
       // 3. Find all exercises from the source plan
-      const exercises = await db.collection('exercises')
+      const exercises = await exercisesCollection
         .find({ planId: idObj, userId: userIdObj }, { session })
         .toArray();
-      
+
       // 4. Duplicate each exercise to the new plan
       if (exercises.length > 0) {
         const newExercises = exercises.map(ex => ({
@@ -324,13 +352,13 @@ export const duplicateTrainingPlan = async (
           createdAt: now,
           updatedAt: now
         }));
-        
+
         if (newExercises.length > 0) {
-          await db.collection('exercises').insertMany(newExercises, { session });
+          await exercisesCollection.insertMany(newExercises, { session });
         }
       }
     });
-    
+
     return newPlan;
   } catch (error) {
     console.error('Error duplicating training plan:', error);
