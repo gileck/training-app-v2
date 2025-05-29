@@ -21,7 +21,7 @@ export const apiClient = {
         name,
         params,
         options: {
-          disableCache: options?.disableCache || window.location.hostname.includes('localhost'),
+          disableCache: true,
           bypassCache: options?.bypassCache || false,
         }
       }),
