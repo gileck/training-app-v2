@@ -31,7 +31,6 @@ export const addExercise = async (params: AddExerciseRequest): Promise<CacheResu
     return apiClient.call<AddExerciseResponse, AddExerciseRequest>(
         addExerciseApiName,
         params,
-        { disableCache: true } // Disable cache as this modifies data
     );
 };
 
@@ -42,7 +41,6 @@ export const updateExercise = async (params: UpdateExerciseRequest): Promise<Cac
     return apiClient.call<UpdateExerciseResponse, UpdateExerciseRequest>(
         updateExerciseApiName,
         params,
-        { disableCache: true } // Disable cache as this modifies data
     );
 };
 
@@ -53,6 +51,5 @@ export const deleteExercise = async (params: DeleteExerciseRequest): Promise<Cac
     return apiClient.call<DeleteExerciseResponse, DeleteExerciseRequest>(
         deleteExerciseApiName,
         params,
-        { disableCache: true } // Disable cache as this modifies data
     );
 }; 

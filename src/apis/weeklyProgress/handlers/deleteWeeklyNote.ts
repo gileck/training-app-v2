@@ -38,7 +38,7 @@ export const deleteWeeklyNote = async (
                 userId,
                 weekNumber
             );
-            
+
             if (!progress) {
                 return { success: false, message: "Weekly progress not found for the specified week." };
             } else {

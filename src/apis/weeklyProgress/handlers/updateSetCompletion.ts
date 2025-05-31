@@ -42,16 +42,16 @@ export const updateSetCompletion = async (
 
         // 2. Find current progress for this exercise
         const currentProgress = await weeklyProgress.findProgressForExercise(
-            planIdObj, 
-            exerciseIdObj, 
-            userIdObj, 
+            planIdObj,
+            exerciseIdObj,
+            userIdObj,
             weekNumber
         );
 
         // 3. Calculate the effective increment for this update
         let effectiveIncrement = setsIncrement;
         const currentSets = currentProgress?.setsCompleted || 0;
-        
+
         if (completeAll) {
             // Calculate how many sets we need to add to complete all
             effectiveIncrement = actualTotalSets - currentSets;
@@ -84,14 +84,14 @@ export const updateSetCompletion = async (
         // 4. Perform the update with the new database layer
         const newSetsCompleted = currentSets + effectiveIncrement;
         const isDoneNow = newSetsCompleted >= actualTotalSets;
-        
+
         // Create some realistic dates for the week
         const today = new Date();
         const startDate = new Date(today);
         startDate.setDate(today.getDate() - ((weekNumber - 1) * 7));
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + 6);
-        
+
         // Prepare data for the upsert operation
         const progressData = {
             userId: userIdObj,
@@ -107,14 +107,14 @@ export const updateSetCompletion = async (
             createdAt: currentProgress?.createdAt || now,
             updatedAt: now
         };
-        
+
         // Use upsert to create or update
         const updatedProgress = await weeklyProgress.upsertExerciseProgress(progressData);
 
         // 5. Create/update exercise activity log for today
         const todayDate = new Date();
         todayDate.setHours(0, 0, 0, 0); // Normalize to start of day
-        
+
         // Use the activityLog DB layer to record today's activity
         await exerciseActivityLog.recordActivity({
             userId: userIdObj,
@@ -142,8 +142,8 @@ export const updateSetCompletion = async (
             completed: updatedProgress.completed
         };
 
-        return { 
-            success: true, 
+        return {
+            success: true,
             updatedProgress: apiResponse
         };
 

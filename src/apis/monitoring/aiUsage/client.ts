@@ -23,9 +23,6 @@ export const getAllUsage = async (
   return apiClient.call<GetAllAIUsageResponse, GetAllAIUsageRequest>(
     `${name}/all`,
     params,
-    {
-      disableCache: true
-    }
   );
 };
 
@@ -36,8 +33,5 @@ export const getSummary = async (): Promise<CacheResult<GetAIUsageSummaryRespons
   return apiClient.call<GetAIUsageSummaryResponse, GetAIUsageSummaryRequest>(
     `${name}/summary`,
     {},
-    {
-      disableCache: true
-    }
   );
 };

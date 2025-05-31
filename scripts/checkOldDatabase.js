@@ -1,6 +1,6 @@
 const { MongoClient } = require('mongodb');
 
-const OLD_MONGO_URI = "mongodb+srv://gileck:jfxccnxeruiowqrioqsdjkla@cluster0.frtddwb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const OLD_MONGO_URI = "mongodb+srv://gileck:EdzaigZENXq1tkmT@cluster0.yepuugh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 async function checkOldDatabase() {
     let client;

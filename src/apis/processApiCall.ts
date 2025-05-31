@@ -78,7 +78,9 @@ export const processApiCall = async (
       return (processFunc as (params: unknown, context: unknown) => Promise<unknown>)(params, context);
     } catch (error) {
       console.error(`Error processing API call ${name}:`, error);
-      throw error;
+      return Promise.resolve({
+        error: `Error processing API call ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
     }
   };
 

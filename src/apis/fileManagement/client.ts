@@ -19,9 +19,6 @@ export const manageFiles = async (
   return apiClient.call<FileManagementResponse, FileManagementRequest>(
     name,
     request,
-    {
-      disableCache: true
-    }
   );
 };
 

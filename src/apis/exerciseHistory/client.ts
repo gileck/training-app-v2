@@ -10,6 +10,5 @@ export const getExerciseHistory = async (params: GetExerciseHistoryRequest): Pro
     return apiClient.call<GetExerciseHistoryResponse, GetExerciseHistoryRequest>(
         nameGetHistory,
         params,
-        { disableCache: true } // Ensure we always get fresh data
     );
 }; 

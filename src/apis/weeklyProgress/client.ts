@@ -23,7 +23,6 @@ export const getWeeklyProgress = async (params: GetWeeklyProgressRequest): Promi
     return apiClient.call<GetWeeklyProgressResponse, GetWeeklyProgressRequest>(
         getWeeklyProgressApiName,
         params,
-        { disableCache: true } // Ensure we always get the latest progress
     );
 };
 
@@ -35,7 +34,6 @@ export const updateSetCompletion = async (params: UpdateSetCompletionRequest): P
     return apiClient.call<UpdateSetCompletionResponse, UpdateSetCompletionRequest>(
         updateSetCompletionApiName,
         params,
-        { disableCache: true } // Ensure no caching for updates
     );
 };
 
@@ -48,7 +46,6 @@ export const addWeeklyNote = async (params: AddWeeklyNoteRequest): Promise<Cache
     return apiClient.call<AddWeeklyNoteResponse, AddWeeklyNoteRequest>(
         addWeeklyNoteApiName,
         params,
-        { disableCache: true } // Disable cache as it modifies data
     );
 };
 
@@ -59,7 +56,6 @@ export const editWeeklyNote = async (params: EditWeeklyNoteRequest): Promise<Cac
     return apiClient.call<EditWeeklyNoteResponse, EditWeeklyNoteRequest>(
         editWeeklyNoteApiName,
         params,
-        { disableCache: true } // Disable cache as it modifies data
     );
 };
 
@@ -70,6 +66,5 @@ export const deleteWeeklyNote = async (params: DeleteWeeklyNoteRequest): Promise
     return apiClient.call<DeleteWeeklyNoteResponse, DeleteWeeklyNoteRequest>(
         deleteWeeklyNoteApiName,
         params,
-        { disableCache: true } // Disable cache as it modifies data
     );
 }; 

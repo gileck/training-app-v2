@@ -79,6 +79,14 @@ const nextConfig: NextConfig = withPWA({
   typescript: {
     ignoreBuildErrors: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'zdllzsw6qffmlxhs.public.blob.vercel-storage.com',
+      },
+    ],
+  },
   webpack(config) {
     // Enable WebAssembly
     config.experiments = {

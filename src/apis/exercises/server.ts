@@ -122,7 +122,7 @@ export const updateExerciseInPlan = async (
     const updateFields: exercises.ExerciseUpdate = {
         updatedAt: new Date()
     };
-    
+
     if (updates.sets !== undefined) updateFields.sets = updates.sets;
     if (updates.reps !== undefined) updateFields.reps = String(updates.reps); // Convert to string
     if (updates.weight !== undefined) updateFields.weight = String(updates.weight); // Convert to string
