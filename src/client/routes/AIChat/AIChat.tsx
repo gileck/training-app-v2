@@ -1,23 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  TextField, 
-  Typography, 
-  Paper, 
-  Container, 
-  CircularProgress, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
+import {
+  TextField,
+  Typography,
+  Paper,
+  Container,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   SelectChangeEvent,
   IconButton,
   Chip
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import { getAllModels } from '../../../server/ai/models';
-import { AIModelDefinition } from '../../../server/ai/models';
-import { chatWithAI } from '@/apis/chat/client';
-import { useSettings } from '../../context/SettingsContext';
+import { AIModelDefinition, getAllModels } from '@/server/ai/models';
+import { sendChatMessage } from '@/apis/chat/client';
+import { useSettings } from '@/client/settings/SettingsContext';
 
 // Message type definition
 interface Message {
@@ -27,7 +26,7 @@ interface Message {
   cost?: number;
   timestamp: Date;
   isFromCache?: boolean;
-  cacheProvider?: 'fs' | 's3';
+  cacheProvider?: 'fs' | 's3' | 'localStorage';
 }
 
 export function AIChat() {
@@ -59,9 +58,9 @@ export function AIChat() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!input.trim() || !settings.aiModel) return;
-    
+
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -70,14 +69,14 @@ export function AIChat() {
       timestamp: new Date(),
       isFromCache: false
     };
-    
+
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
-    
+
     try {
       // Call the API
-      const { data, isFromCache, metadata } = await chatWithAI({
+      const { data, isFromCache, metadata } = await sendChatMessage({
         modelId: settings.aiModel,
         text: input
       });
@@ -93,11 +92,11 @@ export function AIChat() {
         isFromCache,
         cacheProvider: metadata?.provider
       };
-      
+
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
-      
+
       // Add error message
       const errorMessage: Message = {
         id: Date.now().toString(),
@@ -106,7 +105,7 @@ export function AIChat() {
         timestamp: new Date(),
         isFromCache: false
       };
-      
+
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
@@ -123,7 +122,7 @@ export function AIChat() {
       <Typography variant="h4" component="h1" gutterBottom>
         AI Chat
       </Typography>
-      
+
       <FormControl fullWidth sx={{ mb: 3 }}>
         <InputLabel id="model-select-label">AI Model</InputLabel>
         <Select
@@ -140,25 +139,25 @@ export function AIChat() {
           ))}
         </Select>
       </FormControl>
-      
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 2, 
-          mb: 2, 
-          flexGrow: 1, 
+
+      <Paper
+        elevation={3}
+        sx={{
+          p: 2,
+          mb: 2,
+          flexGrow: 1,
           overflow: 'auto',
           display: 'flex',
           flexDirection: 'column'
         }}
       >
         {messages.length === 0 ? (
-          <Typography 
-            variant="body1" 
-            sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center', 
+          <Typography
+            variant="body1"
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
               height: '100%',
               color: 'text.secondary'
             }}
@@ -183,15 +182,15 @@ export function AIChat() {
                 <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                   {message.text}
                 </Typography>
-                
+
                 {message.cost !== undefined && (
                   <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary' }}>
                     {message.isFromCache ? (
                       <span>
-                        <Chip 
-                          size="small" 
-                          label={`From cache (${message.cacheProvider || 'unknown'})`} 
-                          color={message.cacheProvider === 's3' ? 'primary' : 'default'}
+                        <Chip
+                          size="small"
+                          label={`From cache (${message.cacheProvider || 'unknown'})`}
+                          color={message.cacheProvider === 's3' ? 'primary' : message.cacheProvider === 'localStorage' ? 'secondary' : 'default'}
                           variant="outlined"
                           sx={{ mr: 1 }}
                         />
@@ -207,7 +206,7 @@ export function AIChat() {
           </>
         )}
       </Paper>
-      
+
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '8px' }}>
         <TextField
           fullWidth
@@ -217,9 +216,9 @@ export function AIChat() {
           onChange={handleInputChange}
           disabled={isLoading}
         />
-        <IconButton 
-          color="primary" 
-          type="submit" 
+        <IconButton
+          color="primary"
+          type="submit"
           disabled={isLoading || !input.trim()}
           sx={{ p: '10px' }}
         >

@@ -65,3 +65,7 @@ export function getModelById(modelId: string): AIModelDefinition {
   }
   return model;
 }
+
+export function isModelExists(modelId: string): boolean {
+  return getAllModels().some(model => model.id === modelId);
+}

@@ -7,10 +7,11 @@ import { ObjectId } from 'mongodb';
 export interface User {
   _id: ObjectId;
   username: string;     // Indexed, Unique
-  email: string;        // Indexed, Unique
+  email?: string;       // Indexed, Unique (when provided)
   password_hash: string;
   createdAt: Date;
   updatedAt: Date;
+  profilePicture?: string;
 }
 
 /**

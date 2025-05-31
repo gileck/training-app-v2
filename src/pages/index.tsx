@@ -1,10 +1,8 @@
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
-import Layout from '../client/components/Layout';
+import { Layout } from '../client/components/Layout';
 import dynamic from 'next/dynamic';
-import { SettingsProvider } from '../client/context/SettingsContext';
+import { SettingsProvider } from '../client/settings/SettingsContext';
 import { routes } from '../client/routes';
-import { AuthProvider } from '@/client/context/AuthContext';
-import AuthWrapper from '@/client/context/AuthWrapper';
 
 const RouterProvider = dynamic(() => import('../client/router/index').then(module => module.RouterProvider), { ssr: false });
 
@@ -24,15 +22,11 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
-        <SettingsProvider>
-          <AuthWrapper>
-            <RouterProvider routes={routes}>
-              {Component => <Layout><Component /></Layout>}
-            </RouterProvider>
-          </AuthWrapper>
-        </SettingsProvider>
-      </AuthProvider>
+      <SettingsProvider>
+        <RouterProvider routes={routes}>
+          {Component => <Layout><Component /></Layout>}
+        </RouterProvider>
+      </SettingsProvider>
     </ThemeProvider>
   );
 }

@@ -1,42 +1,54 @@
-import type { ObjectId } from 'mongodb';
-
-// Basic User Structure (adjust based on actual user data needed)
-export interface User {
-    _id: ObjectId;
+export interface LoginRequest {
     username: string;
-    email: string;
-    // Avoid sending password hash to client
-    createdAt?: Date;
-    updatedAt?: Date;
+    password: string;
 }
 
-// Registration
 export interface RegisterRequest {
     username: string;
-    email: string;
+    email?: string;
     password: string;
 }
 
-export interface RegisterResponse {
-    user?: User; // Return created user on success
+export interface AuthResponse {
+    user?: UserResponse;
     error?: string;
 }
 
-// Login
-export interface LoginRequest {
-    email: string;
-    password: string;
+export type LoginResponse = AuthResponse;
+export type RegisterResponse = AuthResponse;
+export type CurrentUserResponse = AuthResponse;
+export type LogoutResponse = {
+    success: boolean;
+    error?: string;
+};
+
+export interface UpdateProfileRequest {
+    username?: string;
+    profilePicture?: string;
 }
 
-export interface LoginResponse {
-    user?: User;
-    // Token is typically handled via HttpOnly cookie, not in response body
+export interface UpdateProfileResponse {
+    success: boolean;
+    user?: UserResponse;
     error?: string;
 }
 
-// Get Current User (Me)
-// No request body needed, user identified by token/session
-export interface GetCurrentUserResponse {
-    user?: User;
-    error?: string;
+// User data returned to the client (without password)
+export interface UserResponse {
+    id: string;
+    username: string;
+    email?: string;
+    createdAt: string;
+    profilePicture?: string;
+}
+
+export interface AuthTokenPayload {
+    userId: string;
+}
+
+export interface ApiHandlerContext {
+    userId?: string;
+    getCookieValue: (name: string) => string | undefined;
+    setCookie: (name: string, value: string, options: Record<string, unknown>) => void;
+    clearCookie: (name: string, options: Record<string, unknown>) => void;
 } 

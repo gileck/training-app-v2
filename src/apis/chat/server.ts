@@ -1,7 +1,11 @@
 import { AIModelAdapter } from "../../server/ai/baseModelAdapter";
 import { AIModelAdapterResponse } from "../../server/ai/types";
 import { ChatRequest, ChatResponse } from "./types";
-export { name } from './index'
+import { name } from './index';
+
+// Re-export API names
+export { name };
+
 /**
  * Process a chat request and return a response
  * This function contains the core business logic for the chat API

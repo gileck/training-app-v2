@@ -59,7 +59,7 @@ export const Layout = ({ children }: { children?: ReactNode }) => {
       <Container component="main" sx={{
         flexGrow: 1,
         py: 3,
-        px: { xs: 1, sm: 2 },
+        px: { xs: 2, sm: 3 },
         maxWidth: { xs: '100%', sm: 'md', md: 'lg' },
         // Add iOS momentum scrolling for a more native feel
         WebkitOverflowScrolling: 'touch',
@@ -77,5 +77,3 @@ export const Layout = ({ children }: { children?: ReactNode }) => {
     </Box>
   );
 };
-
-export default Layout;

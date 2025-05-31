@@ -1,56 +1,38 @@
-import type { CacheResult } from "@/server/cache/types"; // Corrected path
-import apiClient from "@/client/utils/apiClient"; // Corrected path
+import apiClient, { ApiOptions } from '@/client/utils/apiClient';
 import {
-    registerApiName,
-    loginApiName,
-    logoutApiName,
-    getCurrentUserApiName
-} from "./index"; // Import names from index (safe)
-import type {
-    RegisterRequest,
-    RegisterResponse,
+    login,
+    logout,
+    getCurrentUserApiName,
+    register,
+    updateProfile
+} from './index';
+import {
     LoginRequest,
     LoginResponse,
-    GetCurrentUserResponse
-} from "./types";
+    LogoutResponse,
+    RegisterRequest,
+    RegisterResponse,
+    CurrentUserResponse,
+    UpdateProfileRequest,
+    UpdateProfileResponse
+} from './types';
 
-/**
- * Task 11 (Client): Call registration API
- */
-export const register = async (request: RegisterRequest): Promise<CacheResult<RegisterResponse>> => {
-    return apiClient.call<CacheResult<RegisterResponse>, RegisterRequest>(
-        registerApiName,
-        request
-    );
+export const apiLogin = (params: LoginRequest) => {
+    return apiClient.call<LoginResponse, LoginRequest>(login, params);
 };
 
-/**
- * Task 12 (Client): Call login API
- */
-export const login = async (request: LoginRequest): Promise<CacheResult<LoginResponse>> => {
-    return apiClient.call<CacheResult<LoginResponse>, LoginRequest>(
-        loginApiName,
-        request
-    );
+export const apiRegister = (params: RegisterRequest) => {
+    return apiClient.call<RegisterResponse, RegisterRequest>(register, params);
 };
 
-/**
- * Task 14 (Client): Call get current user API
- */
-export const fetchCurrentUser = async (): Promise<CacheResult<GetCurrentUserResponse>> => {
-    // No request body needed for 'me' endpoint
-    return apiClient.call<CacheResult<GetCurrentUserResponse>, Record<string, never>>(
-        getCurrentUserApiName,
-        {}
-    );
+export const apiFetchCurrentUser = (options?: ApiOptions) => {
+    return apiClient.call<CurrentUserResponse>(getCurrentUserApiName, {}, options);
 };
 
-/**
- * Client: Call logout API
- */
-export const logout = async (): Promise<CacheResult<{ success: boolean }>> => {
-    return apiClient.call<CacheResult<{ success: boolean }>, Record<string, never>>(
-        logoutApiName,
-        {}
-    );
+export const apiLogout = () => {
+    return apiClient.call<LogoutResponse>(logout, {});
+};
+
+export const apiUpdateProfile = (params: UpdateProfileRequest, options?: ApiOptions) => {
+    return apiClient.call<UpdateProfileResponse, UpdateProfileRequest>(updateProfile, params, options);
 }; 

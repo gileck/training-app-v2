@@ -1,4 +1,4 @@
-import { me } from '../index';
+import { getCurrentUserApiName } from '../index';
 import {
     ApiHandlerContext,
     CurrentUserResponse,
@@ -29,4 +29,4 @@ export const getCurrentUser = async (
 };
 
 // Export API endpoint name
-export { me }; 
+export { getCurrentUserApiName }; 

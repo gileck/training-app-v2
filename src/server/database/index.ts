@@ -1,10 +1,10 @@
 import { MongoClient, Db } from 'mongodb';
-
+import { appConfig } from '@/app.config';
 // --- Configuration ---
 // Read connection string and DB name from environment variables
 // Fallback to defaults for local development if needed
 const MONGO_URI = process.env.MONGO_URI;
-const DB_NAME = process.env.DB_NAME || 'trainingPlanDb'; // Use the same default as setup_db.js
+const DB_NAME = appConfig.dbName;
 
 // --- Connection Management (Singleton Pattern) ---
 let client: MongoClient | null = null;

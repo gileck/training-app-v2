@@ -5,28 +5,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  try {
-    // Pass both req and res to processApiCall
-    const response = await processApiCall(req, res);
+  const response = await processApiCall(req, res);
 
-    // processApiCall now handles setting cookies via `res`
-    // It returns the CacheResult containing the data payload
-    return res.status(200).json(response);
-
-  } catch (error: unknown) {
-    console.error("API Processing Error:", error);
-    // Type check error
-    const errorMessage = error instanceof Error ? error.message : "An internal server error occurred.";
-    // Return a generic error response (don't expose internal details)
-    // Ensure CacheResult structure is consistent if client expects it even for errors
-    return res.status(200).json({
-      data: { error: errorMessage },
-      isFromCache: false,
-      metadata: undefined
-    });
-    // Or, if client handles non-CacheResult errors:
-    // return res.status(500).json({ error: "An internal server error occurred." });
-  }
+  // console.log('API response:', response);
+  return res.status(200).json(response);
 }
 
 export const config = {

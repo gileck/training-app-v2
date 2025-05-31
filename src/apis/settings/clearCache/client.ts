@@ -1,18 +1,13 @@
-import { ClearCacheRequest, ClearCacheResponse } from './types';
 import apiClient from '@/client/utils/apiClient';
 import { name } from './index';
-import type { CacheResult } from '@/server/cache/types';
+import { ClearCacheRequest, ClearCacheResponse } from './types';
+import { CacheResult } from '@/common/cache/types';
 
 /**
- * Client-side function to call the clear cache API
+ * Send request to clear the cache
+ * @param request The clear cache request parameters
  * @returns Promise with the clear cache response
  */
-export const clearCache = async (): Promise<CacheResult<ClearCacheResponse>> => {
-  return apiClient.call<CacheResult<ClearCacheResponse>, ClearCacheRequest>(
-    name,
-    {},
-    {
-      disableCache: true
-    }
-  );
+export const clearCache = (request: ClearCacheRequest): Promise<CacheResult<ClearCacheResponse>> => {
+  return apiClient.call<ClearCacheResponse, ClearCacheRequest>(name, request);
 };
