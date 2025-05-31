@@ -7,11 +7,11 @@ import { CacheResult } from "@/common/cache/types";
 import type { ApiOptions } from "@/client/utils/apiClient";
 import { AuthTokenPayload } from "./auth/types";
 import { fsCacheProvider, s3CacheProvider } from "@/server/cache/providers";
+import { appConfig } from "@/app.config";
 
 // Create server-side cache instance
-const cacheProvider = process.env.CACHE_PROVIDER as 'fs' | 's3' || 'fs';
-const provider = cacheProvider === 's3' ? s3CacheProvider : fsCacheProvider;
-const serverCache = createCache(provider);
+const cacheProvider = appConfig.cacheType === 's3' ? s3CacheProvider : fsCacheProvider;
+const serverCache = createCache(cacheProvider);
 
 // Constants
 const JWT_SECRET = process.env.JWT_SECRET
