@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { ApiHandlerContext } from '../../types';
-import { EditWeeklyNoteRequest, EditWeeklyNoteResponse } from '../types';
+import { EditWeeklyNoteRequest, EditWeeklyNoteResponse } from '@/common/types/training';
 import { weeklyProgress } from '@/server/database/collections';
 
 // --- Task 28: Edit Weekly Note ---
@@ -31,7 +31,12 @@ export const editWeeklyNote = async (
             updatedNote
         );
 
-        return editedNote;
+        // Convert ObjectId to string for API response
+        return {
+            noteId: editedNote.noteId.toString(),
+            date: editedNote.date,
+            note: editedNote.note
+        };
     } catch (error) {
         if (error instanceof Error && error.message.includes('not found')) {
             throw new Error("Weekly progress or specific note not found.");

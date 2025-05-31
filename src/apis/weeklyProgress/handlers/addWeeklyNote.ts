@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { ApiHandlerContext } from '../../types';
-import { AddWeeklyNoteRequest, AddWeeklyNoteResponse } from '../types';
+import { AddWeeklyNoteRequest, AddWeeklyNoteResponse } from '@/common/types/training';
 import { weeklyProgress } from '@/server/database/collections';
 
 // --- Task 28: Add Weekly Note ---
@@ -30,7 +30,12 @@ export const addWeeklyNote = async (
             note.trim()
         );
 
-        return newNote;
+        // Convert ObjectId to string for API response
+        return {
+            noteId: newNote.noteId.toString(),
+            date: newNote.date,
+            note: newNote.note
+        };
     } catch (error) {
         console.error(`addWeeklyNote failed:`, error);
         throw new Error("Failed to add weekly note.");

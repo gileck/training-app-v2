@@ -345,7 +345,7 @@ export const WorkoutPage: React.FC = () => {
                 trainingPlanId: planId
             });
             if (response.data && 'error' in response.data) {
-                setError(response.data.error);
+                setError(String(response.data.error) || 'Failed to create saved workout');
                 return;
             }
 
@@ -358,9 +358,13 @@ export const WorkoutPage: React.FC = () => {
             }
 
             return true;
-        } catch (err) {
-            console.error('Failed to save workout:', err);
-            throw err; // Re-throw to be handled by the dialog
+        } catch (error) {
+            console.error('Error creating saved workout:', error);
+            if (error && typeof error === 'object' && 'message' in error) {
+                setError(error.message as string);
+            } else {
+                setError('Failed to create saved workout');
+            }
         }
     };
 

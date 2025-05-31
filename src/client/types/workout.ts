@@ -1,5 +1,4 @@
-import type { ExerciseBase } from '@/apis/exercises/types';
-import type { WeeklyProgressBase } from '@/apis/weeklyProgress/types';
+import type { ExerciseBase, WeeklyProgressBase } from '@/common/types/training';
 
 // Type for combined exercise data with progress and definition details
 export interface WorkoutExercise extends ExerciseBase {

@@ -9,19 +9,20 @@ import {
     CircularProgress,
     Alert
 } from '@mui/material';
-import { createTrainingPlan } from '@/apis/trainingPlans/client';
+import { useTrainingPlans } from '@/client/hooks/useTrainingData';
 
 interface AddTrainingPlanDialogProps {
     open: boolean;
     onClose: () => void;
-    onPlanCreated: () => void; // Callback to refresh the list
 }
 
-const AddTrainingPlanDialog: React.FC<AddTrainingPlanDialogProps> = ({ open, onClose, onPlanCreated }) => {
+const AddTrainingPlanDialog: React.FC<AddTrainingPlanDialogProps> = ({ open, onClose }) => {
     const [planName, setPlanName] = useState('');
     const [durationWeeks, setDurationWeeks] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const { createTrainingPlan } = useTrainingPlans();
 
     const handleClose = () => {
         if (isSubmitting) return; // Prevent closing while submitting
@@ -47,13 +48,8 @@ const AddTrainingPlanDialog: React.FC<AddTrainingPlanDialogProps> = ({ open, onC
 
         setIsSubmitting(true);
         try {
-            const response = await createTrainingPlan({ name: planName.trim(), durationWeeks: durationNum });
-            if ('_id' in response.data) { // Check if creation was successful (returned a plan)
-                onPlanCreated(); // Refresh the list in the parent component
-                handleClose(); // Close the dialog
-            } else {
-                setError(response.data?.error || 'Failed to create plan.');
-            }
+            await createTrainingPlan({ name: planName.trim(), durationWeeks: durationNum });
+            handleClose(); // Close the dialog - context will automatically update
         } catch (err: unknown) {
             console.error("Create plan error:", err);
             setError(err instanceof Error ? err.message : "An unknown error occurred.");

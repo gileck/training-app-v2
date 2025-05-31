@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { getExercises, deleteExercise, addExercise } from '@/apis/exercises/client';
+import { useExercises } from '@/client/hooks/useTrainingData';
 import { getAllExerciseDefinitionOptions } from '@/apis/exerciseDefinitions/client';
-import type { ExerciseBase } from '@/apis/exercises/types';
+import type { ExerciseBase } from '@/common/types/training';
 import type { ExerciseDefinition as ApiExerciseDefinitionMPE } from '@/apis/exerciseDefinitions/types';
 
 interface ExerciseState {
@@ -36,10 +36,16 @@ export type ExerciseHooksType = ReturnType<typeof useExerciseHooks>;
 
 export const useExerciseHooks = (planId: string | undefined) => {
     const [exerciseState, setExerciseState] = useState<ExerciseState>(getDefaultExerciseState());
+    const { exercises, error: contextError, deleteExercise, createExercise } = useExercises(planId || '');
 
     const updateExerciseState = useCallback((partialState: Partial<ExerciseState>) => {
         setExerciseState(prevState => ({ ...prevState, ...partialState }));
     }, []);
+
+    // Update local state with context data
+    useEffect(() => {
+        updateExerciseState({ exercises, error: contextError });
+    }, [exercises, contextError, updateExerciseState]);
 
     const fetchExercisesTabData = useCallback(async () => {
         if (!planId) {
@@ -48,14 +54,8 @@ export const useExerciseHooks = (planId: string | undefined) => {
         }
         updateExerciseState({ error: null });
         try {
-            const [exercisesResponse, allDefinitionsResponse] = await Promise.all([
-                getExercises({ trainingPlanId: planId }),
-                getAllExerciseDefinitionOptions()
-            ]);
+            const allDefinitionsResponse = await getAllExerciseDefinitionOptions();
 
-            if (exercisesResponse.data && Array.isArray(exercisesResponse.data)) {
-                updateExerciseState({ exercises: exercisesResponse.data });
-            }
             if (allDefinitionsResponse.data && Array.isArray(allDefinitionsResponse.data)) {
                 const defsData = allDefinitionsResponse.data as ApiExerciseDefinitionMPE[];
                 updateExerciseState({ definitions: defsData });
@@ -67,16 +67,16 @@ export const useExerciseHooks = (planId: string | undefined) => {
         } catch (err) {
             console.error("Failed to fetch exercise data:", err);
             const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred for Exercises Tab';
-            updateExerciseState({ error: errorMessage, exercises: [], definitions: [] });
+            updateExerciseState({ error: errorMessage, definitions: [] });
             return Promise.reject(errorMessage);
         }
     }, [planId, updateExerciseState]);
 
     useEffect(() => {
         if (planId) {
-            // fetchExercisesTabData(); // This is now called by useManageTrainingPlanPage's loadInitialPageData
+            fetchExercisesTabData();
         }
-    }, [planId]); // Removed fetchExercisesTabData from deps as it's called by parent
+    }, [planId, fetchExercisesTabData]);
 
     const handleRequestDeleteExercise = useCallback((exercise: ExerciseBase) => {
         updateExerciseState({ exercisePendingDeletion: exercise, isConfirmDeleteExerciseDialogOpen: true });
@@ -95,13 +95,9 @@ export const useExerciseHooks = (planId: string | undefined) => {
         updateExerciseState({ deletingExerciseId: exerciseIdToDelete, error: null, isConfirmDeleteExerciseDialogOpen: false });
 
         try {
-            const response = await deleteExercise({ exerciseId: exerciseIdToDelete, trainingPlanId: planId });
-            if (response.data?.success) {
-                if (loadInitialPageData) {
-                    await loadInitialPageData();
-                }
-            } else {
-                throw new Error(response.data?.message || "Failed to delete exercise.");
+            await deleteExercise(exerciseIdToDelete);
+            if (loadInitialPageData) {
+                await loadInitialPageData();
             }
         } catch (err) {
             console.error("Failed to delete exercise:", err);
@@ -109,7 +105,7 @@ export const useExerciseHooks = (planId: string | undefined) => {
         } finally {
             updateExerciseState({ deletingExerciseId: null, exercisePendingDeletion: null });
         }
-    }, [planId, exerciseState.exercisePendingDeletion, updateExerciseState]);
+    }, [planId, exerciseState.exercisePendingDeletion, updateExerciseState, deleteExercise]);
 
     const handleDuplicateExercise = useCallback(async (exerciseToDuplicate: ExerciseBase, loadInitialPageData?: () => Promise<void>) => {
         if (!planId) {
@@ -118,7 +114,7 @@ export const useExerciseHooks = (planId: string | undefined) => {
         }
         updateExerciseState({ duplicatingExerciseId: exerciseToDuplicate._id.toString(), error: null });
         try {
-            const params = {
+            const exerciseData = {
                 trainingPlanId: planId,
                 exerciseDefinitionId: exerciseToDuplicate.exerciseDefinitionId.toString(),
                 sets: exerciseToDuplicate.sets,
@@ -127,17 +123,9 @@ export const useExerciseHooks = (planId: string | undefined) => {
                 durationSeconds: exerciseToDuplicate.durationSeconds,
                 comments: exerciseToDuplicate.comments,
             };
-            const response = await addExercise(params);
-            if (response.data && '_id' in response.data) {
-                if (loadInitialPageData) {
-                    await loadInitialPageData();
-                }
-            }
-            else if (response.data && 'error' in response.data && typeof (response.data as { error: string }).error === 'string') {
-                throw new Error((response.data as { error: string }).error);
-            }
-            else {
-                throw new Error("Failed to duplicate exercise due to an unexpected response format.");
+            await createExercise(exerciseData);
+            if (loadInitialPageData) {
+                await loadInitialPageData();
             }
         } catch (err) {
             console.error("Failed to duplicate exercise:", err);
@@ -145,7 +133,7 @@ export const useExerciseHooks = (planId: string | undefined) => {
         } finally {
             updateExerciseState({ duplicatingExerciseId: null });
         }
-    }, [planId, updateExerciseState]);
+    }, [planId, updateExerciseState, createExercise]);
 
     const handleOpenExerciseBrowser = useCallback(() => {
         updateExerciseState({ exerciseBeingEdited: null, isExerciseBrowserOpen: true });

@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { ApiHandlerContext } from '../../types';
-import { UpdateSetCompletionRequest, UpdateSetCompletionResponse, WeeklyProgressBase } from '../types';
+import { UpdateSetCompletionRequest, UpdateSetCompletionResponse, WeeklyProgressBase } from '@/common/types/training';
 import { weeklyProgress, exerciseActivityLog, exercises } from '@/server/database/collections';
 
 // --- Task 27: Update Set Completion (Simplified Version) ---
@@ -62,15 +62,19 @@ export const updateSetCompletion = async (
                     return {
                         success: true,
                         updatedProgress: {
-                            _id: currentProgress._id,
-                            userId: currentProgress.userId,
-                            planId: currentProgress.planId,
-                            exerciseId: currentProgress.exerciseId,
+                            _id: currentProgress._id.toString(),
+                            userId: currentProgress.userId.toString(),
+                            planId: currentProgress.planId.toString(),
+                            exerciseId: currentProgress.exerciseId.toString(),
                             weekNumber: currentProgress.weekNumber,
                             setsCompleted: currentProgress.setsCompleted,
                             isExerciseDone: currentProgress.isExerciseDone,
                             lastUpdatedAt: currentProgress.updatedAt,
-                            weeklyNotes: currentProgress.weeklyNotes || [],
+                            weeklyNotes: (currentProgress.weeklyNotes || []).map(note => ({
+                                noteId: note.noteId.toString(),
+                                date: note.date,
+                                note: note.note
+                            })),
                             completed: currentProgress.completed
                         }
                     };
@@ -130,15 +134,19 @@ export const updateSetCompletion = async (
 
         // Map the result to match the expected API response format
         const apiResponse: WeeklyProgressBase = {
-            _id: updatedProgress._id,
-            userId: updatedProgress.userId,
-            planId: updatedProgress.planId,
-            exerciseId: updatedProgress.exerciseId,
+            _id: updatedProgress._id.toString(),
+            userId: updatedProgress.userId.toString(),
+            planId: updatedProgress.planId.toString(),
+            exerciseId: updatedProgress.exerciseId.toString(),
             weekNumber: updatedProgress.weekNumber,
             setsCompleted: updatedProgress.setsCompleted,
             isExerciseDone: updatedProgress.isExerciseDone,
             lastUpdatedAt: updatedProgress.updatedAt,
-            weeklyNotes: updatedProgress.weeklyNotes || [],
+            weeklyNotes: (updatedProgress.weeklyNotes || []).map(note => ({
+                noteId: note.noteId.toString(),
+                date: note.date,
+                note: note.note
+            })),
             completed: updatedProgress.completed
         };
 

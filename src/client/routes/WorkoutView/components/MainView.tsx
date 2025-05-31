@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Tabs, Tab, Typography, Button, Alert, /* CircularProgress, */ alpha } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Button, Alert, CircularProgress, alpha } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useWorkoutView } from '../hooks/useWorkoutView';
 import { ExerciseTabContent } from './ExerciseTabContent';
@@ -56,13 +56,11 @@ export const MainView: React.FC = () => {
         ACTIVE_WORKOUT_TAB_INDEX
     } = useWorkoutView();
 
-    // Determine overall loading state for the main page structure
-    // isLoading will be true if plan data is loading AND there are no plan details yet, or no planId
-    const isLoadingPageStructure = isPlanDataLoading && (!planDetails || !planId);
-    if (isLoadingPageStructure) {
-        return (<></>);
-    }
     const isWeekLoading = isPlanDataLoading && !!planDetails && !!planId && activeExercises.length === 0;
+
+    if (isWeekLoading) {
+        return <></>
+    }
 
     // If there is no planId, show a message and a button to navigate to training plans.
     // This was previously handled by PlanHeader.
@@ -92,9 +90,9 @@ export const MainView: React.FC = () => {
         );
     }
 
-    // If there is an error and we are not in the initial page structure loading state
+    // If there is an error
     // This was also partially handled by PlanHeader.
-    if (error && !isLoadingPageStructure) {
+    if (error) {
         return (
             <Box sx={{ p: 3, bgcolor: '#FFFFFF', color: '#333', textAlign: 'center' }}>
                 <Typography variant="h5" sx={{ mb: 2, color: '#9C27B0', fontWeight: 'bold' }}>

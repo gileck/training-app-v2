@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { updateSetCompletion } from '@/apis/weeklyProgress/client';
+import { useWeeklyProgress } from '@/client/hooks/useTrainingData';
 import { WeeklyProgressBase } from '@/apis/weeklyProgress/types';
 
 export const useExerciseSetCompletion = (
@@ -8,6 +8,7 @@ export const useExerciseSetCompletion = (
     onSetComplete: (exerciseId: string, updatedProgress: WeeklyProgressBase) => void
 ) => {
     const [isUpdating, setIsUpdating] = useState(false);
+    const { updateSetCompletion } = useWeeklyProgress(planId, weekNumber);
 
     const handleSetCheckboxClick = async (
         exerciseId: string,
@@ -25,21 +26,14 @@ export const useExerciseSetCompletion = (
 
         setIsUpdating(true);
         try {
-            const requestParams = {
-                planId,
+            const updatedProgress = await updateSetCompletion(
                 exerciseId,
-                weekNumber,
-                setsIncrement: increment,
-                totalSetsForExercise: totalSets
-            };
+                increment,
+                totalSets
+            );
 
-            const response = await updateSetCompletion(requestParams);
-
-            if (response.data?.success && response.data.updatedProgress) {
-                onSetComplete(exerciseId, response.data.updatedProgress);
-            } else {
-                console.error("[useExerciseSetCompletion] Failed to update set completion:",
-                    response.data?.message || 'No error message provided.', response);
+            if (updatedProgress) {
+                onSetComplete(exerciseId, updatedProgress);
             }
         } catch (err) {
             console.error("[useExerciseSetCompletion] Error calling updateSetCompletion:", err);
@@ -57,22 +51,15 @@ export const useExerciseSetCompletion = (
 
         setIsUpdating(true);
         try {
-            const requestParams = {
-                planId,
+            const updatedProgress = await updateSetCompletion(
                 exerciseId,
-                weekNumber,
-                setsIncrement: 1, // This value is ignored when completeAll is true
-                totalSetsForExercise: totalSets,
-                completeAll: true
-            };
+                1, // This value is ignored when completeAll is true
+                totalSets,
+                true // completeAll
+            );
 
-            const response = await updateSetCompletion(requestParams);
-
-            if (response.data?.success && response.data.updatedProgress) {
-                onSetComplete(exerciseId, response.data.updatedProgress);
-            } else {
-                console.error("[useExerciseSetCompletion] Failed to complete all sets:",
-                    response.data?.message || 'No error message provided.', response);
+            if (updatedProgress) {
+                onSetComplete(exerciseId, updatedProgress);
             }
         } catch (err) {
             console.error("[useExerciseSetCompletion] Error completing all sets:", err);

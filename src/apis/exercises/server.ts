@@ -26,10 +26,10 @@ async function validatePlanOwnership(planId: string, userId: string): Promise<bo
 // Helper to map DB Exercise to API ExerciseBase
 function mapToExerciseBase(exercise: exercises.Exercise): ExerciseBase {
     return {
-        _id: exercise._id,
-        userId: exercise.userId,
-        trainingPlanId: exercise.planId, // Map planId to trainingPlanId
-        exerciseDefinitionId: exercise.definitionId, // Map definitionId
+        _id: exercise._id.toString(),
+        userId: exercise.userId.toString(),
+        trainingPlanId: exercise.planId.toString(), // Map planId to trainingPlanId
+        exerciseDefinitionId: exercise.definitionId.toString(), // Map definitionId
         sets: exercise.sets,
         reps: parseInt(exercise.reps, 10) || 0, // Convert string reps to number
         weight: exercise.weight ? parseFloat(exercise.weight) : undefined,

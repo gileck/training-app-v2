@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { ApiHandlerContext } from '../../types';
-import { GetWeeklyProgressRequest, GetWeeklyProgressResponse } from '../types';
+import { GetWeeklyProgressRequest, GetWeeklyProgressResponse } from '@/common/types/training';
 import { weeklyProgress } from '@/server/database/collections';
 
 // --- Task 26: Get Weekly Progress ---
@@ -36,15 +36,19 @@ export const getWeeklyProgress = async (
         if (existingProgress) {
             // Map from our new database schema to the API response format
             return {
-                _id: existingProgress._id,
-                userId: existingProgress.userId,
-                planId: existingProgress.planId,
-                exerciseId: existingProgress.exerciseId,
+                _id: existingProgress._id.toString(),
+                userId: existingProgress.userId.toString(),
+                planId: existingProgress.planId.toString(),
+                exerciseId: existingProgress.exerciseId.toString(),
                 weekNumber: existingProgress.weekNumber,
                 setsCompleted: existingProgress.setsCompleted ?? 0,
                 isExerciseDone: existingProgress.isExerciseDone ?? false,
                 lastUpdatedAt: existingProgress.updatedAt,
-                weeklyNotes: existingProgress.weeklyNotes ?? [],
+                weeklyNotes: (existingProgress.weeklyNotes ?? []).map(note => ({
+                    noteId: note.noteId.toString(),
+                    date: note.date,
+                    note: note.note
+                })),
                 completed: existingProgress.completed
             };
         } else {
@@ -52,10 +56,10 @@ export const getWeeklyProgress = async (
             const now = new Date();
             return {
                 // Constructing a WeeklyProgressBase compliant object
-                _id: new ObjectId(), // Temporary placeholder ID
-                userId: userIdObj,
-                planId: planIdObj,
-                exerciseId: exerciseIdObj,
+                _id: new ObjectId().toString(), // Temporary placeholder ID
+                userId: userIdObj.toString(),
+                planId: planIdObj.toString(),
+                exerciseId: exerciseIdObj.toString(),
                 weekNumber: weekNumber,
                 setsCompleted: 0,
                 isExerciseDone: false,

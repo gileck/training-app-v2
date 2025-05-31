@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { ApiHandlerContext } from '../types';
-import { ExerciseBase } from '../exercises/types';
+import { ExerciseBase } from '@/common/types/training';
 import {
     name,
     getAllApiName,
@@ -38,11 +38,14 @@ export { name, getAllApiName, getDetailsApiName, createApiName, deleteApiName, a
 // Helper to map DB SavedWorkout to API SavedWorkout
 function mapToApiSavedWorkout(workout: savedWorkouts.SavedWorkout): SavedWorkout {
     return {
-        _id: workout._id,
-        userId: workout.userId,
+        _id: workout._id.toString(),
+        userId: workout.userId.toString(),
         name: workout.name,
-        exercises: workout.exercises, // Use exercises array directly
-        trainingPlanId: workout.planId,
+        exercises: workout.exercises.map(ex => ({
+            exerciseId: ex.exerciseId.toString(),
+            order: ex.order
+        })),
+        trainingPlanId: workout.planId.toString(),
         createdAt: workout.createdAt,
         updatedAt: workout.updatedAt
     };
@@ -114,7 +117,7 @@ export const getSavedWorkoutDetails = async (
         if (!savedWorkout) {
             return null;
         }
-        
+
         // Ensure planId exists on savedWorkout from DB
         if (!savedWorkout.planId) {
             console.error(`SavedWorkout ${savedWorkout._id} is missing planId.`);
@@ -130,18 +133,18 @@ export const getSavedWorkoutDetails = async (
         for (const exerciseId of exerciseIds) {
             // Get the exercise first - must pass userId for permission check
             const exercise = await exercises.findExerciseById(exerciseId, savedWorkout.userId);
-            
+
             if (exercise && exercise.definitionId) {
                 // Get the definition details using the definition ID from the exercise
                 const definition = await exerciseDefinitions.findExerciseDefinitionById(exercise.definitionId);
-                
+
                 if (definition) {
                     // Create a basic ExerciseBase object
                     const exerciseBase: ExerciseBase = {
-                        _id: exerciseId, // Use the actual exercise ID
-                        userId: savedWorkout.userId,
-                        trainingPlanId: savedWorkout.planId,
-                        exerciseDefinitionId: exercise.definitionId,
+                        _id: exerciseId.toString(), // Use the actual exercise ID
+                        userId: savedWorkout.userId.toString(),
+                        trainingPlanId: savedWorkout.planId.toString(),
+                        exerciseDefinitionId: exercise.definitionId.toString(),
                         sets: exercise.sets || 0,
                         reps: parseInt(exercise.reps) || 0, // reps is a string in Exercise type
                         order: savedWorkout.exercises.find(e => e.exerciseId.equals(exerciseId))?.order || 0,
@@ -155,10 +158,10 @@ export const getSavedWorkoutDetails = async (
 
         // Build the response with full exercise details
         const result: SavedWorkoutWithExercises = {
-            _id: savedWorkout._id,
-            userId: savedWorkout.userId,
+            _id: savedWorkout._id.toString(),
+            userId: savedWorkout.userId.toString(),
             name: savedWorkout.name,
-            trainingPlanId: savedWorkout.planId,
+            trainingPlanId: savedWorkout.planId.toString(),
             exercises: exercisesArray,
             createdAt: savedWorkout.createdAt,
             updatedAt: savedWorkout.updatedAt
@@ -177,17 +180,17 @@ export const createSavedWorkout = async (
     context: ApiHandlerContext
 ): Promise<CreateSavedWorkoutResponse> => {
     if (!context.userId) {
-        return { error: "User not authenticated" };
+        throw new Error("User not authenticated");
     }
 
     // Updated validation: Only require name and trainingPlanId.
     // exerciseIds can be an empty array for creating an empty workout shell.
     if (!params.name || !params.trainingPlanId) {
-        return { error: "Name and Training Plan ID are required" };
+        throw new Error("Name and Training Plan ID are required");
     }
 
     if (!ObjectId.isValid(params.trainingPlanId)) {
-        return { error: "Invalid Training Plan ID format" };
+        throw new Error("Invalid Training Plan ID format");
     }
 
     try {
@@ -201,7 +204,7 @@ export const createSavedWorkout = async (
                 exerciseObjectIds.push(new ObjectId(idStr));
             } else {
                 console.error(`Invalid exercise ID format: ${idStr}`);
-                return { error: `Invalid exercise ID format: ${idStr}` };
+                throw new Error(`Invalid exercise ID format: ${idStr}`);
             }
         }
 
@@ -217,7 +220,7 @@ export const createSavedWorkout = async (
             });
         }
         if (exercisesArray.length === 0 && params.exerciseIds.length > 0) {
-            return { error: "Could not create workout with the provided exercises" };
+            throw new Error("Could not create workout with the provided exercises");
         }
         const now = new Date();
         const newWorkout: savedWorkouts.SavedWorkoutCreate = {
@@ -236,7 +239,7 @@ export const createSavedWorkout = async (
         return mapToApiSavedWorkout(createdWorkout);
     } catch (error) {
         console.error("Error creating saved workout:", error);
-        return { error: `Failed to create saved workout: ${error instanceof Error ? error.message : String(error)}` };
+        throw new Error(`Failed to create saved workout: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
 
@@ -275,9 +278,9 @@ export const addExerciseToSavedWorkout = async (
         }
 
         // Return a simple success response
-        return { 
-            success: true, 
-            message: 'Exercise added to workout successfully.' 
+        return {
+            success: true,
+            message: 'Exercise added to workout successfully.'
         };
 
     } catch (error) {

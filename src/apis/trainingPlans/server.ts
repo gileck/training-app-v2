@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { ApiHandlerContext } from '@/apis/types';
+import { TrainingPlan } from '@/common/types/training';
 import {
     GetAllTrainingPlansRequest,
     GetAllTrainingPlansResponse,
@@ -31,6 +32,19 @@ import {
 
 import { trainingPlans } from '@/server/database/collections';
 
+// Helper to convert DB TrainingPlan to API TrainingPlan
+function mapToApiTrainingPlan(plan: trainingPlans.TrainingPlan): TrainingPlan {
+    return {
+        _id: plan._id.toString(),
+        userId: plan.userId.toString(),
+        name: plan.name,
+        durationWeeks: plan.durationWeeks,
+        isActive: plan.isActive,
+        createdAt: plan.createdAt,
+        updatedAt: plan.updatedAt
+    };
+}
+
 // Re-export API names for registration
 export {
     getTrainingPlanApiName,
@@ -50,15 +64,15 @@ export {
  */
 export const getAllTrainingPlans = async (_params: GetAllTrainingPlansRequest, context: ApiHandlerContext): Promise<GetAllTrainingPlansResponse> => {
     if (!context.userId) {
-        return { error: "Unauthorized" };
+        throw new Error("Unauthorized");
     }
     try {
         // Use the database layer to get all training plans
         const plans = await trainingPlans.findTrainingPlansForUser(context.userId);
-        return plans;
+        return plans.map(mapToApiTrainingPlan);
     } catch (error) {
         console.error("Error getting all training plans:", error);
-        return { error: "Failed to retrieve training plans." };
+        throw new Error("Failed to retrieve training plans.");
     }
 };
 
@@ -67,10 +81,10 @@ export const getAllTrainingPlans = async (_params: GetAllTrainingPlansRequest, c
  */
 export const getTrainingPlanById = async (params: GetTrainingPlanRequest, context: ApiHandlerContext): Promise<GetTrainingPlanResponse> => {
     if (!context.userId) {
-        return { error: "Unauthorized" };
+        throw new Error("Unauthorized");
     }
     if (!params.planId) {
-        return { error: "Plan ID is required." };
+        throw new Error("Plan ID is required.");
     }
 
     try {
@@ -78,12 +92,12 @@ export const getTrainingPlanById = async (params: GetTrainingPlanRequest, contex
         const plan = await trainingPlans.findTrainingPlanById(params.planId, context.userId);
 
         if (!plan) {
-            return { error: "Training plan not found or access denied." };
+            throw new Error("Training plan not found or access denied.");
         }
-        return plan;
+        return mapToApiTrainingPlan(plan);
     } catch (error) {
         console.error("Error getting training plan by ID:", error);
-        return { error: "Failed to retrieve training plan." };
+        throw new Error("Failed to retrieve training plan.");
     }
 };
 
@@ -92,10 +106,10 @@ export const getTrainingPlanById = async (params: GetTrainingPlanRequest, contex
  */
 export const createTrainingPlan = async (params: CreateTrainingPlanRequest, context: ApiHandlerContext): Promise<CreateTrainingPlanResponse> => {
     if (!context.userId) {
-        return { error: "Unauthorized" };
+        throw new Error("Unauthorized");
     }
     if (!params.name || !params.durationWeeks || params.durationWeeks <= 0) {
-        return { error: "Valid plan name and positive duration (weeks) are required." };
+        throw new Error("Valid plan name and positive duration (weeks) are required.");
     }
 
     try {
@@ -117,10 +131,10 @@ export const createTrainingPlan = async (params: CreateTrainingPlanRequest, cont
 
         // Use the database layer to insert the new plan
         const createdPlan = await trainingPlans.insertTrainingPlan(newPlanDoc);
-        return createdPlan;
+        return mapToApiTrainingPlan(createdPlan);
     } catch (error) {
         console.error("Error creating training plan:", error);
-        return { error: "Failed to create training plan." };
+        throw new Error("Failed to create training plan.");
     }
 };
 
@@ -129,23 +143,23 @@ export const createTrainingPlan = async (params: CreateTrainingPlanRequest, cont
  */
 export const updateTrainingPlan = async (params: UpdateTrainingPlanRequest, context: ApiHandlerContext): Promise<UpdateTrainingPlanResponse> => {
     if (!context.userId) {
-        return { error: "Unauthorized" };
+        throw new Error("Unauthorized");
     }
     if (!params.planId) {
-        return { error: "Plan ID is required for update." };
+        throw new Error("Plan ID is required for update.");
     }
     if (!params.name && params.durationWeeks === undefined) {
-        return { error: "No update fields provided (name or durationWeeks)." };
+        throw new Error("No update fields provided (name or durationWeeks).");
     }
     if (params.durationWeeks !== undefined && params.durationWeeks <= 0) {
-        return { error: "Duration (weeks) must be positive." };
+        throw new Error("Duration (weeks) must be positive.");
     }
 
     try {
         // First verify the plan exists and belongs to the user
         const existingPlan = await trainingPlans.findTrainingPlanById(params.planId, context.userId);
         if (!existingPlan) {
-            return { error: "Training plan not found or access denied." };
+            throw new Error("Training plan not found or access denied.");
         }
 
         const updates: trainingPlans.TrainingPlanUpdate = {
@@ -158,13 +172,13 @@ export const updateTrainingPlan = async (params: UpdateTrainingPlanRequest, cont
         const updatedPlan = await trainingPlans.updateTrainingPlan(params.planId, context.userId, updates);
 
         if (!updatedPlan) {
-            return { error: "Update failed or plan not found." };
+            throw new Error("Update failed or plan not found.");
         }
 
-        return updatedPlan;
+        return mapToApiTrainingPlan(updatedPlan);
     } catch (error) {
         console.error("Error updating training plan:", error);
-        return { error: "Failed to update training plan." };
+        throw new Error("Failed to update training plan.");
     }
 };
 
@@ -204,10 +218,10 @@ export const deleteTrainingPlan = async (params: DeleteTrainingPlanRequest, cont
  */
 export const duplicateTrainingPlan = async (params: DuplicateTrainingPlanRequest, context: ApiHandlerContext): Promise<DuplicateTrainingPlanResponse> => {
     if (!context.userId) {
-        return { error: "Unauthorized" };
+        throw new Error("Unauthorized");
     }
     if (!params.planId) {
-        return { error: "Original Plan ID is required." };
+        throw new Error("Original Plan ID is required.");
     }
 
     try {
@@ -215,7 +229,7 @@ export const duplicateTrainingPlan = async (params: DuplicateTrainingPlanRequest
         // Generate the new name for the duplicate plan
         const originalPlan = await trainingPlans.findTrainingPlanById(params.planId, context.userId);
         if (!originalPlan) {
-            return { error: "Original training plan not found or access denied." };
+            throw new Error("Original training plan not found or access denied.");
         }
 
         const newName = `${originalPlan.name} (Copy)`;
@@ -226,13 +240,13 @@ export const duplicateTrainingPlan = async (params: DuplicateTrainingPlanRequest
         );
 
         if (!duplicatedPlan) {
-            return { error: "Failed to duplicate training plan." };
+            throw new Error("Failed to duplicate training plan.");
         }
 
-        return duplicatedPlan;
+        return mapToApiTrainingPlan(duplicatedPlan);
     } catch (error) {
         console.error("Error duplicating training plan:", error);
-        return { error: `Failed to duplicate training plan: ${error instanceof Error ? error.message : String(error)}` };
+        throw new Error(`Failed to duplicate training plan: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
 
@@ -285,7 +299,7 @@ export const getActiveTrainingPlan = async (
             return { error: "No active training plan found", plan: null };
         }
 
-        return activePlan;
+        return mapToApiTrainingPlan(activePlan);
     } catch (error) {
         console.error("Error fetching active training plan:", error);
         return { error: "Failed to retrieve active training plan", plan: null };

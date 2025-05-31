@@ -236,20 +236,20 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
 
             const result = await addWeeklyNote(params);
 
-            if (!result.data || result.data.error) {
-                setNotesError(`Failed to add note: ${result.data?.error}`);
+            if (!result.data || 'error' in result.data) {
+                setNotesError(`Failed to add note: ${('error' in result.data) ? result.data.error : 'Unknown error'}`);
                 return;
             }
 
-            // Update the weekly notes with the newly added note
-            const newFormattedNote: FormattedWeeklyNote = {
+            // At this point, result.data is WeeklyNote
+            const newNoteItem = {
                 _id: result.data.noteId ? result.data.noteId.toString() : new Date().getTime().toString(),
                 text: result.data.note || newNote,
                 timestamp: result.data.date ? result.data.date.toString() : new Date().toISOString(),
                 date: result.data.date ? result.data.date.toString() : new Date().toISOString()
             };
 
-            setWeeklyNotes(prev => [...prev, newFormattedNote]);
+            setWeeklyNotes(prev => [...prev, newNoteItem]);
             setNewNote('');
             setIsAddingNote(false);
         } catch (err) {

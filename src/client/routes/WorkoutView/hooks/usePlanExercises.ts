@@ -1,12 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getExercises } from '@/apis/exercises/client';
-import { getTrainingPlanById, getActiveTrainingPlan } from '@/apis/trainingPlans/client';
+import { useMemo, useCallback, useState, useEffect } from 'react';
+import { useExercises, useWeeklyProgress, useTrainingPlans } from '@/client/hooks/useTrainingData';
 import { getAllExerciseDefinitionOptions, getExerciseDefinitionById } from '@/apis/exerciseDefinitions/client';
-import { getWeeklyProgress } from '@/apis/weeklyProgress/client';
-import type { ExerciseBase } from '@/apis/exercises/types';
-import type { TrainingPlan } from '@/apis/trainingPlans/types';
 import type { ExerciseDefinition } from '@/apis/exerciseDefinitions/types';
-import type { WeeklyProgressBase } from '@/apis/weeklyProgress/types';
+import type { WeeklyProgressBase, ExerciseBase, TrainingPlan } from '@/common/types/training';
 import { WorkoutExercise } from '@/client/types/workout';
 import { useRouter } from '@/client/router';
 
@@ -21,7 +17,7 @@ const createDefinitionMap = (defs: ExerciseDefinition[]): Record<string, string>
 export interface UsePlanExercisesReturn {
     planId?: string;
     weekNumber: number;
-    planDetails: TrainingPlan | null;
+    planDetails: { name: string; durationWeeks: number } | null;
     workoutExercises: WorkoutExercise[];
     isLoading: boolean;
     error: string | null;
@@ -42,22 +38,29 @@ export const usePlanExercises = (initialPlanId?: string, initialWeekNumber?: num
     const { routeParams, navigate } = useRouter();
     const [planId, setPlanIdState] = useState<string | undefined>(initialPlanId || routeParams.planId as string | undefined);
     const [weekNumber, setWeekNumberState] = useState<number>(initialWeekNumber || parseInt(routeParams.weekNumber as string || '1', 10));
-
-    const [planDetails, setPlanDetails] = useState<TrainingPlan | null>(null);
     const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [definitionMap, setDefinitionMap] = useState<Record<string, string>>({});
+
+    const { activeTrainingPlan, trainingPlans, isLoading: initialLoading } = useTrainingPlans();
+    const { exercises, isLoading: exercisesLoading, error: exercisesError } = useExercises(planId || '');
+    const { progress, isLoading: progressLoading, error: progressError } = useWeeklyProgress(planId || '', weekNumber);
 
     const setPlanId = useCallback((id: string) => {
         setPlanIdState(id);
     }, []);
 
+    // Auto-set planId from active plan if not provided
     useEffect(() => {
-        if (initialPlanId && initialPlanId !== planId) {
-            setPlanIdState(initialPlanId);
+        if (!planId && activeTrainingPlan) {
+            const activePlanId = activeTrainingPlan._id;
+            setPlanIdState(activePlanId);
+            if (!routeParams.planId) {
+                navigate(`/workout/${activePlanId}/${weekNumber}`, { replace: true });
+            }
         }
-    }, [initialPlanId, planId]);
+    }, [planId, activeTrainingPlan, routeParams.planId, weekNumber, navigate]);
 
+    // Update weekNumber from route params
     useEffect(() => {
         const newWeekNumber = parseInt(routeParams.weekNumber as string || '1', 10);
         if (newWeekNumber !== weekNumber) {
@@ -65,135 +68,105 @@ export const usePlanExercises = (initialPlanId?: string, initialWeekNumber?: num
         }
     }, [routeParams.weekNumber, weekNumber]);
 
-
-    // Fetch active training plan if no planId is provided
+    // Load exercise definitions
     useEffect(() => {
-        async function fetchActivePlan() {
-            if (!planId) {
-                setIsLoading(true);
-                try {
-                    const response = await getActiveTrainingPlan();
-                    if (response.data && !('plan' in response.data) && 'name' in response.data) {
-                        const activePlanId = response.data._id.toString();
-                        setPlanIdState(activePlanId);
-                        // Navigate to include the planId in the URL if it wasn't there
-                        if (!routeParams.planId && activePlanId) {
-                            navigate(`/workout/${activePlanId}/${weekNumber}`, { replace: true });
-                        }
-                    } else {
-                        setError("No active training plan found. Please select a plan.");
-                    }
-                } catch (err) {
-                    console.error("Failed to fetch active training plan:", err);
-                    setError("Failed to fetch active training plan. Please select a plan manually.");
-                } finally {
-                    setIsLoading(false);
+        async function loadDefinitions() {
+            try {
+                const response = await getAllExerciseDefinitionOptions();
+                if (response.data && Array.isArray(response.data)) {
+                    const newDefinitionMap = createDefinitionMap(response.data as ExerciseDefinition[]);
+                    setDefinitionMap(prevMap => {
+                        // Only update if the map actually changed
+                        const hasChanged = Object.keys(newDefinitionMap).length !== Object.keys(prevMap).length ||
+                            Object.keys(newDefinitionMap).some(key => newDefinitionMap[key] !== prevMap[key]);
+                        return hasChanged ? newDefinitionMap : prevMap;
+                    });
                 }
+            } catch (err) {
+                console.error("Failed to load exercise definitions:", err);
             }
         }
-        fetchActivePlan();
-    }, [planId, routeParams.planId, weekNumber, navigate]);
+        loadDefinitions();
+    }, []);
 
-    const fetchPlanData = useCallback(async () => {
-        if (!planId || isNaN(weekNumber) || weekNumber < 1) {
-            if (!planId) { // Still waiting for active plan
-                setIsLoading(true); // Show loading until planId is set
-                return;
-            }
-            setError("Invalid Plan ID or Week Number in URL.");
-            setIsLoading(false);
+    // Build workout exercises from context data
+    useEffect(() => {
+        if (!exercises.length || !planId) {
+            setWorkoutExercises([]);
             return;
         }
-        setIsLoading(true);
-        setError(null);
-        try {
-            const [planRes, exercisesRes, definitionsRes] = await Promise.all([
-                getTrainingPlanById({ planId }),
-                getExercises({ trainingPlanId: planId }),
-                getAllExerciseDefinitionOptions(),
-            ]);
 
-            if (!(planRes.data && 'name' in planRes.data)) {
-                throw new Error('Failed to fetch plan details or plan not found');
-            }
-            const currentPlan = planRes.data;
-            setPlanDetails(currentPlan);
+        const buildWorkoutExercises = async () => {
+            const exercisesWithDetails = await Promise.all(
+                exercises.map(async (ex: ExerciseBase) => {
+                    const exerciseProgress = progress.find((p: WeeklyProgressBase) => p.exerciseId === ex._id);
 
-            const defMap = createDefinitionMap((definitionsRes.data && Array.isArray(definitionsRes.data)) ? definitionsRes.data as ExerciseDefinition[] : []);
+                    let exerciseName = 'Unknown Exercise';
+                    let definitionData: Partial<Pick<ExerciseDefinition, 'primaryMuscle' | 'secondaryMuscles' | 'bodyWeight' | 'type' | 'imageUrl'> & { hasComments?: boolean }> | undefined = undefined;
 
-            if (!(exercisesRes.data && Array.isArray(exercisesRes.data))) {
-                throw new Error('Failed to fetch exercises for the plan');
-            }
-            const planExercises: ExerciseBase[] = exercisesRes.data;
+                    try {
+                        const defResponse = await getExerciseDefinitionById({ definitionId: ex.exerciseDefinitionId });
+                        if (defResponse.data) {
+                            const def = defResponse.data;
+                            exerciseName = def.name; // Use the name from the API response
+                            definitionData = {
+                                primaryMuscle: def.primaryMuscle,
+                                secondaryMuscles: def.secondaryMuscles,
+                                bodyWeight: def.bodyWeight,
+                                type: def.type,
+                                imageUrl: def.imageUrl,
+                                hasComments: !!(exerciseProgress?.weeklyNotes?.length)
+                            };
+                        }
+                    } catch (err) {
+                        console.warn(`Failed to fetch definition for exercise ${ex._id}:`, err);
+                        // Fallback to definition map if individual fetch fails
+                        exerciseName = definitionMap[ex.exerciseDefinitionId] || 'Unknown Exercise';
+                    }
 
-            const progressPromises = planExercises.map(ex =>
-                getWeeklyProgress({ planId, exerciseId: ex._id.toString(), weekNumber })
-            );
-            const definitionPromises = planExercises.map(ex =>
-                getExerciseDefinitionById({ definitionId: ex.exerciseDefinitionId.toString() })
-            );
-
-            const [progressResults, definitionResults] = await Promise.all([
-                Promise.allSettled(progressPromises),
-                Promise.allSettled(definitionPromises)
-            ]);
-
-            const exercisesWithDetails = planExercises.map((ex, index) => {
-                const progressResult = progressResults[index];
-                let progressData: WeeklyProgressBase | undefined = undefined;
-                if (progressResult.status === 'fulfilled' && progressResult.value.data) {
-                    progressData = progressResult.value.data as WeeklyProgressBase;
-                } else if (progressResult.status === 'rejected') {
-                    console.warn(`Failed to fetch progress for exercise ${ex._id}:`, progressResult.reason);
-                }
-
-                const definitionResult = definitionResults[index];
-                let definitionData: Partial<Pick<ExerciseDefinition, 'primaryMuscle' | 'secondaryMuscles' | 'bodyWeight' | 'type' | 'imageUrl'> & { hasComments?: boolean }> | undefined = undefined;
-                if (definitionResult.status === 'fulfilled' && definitionResult.value.data) {
-                    const def = definitionResult.value.data;
-                    definitionData = {
-                        primaryMuscle: def.primaryMuscle,
-                        secondaryMuscles: def.secondaryMuscles,
-                        bodyWeight: def.bodyWeight,
-                        type: def.type,
-                        imageUrl: def.imageUrl,
-                        hasComments: !!(progressData?.weeklyNotes?.length)
+                    return {
+                        ...ex,
+                        name: exerciseName,
+                        progress: exerciseProgress,
+                        definition: definitionData
                     };
-                }
-
-                return {
-                    ...ex,
-                    name: defMap[ex.exerciseDefinitionId.toString()] || 'Unknown Exercise',
-                    progress: progressData,
-                    definition: definitionData
-                };
+                })
+            );
+            setWorkoutExercises(prev => {
+                // Only update if the data actually changed
+                const hasChanged = prev.length !== exercisesWithDetails.length ||
+                    prev.some((prevEx, idx) =>
+                        prevEx._id !== exercisesWithDetails[idx]._id ||
+                        prevEx.progress?.setsCompleted !== exercisesWithDetails[idx].progress?.setsCompleted
+                    );
+                return hasChanged ? exercisesWithDetails : prev;
             });
-            setWorkoutExercises(exercisesWithDetails);
-        } catch (err) {
-            console.error("Failed to load workout data:", err);
-            setError(err instanceof Error ? err.message : 'An unknown error occurred');
-            setPlanDetails(null);
-            setWorkoutExercises([]);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [planId, weekNumber]);
+        };
 
-    useEffect(() => {
-        if (planId) {
-            fetchPlanData();
-        }
-    }, [planId, weekNumber, fetchPlanData]); // Added weekNumber here, so if weekNumber changes, data re-fetches
+        buildWorkoutExercises();
+    }, [exercises.length, progress.length, planId]);
+
+    const fetchPlanData = useCallback(async () => {
+        // Context automatically handles data loading, so this is mostly a no-op
+        // but kept for compatibility with existing components
+    }, []);
 
     const handleSetCompletionUpdate = useCallback((exerciseId: string, updatedProgress: WeeklyProgressBase) => {
         setWorkoutExercises(prevExercises =>
             prevExercises.map(ex =>
-                ex._id.toString() === exerciseId
+                ex._id === exerciseId
                     ? { ...ex, progress: updatedProgress }
                     : ex
             )
         );
+        // Context updates are now handled by useExerciseSetCompletion
     }, []);
+
+    const planDetails = useMemo(() => {
+        if (!planId) return null;
+        const plan = trainingPlans.find((p: TrainingPlan) => p._id === planId);
+        return plan ? { name: plan.name, durationWeeks: plan.durationWeeks } : null;
+    }, [planId, trainingPlans]);
 
     const activePlanExercises = useMemo(() => workoutExercises.filter(ex => {
         const setsPrescribed = ex.sets;
@@ -207,18 +180,27 @@ export const usePlanExercises = (initialPlanId?: string, initialWeekNumber?: num
         return setsDone >= setsPrescribed;
     }), [workoutExercises]);
 
-    const progressPercentage = useMemo(() => {
-        if (workoutExercises.length === 0) return 0;
-        const totalPossibleSets = workoutExercises.reduce((acc, ex) => acc + ex.sets, 0);
-        if (totalPossibleSets === 0) return 0; // Avoid division by zero
-        const totalCompletedSets = workoutExercises.reduce((acc, ex) => acc + (ex.progress?.setsCompleted || 0), 0);
-        return Math.round((totalCompletedSets / totalPossibleSets) * 100);
-    }, [workoutExercises]);
+    const { totalExercises, completedExercisesCount, completedSetsCount, totalSetsCount } = useMemo(() => {
+        const total = workoutExercises.length;
+        const completed = completedPlanExercises.length;
+        const totalSets = workoutExercises.reduce((sum, ex) => sum + ex.sets, 0);
+        const completedSets = workoutExercises.reduce((sum, ex) => sum + (ex.progress?.setsCompleted || 0), 0);
 
-    const totalExercises = useMemo(() => workoutExercises.length, [workoutExercises]);
-    const completedExercisesCount = useMemo(() => completedPlanExercises.length, [completedPlanExercises]);
-    const completedSetsCount = useMemo(() => workoutExercises.reduce((acc, ex) => acc + (ex.progress?.setsCompleted || 0), 0), [workoutExercises]);
-    const totalSetsCount = useMemo(() => workoutExercises.reduce((acc, ex) => acc + ex.sets, 0), [workoutExercises]);
+        return {
+            totalExercises: total,
+            completedExercisesCount: completed,
+            completedSetsCount: completedSets,
+            totalSetsCount: totalSets
+        };
+    }, [workoutExercises, completedPlanExercises]);
+
+    const progressPercentage = useMemo(() => {
+        if (totalSetsCount === 0) return 0;
+        return Math.round((completedSetsCount / totalSetsCount) * 100);
+    }, [completedSetsCount, totalSetsCount]);
+
+    const isLoading = initialLoading || exercisesLoading || progressLoading;
+    const error = exercisesError || progressError;
 
     return {
         planId,
@@ -237,6 +219,6 @@ export const usePlanExercises = (initialPlanId?: string, initialWeekNumber?: num
         completedSetsCount,
         totalSetsCount,
         setPlanId,
-        setWorkoutExercises,
+        setWorkoutExercises
     };
 }; 

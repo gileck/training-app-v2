@@ -1,21 +1,16 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useSavedWorkouts, useExercises } from '@/client/hooks/useTrainingData';
 import {
-    getAllSavedWorkouts,
-    deleteSavedWorkout as deleteSavedWorkoutApi,
-    getSavedWorkoutDetails,
-    createSavedWorkout,
     addExerciseToSavedWorkout,
     removeExerciseFromSavedWorkout as removeExerciseFromSavedWorkoutApi,
     renameSavedWorkout,
 } from '@/apis/savedWorkouts/client';
-import { getExercises } from '@/apis/exercises/client';
 import type {
-    SavedWorkout as ApiSavedWorkout,
     AddExerciseToSavedWorkoutRequest,
     RemoveExerciseFromSavedWorkoutRequest,
 } from '@/apis/savedWorkouts/types';
 import type { ExerciseDefinition as ApiExerciseDefinition } from '@/apis/exerciseDefinitions/types';
-import type { ExerciseBase } from '@/apis/exercises/types';
+import type { ExerciseBase } from '@/common/types/training';
 import type { ClientWorkoutDisplay } from '../types';
 
 interface WorkoutsPageState {
@@ -85,6 +80,9 @@ const getDefaultWorkoutsState = (): WorkoutsPageState => ({
 export const useWorkoutHooks = (planId: string | undefined, generalDefinitions: ApiExerciseDefinition[], generalExercises: ExerciseBase[]) => {
     const [workoutsState, setWorkoutsState] = useState<WorkoutsPageState>(getDefaultWorkoutsState());
 
+    const { savedWorkouts, loadSavedWorkouts, createSavedWorkout, deleteSavedWorkout } = useSavedWorkouts(planId || '');
+    const { exercises } = useExercises(planId || '');
+
     const generalDefinitionsRef = useRef(generalDefinitions);
     const generalExercisesRef = useRef(generalExercises);
 
@@ -122,81 +120,30 @@ export const useWorkoutHooks = (planId: string | undefined, generalDefinitions: 
         }
         updateWorkoutsState({ savedWorkout_error: null, savedWorkout_successMessage: null });
         try {
-            if (generalDefinitionsRef.current.length === 0) {
-            }
+            await loadSavedWorkouts();
 
-            const workoutsResponse = await getAllSavedWorkouts({ trainingPlanId: planId });
-            if (workoutsResponse.data) {
-                const rawWorkouts = workoutsResponse.data;
+            // Convert context savedWorkouts to ClientWorkoutDisplay format
+            const formatDate = (dateValue: string | number | Date | null | undefined): string => {
+                if (!dateValue) return new Date().toISOString();
+                if (dateValue instanceof Date) return dateValue.toISOString();
+                if (typeof dateValue === 'string') { try { return new Date(dateValue).toISOString(); } catch { /* ignore */ } }
+                if (typeof dateValue === 'number') return new Date(dateValue).toISOString();
+                return new Date().toISOString();
+            };
 
-                const workoutsWithDetailsPromises = rawWorkouts.map(async (rawWorkout: ApiSavedWorkout) => {
-                    if (!rawWorkout || !rawWorkout._id || !rawWorkout.userId || !rawWorkout.trainingPlanId) {
-                        return null;
-                    }
-                    try {
-                        const detailsResponse = await getSavedWorkoutDetails({ workoutId: rawWorkout._id.toString() });
-                        const formatDate = (dateValue: string | number | Date | null | undefined): string => {
-                            if (!dateValue) return new Date().toISOString();
-                            if (dateValue instanceof Date) return dateValue.toISOString();
-                            if (typeof dateValue === 'string') { try { return new Date(dateValue).toISOString(); } catch { /* ignore */ } }
-                            if (typeof dateValue === 'number') return new Date(dateValue).toISOString();
-                            return new Date().toISOString(); // Fallback for unparseable string or other types
-                        };
+            const clientWorkouts: ClientWorkoutDisplay[] = savedWorkouts.map(workout => ({
+                _id: workout._id,
+                userId: workout.userId,
+                name: workout.name,
+                trainingPlanId: workout.trainingPlanId,
+                createdAt: formatDate(workout.createdAt),
+                updatedAt: formatDate(workout.updatedAt),
+                exercises: workout.exercises.map(ex => exercises.find(e => e._id === ex.exerciseId)).filter(Boolean) as ExerciseBase[],
+                isExercisesLoading: false,
+                exercisesError: null,
+            }));
 
-                        if (detailsResponse.data && 'exercises' in detailsResponse.data) {
-                            return {
-                                ...detailsResponse.data,
-                                _id: detailsResponse.data._id.toString(),
-                                userId: detailsResponse.data.userId.toString(),
-                                trainingPlanId: detailsResponse.data.trainingPlanId.toString(),
-                                createdAt: formatDate(detailsResponse.data.createdAt),
-                                updatedAt: formatDate(detailsResponse.data.updatedAt),
-                                exercises: detailsResponse.data.exercises,
-                                isExercisesLoading: false,
-                                exercisesError: null,
-                            } as ClientWorkoutDisplay;
-                        } else {
-                            return {
-                                ...rawWorkout,
-                                _id: rawWorkout._id.toString(),
-                                userId: rawWorkout.userId.toString(),
-                                trainingPlanId: rawWorkout.trainingPlanId.toString(),
-                                createdAt: formatDate(rawWorkout.createdAt),
-                                updatedAt: formatDate(rawWorkout.updatedAt),
-                                exercises: [],
-                                isExercisesLoading: false,
-                                exercisesError: 'Failed to load exercises on initial fetch.',
-                            } as ClientWorkoutDisplay;
-                        }
-                    } catch (detailErr) {
-                        const formatDate = (dateValue: string | number | Date | null | undefined): string => {
-                            if (!dateValue) return new Date().toISOString();
-                            if (dateValue instanceof Date) return dateValue.toISOString();
-                            if (typeof dateValue === 'string') { try { return new Date(dateValue).toISOString(); } catch { /* ignore */ } }
-                            if (typeof dateValue === 'number') return new Date(dateValue).toISOString();
-                            return new Date().toISOString();
-                        };
-                        return {
-                            ...rawWorkout,
-                            _id: rawWorkout._id.toString(),
-                            userId: rawWorkout.userId.toString(),
-                            trainingPlanId: rawWorkout.trainingPlanId.toString(),
-                            createdAt: formatDate(rawWorkout.createdAt),
-                            updatedAt: formatDate(rawWorkout.updatedAt),
-                            exercises: [],
-                            isExercisesLoading: false,
-                            exercisesError: `Error fetching details: ${detailErr instanceof Error ? detailErr.message : 'Unknown error'}.`,
-                        } as ClientWorkoutDisplay;
-                    }
-                });
-
-                const settledWorkouts = await Promise.all(workoutsWithDetailsPromises);
-                const validWorkouts = settledWorkouts.filter(Boolean) as ClientWorkoutDisplay[];
-
-                updateWorkoutsState({ savedWorkout_workouts: validWorkouts });
-            } else {
-                updateWorkoutsState({ savedWorkout_error: 'Failed to load saved workouts for this plan' });
-            }
+            updateWorkoutsState({ savedWorkout_workouts: clientWorkouts });
             return Promise.resolve();
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'An error occurred while loading workouts for this plan';
@@ -224,15 +171,9 @@ export const useWorkoutHooks = (planId: string | undefined, generalDefinitions: 
         });
 
         try {
-            const response = await deleteSavedWorkoutApi({ workoutId: workoutsState.savedWorkout_workoutToDeleteId });
-            if (response.data && 'error' in response.data) {
-                updateWorkoutsState({ savedWorkout_error: `Failed to delete workout: ${response.data.error}` });
-            } else if (response.data?.success) {
-                await fetchSavedWorkoutsForPlan();
-                updateWorkoutsState({ savedWorkout_successMessage: 'Workout deleted successfully!' });
-            } else {
-                updateWorkoutsState({ savedWorkout_error: response.data?.message || 'Failed to delete workout: No data returned or success false' });
-            }
+            await deleteSavedWorkout(workoutsState.savedWorkout_workoutToDeleteId);
+            await fetchSavedWorkoutsForPlan();
+            updateWorkoutsState({ savedWorkout_successMessage: 'Workout deleted successfully!' });
         } catch (err) {
             updateWorkoutsState({ savedWorkout_error: `An error occurred: ${err instanceof Error ? err.message : String(err)}` });
         } finally {
@@ -300,10 +241,8 @@ export const useWorkoutHooks = (planId: string | undefined, generalDefinitions: 
 
                 let planExercisesToUse = generalExercisesRef.current;
                 if (planExercisesToUse.length === 0 && currentPlanId) {
-                    const exercisesResponse = await getExercises({ trainingPlanId: currentPlanId });
-                    if (exercisesResponse.data && Array.isArray(exercisesResponse.data)) {
-                        planExercisesToUse = exercisesResponse.data;
-                    } else {
+                    planExercisesToUse = exercises;
+                    if (planExercisesToUse.length === 0) {
                         updateWorkoutsState({ savedWorkout_dialogPlanContextError: 'Could not load plan exercises.', savedWorkout_isLoadingDialogExercises: false });
                         return;
                     }
@@ -312,10 +251,17 @@ export const useWorkoutHooks = (planId: string | undefined, generalDefinitions: 
                 const exercisesWithDefinitions = planExercisesToUse.map(exercise => {
                     const definitionId = exercise.exerciseDefinitionId.toString();
                     const definitionDetail = definitionsToFilter.find(def => def._id.toString() === definitionId);
-                    const fallbackDefinition: ApiExerciseDefinition = definitionDetail || {
-                        _id: exercise.exerciseDefinitionId, name: 'Unknown Exercise', imageUrl: '', primaryMuscle: '', secondaryMuscles: [], bodyWeight: false, type: '', static: false
-                    };
-                    return { exerciseId: exercise._id.toString(), definitionId, definition: fallbackDefinition };
+                    const definition = definitionDetail || ({
+                        _id: 'unknown',
+                        name: 'Unknown Exercise',
+                        imageUrl: '',
+                        primaryMuscle: '',
+                        secondaryMuscles: [],
+                        bodyWeight: false,
+                        type: 'strength',
+                        static: false
+                    } as unknown as ApiExerciseDefinition);
+                    return { exerciseId: exercise._id.toString(), definitionId, definition };
                 });
                 updateWorkoutsState({ savedWorkout_planExercises: exercisesWithDefinitions });
 
@@ -447,10 +393,8 @@ export const useWorkoutHooks = (planId: string | undefined, generalDefinitions: 
 
                 let planExercisesToUse = generalExercisesRef.current;
                 if (planExercisesToUse.length === 0 && currentPlanId) {
-                    const exercisesResponse = await getExercises({ trainingPlanId: currentPlanId });
-                    if (exercisesResponse.data && Array.isArray(exercisesResponse.data)) {
-                        planExercisesToUse = exercisesResponse.data;
-                    } else {
+                    planExercisesToUse = exercises;
+                    if (planExercisesToUse.length === 0) {
                         updateWorkoutsState({ newWorkoutDialog_errorLoadingExercises: 'Could not load plan exercises.', newWorkoutDialog_isLoadingExercises: false });
                         return;
                     }
@@ -459,10 +403,17 @@ export const useWorkoutHooks = (planId: string | undefined, generalDefinitions: 
                 const exercisesWithDefinitions = planExercisesToUse.map(exercise => {
                     const definitionId = exercise.exerciseDefinitionId.toString();
                     const definitionDetail = definitionsToFilter.find(def => def._id.toString() === definitionId);
-                    const fallbackDefinition: ApiExerciseDefinition = definitionDetail || {
-                        _id: exercise.exerciseDefinitionId, name: 'Unknown Exercise', imageUrl: '', primaryMuscle: '', secondaryMuscles: [], bodyWeight: false, type: '', static: false
-                    };
-                    return { exerciseId: exercise._id.toString(), definitionId, definition: fallbackDefinition };
+                    const definition = definitionDetail || ({
+                        _id: 'unknown',
+                        name: 'Unknown Exercise',
+                        imageUrl: '',
+                        primaryMuscle: '',
+                        secondaryMuscles: [],
+                        bodyWeight: false,
+                        type: 'strength',
+                        static: false
+                    } as unknown as ApiExerciseDefinition);
+                    return { exerciseId: exercise._id.toString(), definitionId, definition };
                 });
                 updateWorkoutsState({ newWorkoutDialog_planExercises: exercisesWithDefinitions });
                 if (exercisesWithDefinitions.length === 0) {
@@ -505,21 +456,14 @@ export const useWorkoutHooks = (planId: string | undefined, generalDefinitions: 
 
         try {
             const selectedExerciseIdsArray = Array.from(workoutsState.newWorkoutDialog_selectedExerciseIds);
-            const response = await createSavedWorkout({
+            await createSavedWorkout({
                 name: workoutsState.savedWorkout_newWorkoutNameForAdd.trim(),
-                trainingPlanId: planId,
                 exerciseIds: selectedExerciseIdsArray,
             });
 
-            if (response.data && 'error' in response.data) {
-                updateWorkoutsState({ savedWorkout_addWorkoutError: `Failed to create workout: ${response.data.error}` });
-            } else if (response.data && '_id' in response.data) {
-                updateWorkoutsState({ savedWorkout_successMessage: 'Workout created successfully!' });
-                savedWorkout_handleCloseAddWorkoutDialog();
-                await fetchSavedWorkoutsForPlan();
-            } else {
-                updateWorkoutsState({ savedWorkout_addWorkoutError: 'Failed to create workout: No data returned or unexpected format' });
-            }
+            updateWorkoutsState({ savedWorkout_successMessage: 'Workout created successfully!' });
+            savedWorkout_handleCloseAddWorkoutDialog();
+            await fetchSavedWorkoutsForPlan();
         } catch (err) {
             updateWorkoutsState({ savedWorkout_addWorkoutError: `An error occurred: ${err instanceof Error ? err.message : String(err)}` });
         } finally {

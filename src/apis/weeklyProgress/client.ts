@@ -34,6 +34,10 @@ export const updateSetCompletion = async (params: UpdateSetCompletionRequest): P
     return apiClient.call<UpdateSetCompletionResponse, UpdateSetCompletionRequest>(
         updateSetCompletionApiName,
         params,
+        {
+            staleWhileRevalidate: false,
+            disableCache: true,
+        }
     );
 };
 

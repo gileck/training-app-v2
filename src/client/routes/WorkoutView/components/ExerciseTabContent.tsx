@@ -31,6 +31,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
     handleExerciseSelect,
     toggleShowCompleted
 }) => {
+
     if (isLoading) {
         return (
             <Box sx={{ pt: 3 }}>
@@ -39,6 +40,9 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
                 ))}
             </Box>
         );
+    }
+    if (!activeExercises.length) {
+        return <></>
     }
 
     return (
@@ -82,40 +86,11 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
 
             {/* Exercises list */}
             {activeExercises.length === 0 && completedExercises.length === 0 ? (
-                <Paper
-                    elevation={2}
-                    sx={{
-                        textAlign: 'center',
-                        mt: 6,
-                        p: 4,
-                        borderRadius: 3,
-                        bgcolor: LIGHT_PAPER,
-                        border: `1px dashed ${alpha('#000000', 0.2)}`
-                    }}
-                >
-                    <Typography variant="h6" color={alpha('#000000', 0.5)}>
-                        No exercises found for this plan
-                    </Typography>
-                </Paper>
+                <></>
             ) : (
                 <Box>
                     {/* Active Exercises */}
                     <Box sx={{ mb: 4 }}>
-                        {/* {activeExercises.length > 0 && (
-                            <Typography
-                                variant="subtitle1"
-                                sx={{
-                                    mb: 2,
-                                    color: NEON_BLUE,
-                                    fontWeight: 'medium',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: 1,
-                                    fontSize: '0.875rem'
-                                }}
-                            >
-                                Active Exercises
-                            </Typography>
-                        )} */}
                         {activeExercises.map((exercise) => (
                             <WorkoutExerciseItem
                                 key={exercise._id.toString()}
@@ -174,7 +149,8 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
                         </Box>
                     )}
                 </Box>
-            )}
-        </Box>
+            )
+            }
+        </Box >
     );
 }; 

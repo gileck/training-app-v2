@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { ApiHandlerContext } from '../../types';
-import { DeleteWeeklyNoteRequest, DeleteWeeklyNoteResponse } from '../types';
+import { DeleteWeeklyNoteRequest, DeleteWeeklyNoteResponse } from '@/common/types/training';
 import { weeklyProgress } from '@/server/database/collections';
 
 // --- Task 28: Delete Weekly Note ---

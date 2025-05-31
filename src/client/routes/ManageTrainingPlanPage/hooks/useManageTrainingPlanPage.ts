@@ -5,7 +5,7 @@ import { useWorkoutHooks } from './useWorkoutHooks';
 import { useExerciseHooks } from './useExerciseHooks';
 import { usePlanDataHooks } from './usePlanDataHooks';
 import { usePageHooks } from './usePageHooks';
-import type { ExerciseBase } from '@/apis/exercises/types';
+import type { ExerciseBase } from '@/common/types/training';
 
 export const useManageTrainingPlanPage = () => {
     const router = useRouter();

@@ -1,12 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from '@/client/router';
-import type { WeeklyProgressBase } from '@/apis/weeklyProgress/types';
+import type { WeeklyProgressBase } from '@/common/types/training';
 import { usePlanExercises } from './usePlanExercises';
 import { useSavedWorkoutsData } from './useSavedWorkoutsData';
 import { useExerciseSetCompletion } from './useExerciseSetCompletion';
 import { useActiveWorkoutSession, EXERCISES_TAB_INDEX, ACTIVE_WORKOUT_TAB_INDEX } from './useActiveWorkoutSession';
 import { useExerciseSelection } from './useExerciseSelection';
-import { createSavedWorkout } from '@/apis/savedWorkouts/client';
+import { useSavedWorkouts } from '@/client/hooks/useTrainingData';
 
 // Tab indices constants
 const WORKOUTS_TAB_INDEX = 1;
@@ -38,6 +38,9 @@ export const useWorkoutView = () => {
         totalSetsCount,
         setPlanId,
     } = usePlanExercises(initialPlanId, initialWeekNumber);
+
+    // Get saved workouts from context
+    const { createSavedWorkout } = useSavedWorkouts(planId || '');
 
     // Create a ref to hold the clearSelections function 
     // that will be defined by useExerciseSelection
@@ -159,8 +162,7 @@ export const useWorkoutView = () => {
             }
             await createSavedWorkout({
                 name,
-                exerciseIds: selectedExercisesDetails.map(ex => ex._id.toString()),
-                trainingPlanId: planId
+                exerciseIds: selectedExercisesDetails.map(ex => ex._id.toString())
             });
             fetchSavedWorkoutStructures();
             clearSelections(); // Clear selection after saving from selection bar
@@ -174,7 +176,8 @@ export const useWorkoutView = () => {
         selectedExercisesDetails,
         clearSelections,
         fetchSavedWorkoutStructures,
-        planId
+        planId,
+        createSavedWorkout
     ]);
 
     const handleSaveActiveSessionAsNewWorkout = useCallback(async (name: string) => {
@@ -191,20 +194,17 @@ export const useWorkoutView = () => {
                 setIsSavingWorkout(false);
                 return;
             }
-            const newWorkout = await createSavedWorkout({
+            await createSavedWorkout({
                 name,
-                exerciseIds: activeWorkoutSession.map(ex => ex._id.toString()),
-                trainingPlanId: planId
+                exerciseIds: activeWorkoutSession.map(ex => ex._id.toString())
             });
             await fetchSavedWorkoutStructures(); // Refresh saved workouts list
             // Optionally, restart the current session with the new name to reflect its saved state
             // This will also clear the "Save Workout" button condition if it depends on the default name
-            if (newWorkout && newWorkout.data) { // Assuming createSavedWorkout returns the new workout data
-                // To properly update the UI and potentially the workout ID for progress tracking,
-                // we might need to adjust how activeWorkoutSession handles IDs or re-fetch exercise details.
-                // For now, just updating the name.
-                startActiveWorkout(activeWorkoutSession, name); // Restart with new name
-            }
+            // To properly update the UI and potentially the workout ID for progress tracking,
+            // we might need to adjust how activeWorkoutSession handles IDs or re-fetch exercise details.
+            // For now, just updating the name.
+            startActiveWorkout(activeWorkoutSession, name); // Restart with new name
             // No need to call clearSelections() here as it's about the active session not the selection bar
         } catch (err) {
             console.error("Failed to save active session:", err);
@@ -216,7 +216,8 @@ export const useWorkoutView = () => {
         activeWorkoutSession,
         fetchSavedWorkoutStructures,
         startActiveWorkout,
-        planId
+        planId,
+        createSavedWorkout
     ]);
 
     return {
