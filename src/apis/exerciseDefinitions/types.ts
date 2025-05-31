@@ -1,6 +1,4 @@
 import type { ExerciseDefinition } from '@/server/database/collections/exerciseDefinitions/types';
-// import { BaseModel } from '@/server/database/types'; // Removed unused import
-// import { Document, Types } from 'mongoose'; // Previously removed unused imports
 export * from '@/server/database/collections/exerciseDefinitions/types';
 
 
