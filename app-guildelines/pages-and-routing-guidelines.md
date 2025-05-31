@@ -278,8 +278,3 @@ export const SearchResults = () => {
     </div>
   );
 };
-
-
-#### WHAT NOT TO DO:
-1. NEVER add new pages to /pages folder
-2. NEVER add new apis to /pages/api folder.

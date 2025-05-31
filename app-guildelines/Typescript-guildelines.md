@@ -45,33 +45,15 @@
 
 ### Prefer Union Types Over Enums
 - Use string literal unions (`'pending' | 'approved' | 'rejected'`) instead of enums when possible.
-- They're simpler, easier to infer, and fully type-safe.
+- They’re simpler, easier to infer, and fully type-safe.
 
 ### Use Generics to Create Reusable Types
 - Avoid duplicating types by leveraging generics in functions, components, and utility types.
 - Makes your code more flexible and type-safe.
 
-### Avoid Type Assertions (`as`) Unless You're Certain
+### Avoid Type Assertions (`as`) Unless You’re Certain
 - Type assertions can bypass the compiler and lead to runtime errors.
-- Only use `as` when you've validated the value shape manually or through safe parsing.
-- **NEVER create and cast to custom types when the function you're calling already defines its parameter types.**
-- **ALWAYS import and use the exact parameter and return types defined alongside the functions you're calling.**
-
-### Use Proper Type Imports for API Functions
-- **NEVER create duplicate types or cast to custom types when calling API functions.**
-- **ALWAYS import and use the exact parameter types from the API's type definitions.**
-- **For example:**
-  ```typescript
-  // DO THIS:
-  import { SomeApiParams } from '@/apis/someApi/types';
-  
-  const params: SomeApiParams = { /* parameters */ };
-  const result = await someApiFunction(params);
-  
-  // DON'T DO THIS:
-  interface MyCustomApiParams { /* similar but not identical */ }
-  const result = await someApiFunction({ /* parameters */ } as MyCustomApiParams);
-  ```
+- Only use `as` when you’ve validated the value shape manually or through safe parsing.
 
 ### Use `readonly` for Immutable Data
 - Protect values from accidental mutation by using `readonly` with arrays and objects.
@@ -87,11 +69,11 @@
 
 
 ### Keep Your `tsconfig` Clean and Strict
-- Don't disable important compiler options unless absolutely necessary.
+- Don’t disable important compiler options unless absolutely necessary.
 - Keep configurations consistent across environments and projects.
 
 ### DO NOT Create COMPLEX TYPES
 - Avoid creating complex types that are not immediately obvious.
-- Use comments to explain why a type is structured a certain way, especially if it's not obvious.
+- Use comments to explain why a type is structured a certain way, especially if it’s not obvious.
 - Helps others (and future you) understand your decisions.
 - Prefer simple, self-explanatory types.
