@@ -1,5 +1,5 @@
-import { 
-  FileManagementRequest, 
+import {
+  FileManagementRequest,
   FileManagementResponse,
   ListFilesResponse,
   GetFileResponse,
@@ -10,13 +10,13 @@ import {
 } from "./types";
 import apiClient from "@/client/utils/apiClient";
 import { name } from "./index";
-import type { CacheResult } from "@/server/cache/types";
+import type { CacheResult } from "@/common/cache/types";
 
 // Main function to manage files
 export const manageFiles = async (
   request: FileManagementRequest
 ): Promise<CacheResult<FileManagementResponse>> => {
-  return apiClient.call<CacheResult<FileManagementResponse>, FileManagementRequest>(
+  return apiClient.call<FileManagementResponse, FileManagementRequest>(
     name,
     request,
     {

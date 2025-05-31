@@ -1,5 +1,5 @@
 import { apiClient } from "@/client/utils/apiClient";
-import type { CacheResult } from "@/server/cache/types";
+import type { CacheResult } from "@/common/cache/types";
 import {
     GetWeeklyProgressRequest, GetWeeklyProgressResponse,
     UpdateSetCompletionRequest, UpdateSetCompletionResponse,
@@ -20,7 +20,7 @@ import {
  * Caching might be desired but needs careful invalidation after updates.
  */
 export const getWeeklyProgress = async (params: GetWeeklyProgressRequest): Promise<CacheResult<GetWeeklyProgressResponse>> => {
-    return apiClient.call<CacheResult<GetWeeklyProgressResponse>, GetWeeklyProgressRequest>(
+    return apiClient.call<GetWeeklyProgressResponse, GetWeeklyProgressRequest>(
         getWeeklyProgressApiName,
         params,
         { disableCache: true } // Ensure we always get the latest progress
@@ -32,7 +32,7 @@ export const getWeeklyProgress = async (params: GetWeeklyProgressRequest): Promi
  * Always bypass cache as this modifies data.
  */
 export const updateSetCompletion = async (params: UpdateSetCompletionRequest): Promise<CacheResult<UpdateSetCompletionResponse>> => {
-    return apiClient.call<CacheResult<UpdateSetCompletionResponse>, UpdateSetCompletionRequest>(
+    return apiClient.call<UpdateSetCompletionResponse, UpdateSetCompletionRequest>(
         updateSetCompletionApiName,
         params,
         { disableCache: true } // Ensure no caching for updates
@@ -45,7 +45,7 @@ export const updateSetCompletion = async (params: UpdateSetCompletionRequest): P
  * Task 28 (Client): Add a weekly note.
  */
 export const addWeeklyNote = async (params: AddWeeklyNoteRequest): Promise<CacheResult<AddWeeklyNoteResponse>> => {
-    return apiClient.call<CacheResult<AddWeeklyNoteResponse>, AddWeeklyNoteRequest>(
+    return apiClient.call<AddWeeklyNoteResponse, AddWeeklyNoteRequest>(
         addWeeklyNoteApiName,
         params,
         { disableCache: true } // Disable cache as it modifies data
@@ -56,7 +56,7 @@ export const addWeeklyNote = async (params: AddWeeklyNoteRequest): Promise<Cache
  * Task 28 (Client): Edit a weekly note.
  */
 export const editWeeklyNote = async (params: EditWeeklyNoteRequest): Promise<CacheResult<EditWeeklyNoteResponse>> => {
-    return apiClient.call<CacheResult<EditWeeklyNoteResponse>, EditWeeklyNoteRequest>(
+    return apiClient.call<EditWeeklyNoteResponse, EditWeeklyNoteRequest>(
         editWeeklyNoteApiName,
         params,
         { disableCache: true } // Disable cache as it modifies data
@@ -67,7 +67,7 @@ export const editWeeklyNote = async (params: EditWeeklyNoteRequest): Promise<Cac
  * Task 28 (Client): Delete a weekly note.
  */
 export const deleteWeeklyNote = async (params: DeleteWeeklyNoteRequest): Promise<CacheResult<DeleteWeeklyNoteResponse>> => {
-    return apiClient.call<CacheResult<DeleteWeeklyNoteResponse>, DeleteWeeklyNoteRequest>(
+    return apiClient.call<DeleteWeeklyNoteResponse, DeleteWeeklyNoteRequest>(
         deleteWeeklyNoteApiName,
         params,
         { disableCache: true } // Disable cache as it modifies data

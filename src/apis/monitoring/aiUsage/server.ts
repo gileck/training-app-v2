@@ -2,18 +2,19 @@
  * Server implementation for the AI usage monitoring API
  */
 
-import { 
-  getAllAIUsageRecords, 
-  getAIUsageSummary 
+import {
+  getAllAIUsageRecords,
+  getAIUsageSummary
 } from '@/server/ai-usage-monitoring';
-import { 
-  GetAllAIUsageRequest, 
-  GetAllAIUsageResponse, 
-  GetAIUsageSummaryRequest, 
-  GetAIUsageSummaryResponse 
+import {
+  GetAllAIUsageRequest,
+  GetAllAIUsageResponse,
+  GetAIUsageSummaryRequest,
+  GetAIUsageSummaryResponse
 } from './types';
 
-// Export the API name
+// Re-export API names from index.ts
+export { name } from './index';
 export const all = "monitoring/ai-usage/all";
 export const summary = "monitoring/ai-usage/summary";
 
@@ -27,9 +28,9 @@ export const getAllUsage = async (
     const records = await getAllAIUsageRecords({
       maxRecords: params.maxRecords
     });
-    
+
     const summary = await getAIUsageSummary();
-    
+
     return {
       records,
       summary,
@@ -62,7 +63,7 @@ export const getSummary = async (
 ): Promise<GetAIUsageSummaryResponse> => {
   try {
     const summary = await getAIUsageSummary();
-    
+
     return {
       summary,
       success: true

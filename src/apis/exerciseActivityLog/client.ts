@@ -15,14 +15,14 @@ import {
     getActivitySummaryApiName
 } from './index';
 import apiClient from '@/client/utils/apiClient';
-import type { CacheResult } from "@/server/cache/types";
+import type { CacheResult } from "@/common/cache/types";
 
 
 /**
  * Get activity logs for the current user
  */
 export async function getActivityLogs(params?: GetActivityLogParams): Promise<CacheResult<GetActivityLogResponse>> {
-    return apiClient.call<CacheResult<GetActivityLogResponse>, GetActivityLogParams>(
+    return apiClient.call<GetActivityLogResponse, GetActivityLogParams>(
         getActivityLogsApiName,
         params || {}
     );
@@ -32,7 +32,7 @@ export async function getActivityLogs(params?: GetActivityLogParams): Promise<Ca
  * Update an activity log
  */
 export async function updateActivityLog(params: UpdateActivityLogParams): Promise<CacheResult<UpdateActivityLogResponse>> {
-    return apiClient.call<CacheResult<UpdateActivityLogResponse>, UpdateActivityLogParams>(
+    return apiClient.call<UpdateActivityLogResponse, UpdateActivityLogParams>(
         updateActivityLogApiName,
         params
     );
@@ -42,7 +42,7 @@ export async function updateActivityLog(params: UpdateActivityLogParams): Promis
  * Delete an activity log
  */
 export async function deleteActivityLog(params: DeleteActivityLogParams): Promise<CacheResult<DeleteActivityLogResponse>> {
-    return apiClient.call<CacheResult<DeleteActivityLogResponse>, DeleteActivityLogParams>(
+    return apiClient.call<DeleteActivityLogResponse, DeleteActivityLogParams>(
         deleteActivityLogApiName,
         params
     );
@@ -52,7 +52,7 @@ export async function deleteActivityLog(params: DeleteActivityLogParams): Promis
  * Get activity summary for a date range
  */
 export async function getActivitySummary(params: GetActivitySummaryParams): Promise<CacheResult<GetActivitySummaryResponse>> {
-    return apiClient.call<CacheResult<GetActivitySummaryResponse>, GetActivitySummaryParams>(
+    return apiClient.call<GetActivitySummaryResponse, GetActivitySummaryParams>(
         getActivitySummaryApiName,
         params
     );

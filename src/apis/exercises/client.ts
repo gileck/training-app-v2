@@ -1,5 +1,5 @@
 import { apiClient } from "@/client/utils/apiClient";
-import type { CacheResult } from "@/server/cache/types";
+import type { CacheResult } from "@/common/cache/types";
 import {
     GetExercisesRequest, GetExercisesResponse,
     AddExerciseRequest, AddExerciseResponse,
@@ -17,7 +17,7 @@ import {
  * Client function to fetch exercises for a specific training plan.
  */
 export const getExercises = async (params: GetExercisesRequest): Promise<CacheResult<GetExercisesResponse>> => {
-    return apiClient.call<CacheResult<GetExercisesResponse>, GetExercisesRequest>(
+    return apiClient.call<GetExercisesResponse, GetExercisesRequest>(
         getExercisesApiName,
         params
         // Caching options can be added here if needed
@@ -28,7 +28,7 @@ export const getExercises = async (params: GetExercisesRequest): Promise<CacheRe
  * Client function to add a new exercise to a training plan.
  */
 export const addExercise = async (params: AddExerciseRequest): Promise<CacheResult<AddExerciseResponse>> => {
-    return apiClient.call<CacheResult<AddExerciseResponse>, AddExerciseRequest>(
+    return apiClient.call<AddExerciseResponse, AddExerciseRequest>(
         addExerciseApiName,
         params,
         { disableCache: true } // Disable cache as this modifies data
@@ -39,7 +39,7 @@ export const addExercise = async (params: AddExerciseRequest): Promise<CacheResu
  * Client function to update an existing exercise within a plan.
  */
 export const updateExercise = async (params: UpdateExerciseRequest): Promise<CacheResult<UpdateExerciseResponse>> => {
-    return apiClient.call<CacheResult<UpdateExerciseResponse>, UpdateExerciseRequest>(
+    return apiClient.call<UpdateExerciseResponse, UpdateExerciseRequest>(
         updateExerciseApiName,
         params,
         { disableCache: true } // Disable cache as this modifies data
@@ -50,7 +50,7 @@ export const updateExercise = async (params: UpdateExerciseRequest): Promise<Cac
  * Client function to delete an exercise from a plan.
  */
 export const deleteExercise = async (params: DeleteExerciseRequest): Promise<CacheResult<DeleteExerciseResponse>> => {
-    return apiClient.call<CacheResult<DeleteExerciseResponse>, DeleteExerciseRequest>(
+    return apiClient.call<DeleteExerciseResponse, DeleteExerciseRequest>(
         deleteExerciseApiName,
         params,
         { disableCache: true } // Disable cache as this modifies data

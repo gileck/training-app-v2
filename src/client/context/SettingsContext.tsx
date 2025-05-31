@@ -19,7 +19,7 @@ const SettingsContext = createContext<SettingsContextType>({
   settings: {
     aiModel: '',
   },
-  updateSettings: () => {},
+  updateSettings: () => { },
   clearCache: async () => ({ success: false, message: 'Context not initialized' }),
 });
 
@@ -36,7 +36,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         return JSON.parse(savedSettings);
       }
     }
-    
+
     // Default settings
     return {
       aiModel: '',
@@ -53,7 +53,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
       }
     };
-    
+
     initializeModel();
   }, [settings.aiModel]);
 
@@ -75,7 +75,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Clear cache function
   const clearCache = async (): Promise<{ success: boolean; message: string }> => {
     try {
-      const response = await clearCacheApi();
+      const response = await clearCacheApi({});
       return {
         success: response.data.success,
         message: response.data.message

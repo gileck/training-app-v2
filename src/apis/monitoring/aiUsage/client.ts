@@ -3,13 +3,13 @@
  */
 
 import apiClient from '@/client/utils/apiClient';
-import { 
-  GetAllAIUsageRequest, 
-  GetAllAIUsageResponse, 
-  GetAIUsageSummaryRequest, 
-  GetAIUsageSummaryResponse 
+import {
+  GetAllAIUsageRequest,
+  GetAllAIUsageResponse,
+  GetAIUsageSummaryRequest,
+  GetAIUsageSummaryResponse
 } from './types';
-import type { CacheResult } from '@/server/cache/types';
+import type { CacheResult } from '@/common/cache/types';
 
 // Export the API name
 export const name = "monitoring/ai-usage";
@@ -20,7 +20,7 @@ export const name = "monitoring/ai-usage";
 export const getAllUsage = async (
   params: GetAllAIUsageRequest = {}
 ): Promise<CacheResult<GetAllAIUsageResponse>> => {
-  return apiClient.call<CacheResult<GetAllAIUsageResponse>, GetAllAIUsageRequest>(
+  return apiClient.call<GetAllAIUsageResponse, GetAllAIUsageRequest>(
     `${name}/all`,
     params,
     {
@@ -33,11 +33,11 @@ export const getAllUsage = async (
  * Get AI usage summary
  */
 export const getSummary = async (): Promise<CacheResult<GetAIUsageSummaryResponse>> => {
-  return apiClient.call<CacheResult<GetAIUsageSummaryResponse>, GetAIUsageSummaryRequest>(
+  return apiClient.call<GetAIUsageSummaryResponse, GetAIUsageSummaryRequest>(
     `${name}/summary`,
     {},
     {
       disableCache: true
-    } 
+    }
   );
 };

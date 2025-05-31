@@ -1,5 +1,5 @@
 import { apiClient } from '@/client/utils/apiClient';
-import type { CacheResult } from '@/server/cache/types';
+import type { CacheResult } from '@/common/cache/types';
 import {
     GetDailyActivityRequest,
     GetDailyActivityResponse
@@ -12,7 +12,7 @@ import {
 export const getDailyActivity = async (
     params: GetDailyActivityRequest
 ): Promise<CacheResult<GetDailyActivityResponse>> => {
-    return apiClient.call<CacheResult<GetDailyActivityResponse>, GetDailyActivityRequest>(
+    return apiClient.call<GetDailyActivityResponse, GetDailyActivityRequest>(
         getDailyActivityApiName,
         params
     );
@@ -35,7 +35,7 @@ export const getActivitySummary = async (
             startDate: params.startDate,
             endDate: params.endDate
         });
-        
+
         return {
             data: {
                 success: true,

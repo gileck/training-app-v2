@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { CacheMetadata } from '@/common/cache/types';
+import { CacheMetadata } from './types';
 import {
   uploadFile,
   getFileAsString,

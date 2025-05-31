@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { CacheMetadata } from '@/common/cache/types';
+import { CacheMetadata } from './types';
 // Constants
 const CACHE_DIR = path.join(process.cwd(), '.cache');
 

@@ -14,7 +14,7 @@ const LoginForm: React.FC = () => {
         if (isRegistering) {
             await register({ username, email, password });
         } else {
-            await login({ email, password });
+            await login({ username, password });
         }
         // AuthProvider handles state updates based on success/failure
     };

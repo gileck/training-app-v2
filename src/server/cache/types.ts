@@ -14,13 +14,15 @@ export interface CacheOptions {
 export interface CacheMetadata {
   /** When the cache entry was created */
   createdAt: string;
+  /** When the cache entry was last accessed (for LRU eviction) */
+  lastAccessedAt: string;
   /** The cache key used to store this entry */
   key: string;
   /** The cache provider used (fs or s3) */
   provider: 'fs' | 's3';
 }
 
-export interface CacheResult<T> { 
+export interface CacheResult<T> {
   /** The result of the cached function */
   data: T
   /** Whether the result was retrieved from cache */

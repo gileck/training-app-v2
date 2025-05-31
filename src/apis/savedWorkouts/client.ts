@@ -1,5 +1,5 @@
 import apiClient from '@/client/utils/apiClient';
-import type { CacheResult } from '@/server/cache/types';
+import type { CacheResult } from '@/common/cache/types';
 import {
     SavedWorkout,
     GetAllSavedWorkoutsRequest,
@@ -31,7 +31,7 @@ import {
 export const getAllSavedWorkouts = async (
     params: GetAllSavedWorkoutsRequest
 ): Promise<CacheResult<SavedWorkout[]>> => {
-    return apiClient.call<CacheResult<SavedWorkout[]>, GetAllSavedWorkoutsRequest>(
+    return apiClient.call<SavedWorkout[], GetAllSavedWorkoutsRequest>(
         getAllApiName,
         params // Pass the params object which may contain trainingPlanId
     );
@@ -41,7 +41,7 @@ export const getAllSavedWorkouts = async (
 export const getSavedWorkoutDetails = async (
     params: GetSavedWorkoutDetailsRequest
 ): Promise<CacheResult<GetSavedWorkoutDetailsResponse>> => {
-    return apiClient.call<CacheResult<GetSavedWorkoutDetailsResponse>, GetSavedWorkoutDetailsRequest>(
+    return apiClient.call<GetSavedWorkoutDetailsResponse, GetSavedWorkoutDetailsRequest>(
         getDetailsApiName,
         params
     );
@@ -51,7 +51,7 @@ export const getSavedWorkoutDetails = async (
 export const createSavedWorkout = async (
     params: CreateSavedWorkoutRequest
 ): Promise<CacheResult<CreateSavedWorkoutResponse>> => {
-    return apiClient.call<CacheResult<CreateSavedWorkoutResponse>, CreateSavedWorkoutRequest>(
+    return apiClient.call<CreateSavedWorkoutResponse, CreateSavedWorkoutRequest>(
         createApiName,
         params
     );
@@ -61,7 +61,7 @@ export const createSavedWorkout = async (
 export const deleteSavedWorkout = async (
     params: DeleteSavedWorkoutRequest
 ): Promise<CacheResult<DeleteSavedWorkoutResponse>> => {
-    return apiClient.call<CacheResult<DeleteSavedWorkoutResponse>, DeleteSavedWorkoutRequest>(
+    return apiClient.call<DeleteSavedWorkoutResponse, DeleteSavedWorkoutRequest>(
         deleteApiName,
         params
     );
@@ -73,7 +73,7 @@ export const deleteSavedWorkout = async (
 export const addExerciseToSavedWorkout = async (
     params: AddExerciseToSavedWorkoutRequest
 ): Promise<CacheResult<AddExerciseToSavedWorkoutResponse>> => {
-    return apiClient.call<CacheResult<AddExerciseToSavedWorkoutResponse>, AddExerciseToSavedWorkoutRequest>(
+    return apiClient.call<AddExerciseToSavedWorkoutResponse, AddExerciseToSavedWorkoutRequest>(
         addExerciseApiName,
         params,
         { bypassCache: true } // Typically, updates should bypass GET cache
@@ -82,7 +82,7 @@ export const addExerciseToSavedWorkout = async (
 
 // --- Client function to remove an exercise from a saved workout --- //
 export const removeExerciseFromSavedWorkout = async (request: RemoveExerciseFromSavedWorkoutRequest): Promise<CacheResult<RemoveExerciseFromSavedWorkoutResponse>> => {
-    return apiClient.call<CacheResult<RemoveExerciseFromSavedWorkoutResponse>, RemoveExerciseFromSavedWorkoutRequest>(
+    return apiClient.call<RemoveExerciseFromSavedWorkoutResponse, RemoveExerciseFromSavedWorkoutRequest>(
         removeExerciseApiName,
         request
     );
@@ -90,7 +90,7 @@ export const removeExerciseFromSavedWorkout = async (request: RemoveExerciseFrom
 
 // --- Client function to rename a saved workout --- //
 export const renameSavedWorkout = async (request: RenameSavedWorkoutRequest): Promise<CacheResult<RenameSavedWorkoutResponse>> => {
-    return apiClient.call<CacheResult<RenameSavedWorkoutResponse>, RenameSavedWorkoutRequest>(
+    return apiClient.call<RenameSavedWorkoutResponse, RenameSavedWorkoutRequest>(
         renameApiName,
         request,
         { bypassCache: true } // Ensure updated data is fetched next time if needed, and not cached with old name
