@@ -7,7 +7,11 @@ import {
     TextField,
     Button,
     CircularProgress,
-    Alert
+    Alert,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from '@mui/material';
 import { useTrainingPlans } from '@/client/hooks/useTrainingData';
 
@@ -18,6 +22,7 @@ interface AddTrainingPlanDialogProps {
 
 const AddTrainingPlanDialog: React.FC<AddTrainingPlanDialogProps> = ({ open, onClose }) => {
     const [planName, setPlanName] = useState('');
+    const [planDescription, setPlanDescription] = useState('');
     const [durationWeeks, setDurationWeeks] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -27,6 +32,7 @@ const AddTrainingPlanDialog: React.FC<AddTrainingPlanDialogProps> = ({ open, onC
     const handleClose = () => {
         if (isSubmitting) return; // Prevent closing while submitting
         setPlanName('');
+        setPlanDescription('');
         setDurationWeeks('');
         setError(null);
         onClose();
@@ -75,24 +81,42 @@ const AddTrainingPlanDialog: React.FC<AddTrainingPlanDialogProps> = ({ open, onC
                     value={planName}
                     onChange={(e) => setPlanName(e.target.value)}
                     disabled={isSubmitting}
+                    inputProps={{ 'data-testid': 'plan-name-input' }}
                 />
                 <TextField
-                    required
                     margin="dense"
-                    id="durationWeeks"
-                    label="Duration (Weeks)"
-                    type="number"
+                    id="planDescription"
+                    label="Description (optional)"
+                    type="text"
                     fullWidth
                     variant="standard"
-                    value={durationWeeks}
-                    onChange={(e) => setDurationWeeks(e.target.value)}
+                    value={planDescription}
+                    onChange={(e) => setPlanDescription(e.target.value)}
                     disabled={isSubmitting}
-                    inputProps={{ min: 1 }}
+                    inputProps={{ 'data-testid': 'plan-description-input' }}
                 />
+                <FormControl fullWidth variant="standard" margin="dense" required>
+                    <InputLabel id="duration-weeks-label">Duration (Weeks)</InputLabel>
+                    <Select
+                        labelId="duration-weeks-label"
+                        id="durationWeeks"
+                        value={durationWeeks}
+                        onChange={(e) => setDurationWeeks(e.target.value)}
+                        disabled={isSubmitting}
+                        data-testid="plan-duration-select"
+                    >
+                        <MenuItem value="4">4 Weeks</MenuItem>
+                        <MenuItem value="6">6 Weeks</MenuItem>
+                        <MenuItem value="8">8 Weeks</MenuItem>
+                        <MenuItem value="12">12 Weeks</MenuItem>
+                        <MenuItem value="16">16 Weeks</MenuItem>
+                        <MenuItem value="20">20 Weeks</MenuItem>
+                    </Select>
+                </FormControl>
             </DialogContent>
             <DialogActions sx={{ padding: '16px 24px' }}>
                 <Button onClick={handleClose} disabled={isSubmitting}>Cancel</Button>
-                <Button onClick={handleSubmit} variant="contained" disabled={isSubmitting}>
+                <Button onClick={handleSubmit} variant="contained" disabled={isSubmitting} data-testid="save-plan-button">
                     {isSubmitting ? <CircularProgress size={24} /> : 'Create Plan'}
                 </Button>
             </DialogActions>

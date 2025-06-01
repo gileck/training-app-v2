@@ -106,8 +106,14 @@ export const useTrainingPlanHooks = (
             const response = await apiDeleteTrainingPlan({ planId });
 
             if (response.data) {
+                const remainingPlans = state.trainingPlans.filter(plan => plan._id !== planId);
+                const newActivePlanId = state.activePlanId === planId
+                    ? (remainingPlans.length > 0 ? remainingPlans[0]._id : null)
+                    : state.activePlanId;
+
                 updateStateAndSave({
-                    trainingPlans: state.trainingPlans.filter(plan => plan._id !== planId),
+                    trainingPlans: remainingPlans,
+                    activePlanId: newActivePlanId,
                     planData: Object.fromEntries(
                         Object.entries(state.planData).filter(([id]) => id !== planId)
                     )
@@ -120,7 +126,7 @@ export const useTrainingPlanHooks = (
                 error: error instanceof Error ? error.message : 'Failed to delete training plan'
             });
         }
-    }, [updateState, updateStateAndSave, state.trainingPlans, state.planData]);
+    }, [updateState, updateStateAndSave, state.trainingPlans, state.planData, state.activePlanId]);
 
     const duplicateTrainingPlan = useCallback(async (planId: string) => {
         try {

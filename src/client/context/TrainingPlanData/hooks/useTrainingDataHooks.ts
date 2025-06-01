@@ -45,7 +45,7 @@ export const useTrainingDataHooks = () => {
     // Domain hooks
     const trainingPlanHooks = useTrainingPlanHooks(state, updateState, updateStateAndSave);
     const exerciseHooks = useExerciseHooks(state, updateState, updateStateAndSave);
-    const weeklyProgressHooks = useWeeklyProgressHooks(state, updateState, saveToLocalStorage, showNotification);
+    const weeklyProgressHooks = useWeeklyProgressHooks(state, updateState, saveToLocalStorage, showNotification, setState);
     const savedWorkoutHooks = useSavedWorkoutHooks(state, updateState, updateStateAndSave);
 
     // Main data loading function that orchestrates all data loading
@@ -180,15 +180,16 @@ export const useTrainingDataHooks = () => {
 
     // Plan data loading
     const loadPlanData = useCallback(async (planId: string) => {
-        const existing = state.planData[planId];
-        if (existing?.isLoaded) {
-            return;
-        }
-
+        // Use setState with function to check and set loading atomically
+        let shouldLoad = false;
         setState(prev => {
             const existing = prev.planData[planId];
-            if (existing?.isLoaded || existing?.isLoading) return prev;
+            if (existing?.isLoaded || existing?.isLoading) {
+                shouldLoad = false;
+                return prev;
+            }
 
+            shouldLoad = true;
             return {
                 ...prev,
                 planData: {
@@ -203,6 +204,10 @@ export const useTrainingDataHooks = () => {
                 }
             };
         });
+
+        if (!shouldLoad) {
+            return;
+        }
 
         try {
             const [exercisesResponse, savedWorkoutsResponse] = await Promise.all([
@@ -243,7 +248,7 @@ export const useTrainingDataHooks = () => {
                 }
             }));
         }
-    }, [state.planData, saveToLocalStorage]);
+    }, [saveToLocalStorage]);
 
     // Load training plans on mount
     useEffect(() => {

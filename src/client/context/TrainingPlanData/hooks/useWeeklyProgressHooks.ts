@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { TrainingDataState } from '../TrainingDataContext';
 import { WeeklyProgressBase } from '@/common/types/training';
 import {
@@ -12,7 +12,8 @@ export const useWeeklyProgressHooks = (
     state: TrainingDataState,
     updateState: (newState: Partial<TrainingDataState>) => void,
     saveToLocalStorage: (data: TrainingDataState) => void,
-    showNotification: (message: string, severity?: 'error' | 'warning' | 'info' | 'success') => void
+    showNotification: (message: string, severity?: 'error' | 'warning' | 'info' | 'success') => void,
+    setState: React.Dispatch<React.SetStateAction<TrainingDataState>>
 ) => {
     const loadWeeklyProgress = useCallback(async (planId: string, weekNumber: number) => {
         try {
@@ -132,17 +133,19 @@ export const useWeeklyProgressHooks = (
                 completeAll
             }).then(response => {
                 if (response.data?.success && response.data.updatedProgress) {
-                    const currentPlanData = state.planData[planId];
-                    if (currentPlanData) {
+                    setState(currentState => {
+                        const currentPlanData = currentState.planData[planId];
+                        if (!currentPlanData) return currentState;
+
                         const currentWeekProgress = currentPlanData.weeklyProgress[weekNumber] || [];
                         const updatedWeekProgress = currentWeekProgress.map(p =>
                             p.exerciseId === exerciseId ? response.data!.updatedProgress! : p
                         );
 
                         const newState = {
-                            ...state,
+                            ...currentState,
                             planData: {
-                                ...state.planData,
+                                ...currentState.planData,
                                 [planId]: {
                                     ...currentPlanData,
                                     weeklyProgress: {
@@ -153,51 +156,41 @@ export const useWeeklyProgressHooks = (
                             }
                         };
 
-                        updateState({
-                            planData: {
-                                ...state.planData,
-                                [planId]: {
-                                    ...currentPlanData,
-                                    weeklyProgress: {
-                                        ...currentPlanData.weeklyProgress,
-                                        [weekNumber]: updatedWeekProgress
-                                    }
-                                }
-                            }
-                        });
-
                         saveToLocalStorage(newState);
-                    }
+                        return newState;
+                    });
                 } else {
                     // Rollback on error
-                    updateState({
+                    setState(currentState => ({
+                        ...currentState,
                         planData: {
-                            ...state.planData,
+                            ...currentState.planData,
                             [planId]: {
-                                ...currentPlanData,
+                                ...currentState.planData[planId],
                                 weeklyProgress: {
-                                    ...currentPlanData?.weeklyProgress,
+                                    ...currentState.planData[planId]?.weeklyProgress,
                                     [weekNumber]: originalWeekProgress
                                 }
                             }
                         }
-                    });
+                    }));
                     showNotification(`Could not save progress: ${response.data?.message || 'Server error'}`, 'error');
                 }
             }).catch(error => {
                 // Rollback on error
-                updateState({
+                setState(currentState => ({
+                    ...currentState,
                     planData: {
-                        ...state.planData,
+                        ...currentState.planData,
                         [planId]: {
-                            ...currentPlanData,
+                            ...currentState.planData[planId],
                             weeklyProgress: {
-                                ...currentPlanData?.weeklyProgress,
+                                ...currentState.planData[planId]?.weeklyProgress,
                                 [weekNumber]: originalWeekProgress
                             }
                         }
                     }
-                });
+                }));
                 showNotification(`Could not save progress: ${error instanceof Error ? error.message : 'Network error'}`, 'error');
             });
 

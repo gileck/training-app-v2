@@ -9,7 +9,7 @@ interface BottomNavBarProps {
 
 export const BottomNavBar = ({ navItems, isStandalone }: BottomNavBarProps) => {
   const { currentPath, navigate } = useRouter();
-  
+
   // Get the current navigation value based on the path
   const getCurrentNavValue = () => {
     const index = navItems.findIndex(item => item.path === currentPath);
@@ -21,11 +21,11 @@ export const BottomNavBar = ({ navItems, isStandalone }: BottomNavBarProps) => {
   };
 
   return (
-    <Paper 
-      sx={{ 
-        position: 'fixed', 
-        bottom: 0, 
-        left: 0, 
+    <Paper
+      sx={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
         right: 0,
         display: { xs: 'block', sm: 'none' },
         zIndex: 1100,
@@ -33,7 +33,7 @@ export const BottomNavBar = ({ navItems, isStandalone }: BottomNavBarProps) => {
         ...(isStandalone && {
           paddingBottom: 'env(safe-area-inset-bottom)'
         })
-      }} 
+      }}
       elevation={3}
     >
       <BottomNavigation
@@ -45,10 +45,11 @@ export const BottomNavBar = ({ navItems, isStandalone }: BottomNavBarProps) => {
         }}
       >
         {navItems.map((item) => (
-          <BottomNavigationAction 
+          <BottomNavigationAction
             key={item.path}
-            label={item.label} 
-            icon={item.icon} 
+            data-testid={item.path === '/' ? 'home-nav' : item.path === '/training-plans' ? 'training-plans-nav' : item.path === '/workout-page' ? 'workout-nav' : 'nav-item'}
+            label={item.label}
+            icon={item.icon}
           />
         ))}
       </BottomNavigation>

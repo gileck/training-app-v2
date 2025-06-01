@@ -127,6 +127,7 @@ export const TrainingPlans: React.FC = () => {
                         startIcon={<AddIcon />}
                         onClick={handleAddPlanClick}
                         size="small"
+                        data-testid="create-plan-button"
                     >
                         Add Plan
                     </Button>
@@ -158,7 +159,7 @@ export const TrainingPlans: React.FC = () => {
                     {trainingPlans.map((plan: TrainingPlan, index: number) => (
                         <React.Fragment key={plan._id.toString()}>
                             <ListItem sx={{ display: 'block', p: 0, mb: trainingPlans.length - 1 === index ? 0 : 2 }}>
-                                <Paper elevation={2} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                <Paper elevation={2} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }} data-testid="plan-card">
                                     <CardContent sx={{ flexGrow: 1 }}>
                                         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                                             <Typography variant="h6" component="div">
@@ -172,6 +173,7 @@ export const TrainingPlans: React.FC = () => {
                                                         color="primary"
                                                         size="small"
                                                         sx={{ ml: 1, height: '24px', '.MuiChip-icon': { fontSize: '1rem' } }}
+                                                        data-testid="active-badge"
                                                     />
                                                 </Tooltip>
                                             )}
@@ -190,6 +192,7 @@ export const TrainingPlans: React.FC = () => {
                                                     size="small"
                                                     onClick={(e) => { e.stopPropagation(); handleSetActive(plan._id.toString()); }}
                                                     disabled={plan.isActive}
+                                                    data-testid="set-active-button"
                                                 >
                                                     {plan.isActive ? <StarIcon color="primary" /> : <StarBorderIcon />}
                                                 </IconButton>
@@ -199,17 +202,18 @@ export const TrainingPlans: React.FC = () => {
                                             <IconButton
                                                 size="small"
                                                 onClick={(e) => { e.stopPropagation(); handleManageExercisesClick(plan._id.toString()); }}
+                                                data-testid="manage-exercises-button"
                                             >
                                                 <ListAltIcon />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Duplicate Plan">
-                                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDuplicate(plan._id.toString()); }}>
+                                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDuplicate(plan._id.toString()); }} data-testid="duplicate-plan-button">
                                                 <ContentCopyIcon />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Delete Plan">
-                                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDelete(plan._id.toString(), plan.name); }}>
+                                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDelete(plan._id.toString(), plan.name); }} data-testid="delete-plan-button">
                                                 <DeleteIcon />
                                             </IconButton>
                                         </Tooltip>

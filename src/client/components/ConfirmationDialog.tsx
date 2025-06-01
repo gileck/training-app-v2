@@ -54,6 +54,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                     onClick={onCancel}
                     variant="outlined"
                     color="inherit"
+                    data-testid="cancel-button"
                 >
                     {cancelText}
                 </Button>
@@ -62,6 +63,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                     variant="contained"
                     color={severity === 'error' ? 'error' : 'primary'}
                     autoFocus
+                    data-testid="confirm-button"
                 >
                     {confirmText}
                 </Button>
