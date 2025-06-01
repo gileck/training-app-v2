@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Tabs, Tab, Typography, Button, Alert, CircularProgress, alpha } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Button, Alert, alpha } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useWorkoutView } from '../hooks/useWorkoutView';
 import { ExerciseTabContent } from './ExerciseTabContent';
@@ -8,6 +8,7 @@ import { ActiveWorkoutContent } from './ActiveWorkoutContent';
 import { PlanWeekHeader } from '@/client/components/PlanWeekHeader';
 import { PlanWeekHeaderSkeleton } from '@/client/components/PlanWeekHeaderSkeleton';
 import { SelectedExercisesBar } from './SelectedExercisesBar';
+import { useTrainingData } from '@/client/hooks/useTrainingData';
 
 // --- Color constants for the light theme --- //
 const LIGHT_BG = '#FFFFFF';
@@ -55,6 +56,8 @@ export const MainView: React.FC = () => {
         WORKOUTS_TAB_INDEX,
         ACTIVE_WORKOUT_TAB_INDEX
     } = useWorkoutView();
+
+    const { isLoadingFromServer } = useTrainingData();
 
     const isWeekLoading = isPlanDataLoading && !!planDetails && !!planId && activeExercises.length === 0;
 
@@ -146,6 +149,7 @@ export const MainView: React.FC = () => {
                         maxWeeks={planDetails.durationWeeks}
                         onNavigate={handleNavigateWeek}
                         isWeekLoading={isWeekLoading}
+                        isSyncingFromServer={isLoadingFromServer}
                         progressPercentage={progressPercentage}
                         completedSetsCount={completedSetsCount}
                         totalSetsCount={totalSetsCount}

@@ -1,9 +1,7 @@
 import React from 'react';
 import {
     Box,
-    Typography,
     Button,
-    Paper,
     alpha
 } from '@mui/material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -12,9 +10,6 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { ExerciseTabContentProps } from './types';
 import { WorkoutExerciseItem } from './WorkoutExerciseItem';
 import { WorkoutExerciseItemSkeleton } from './WorkoutExerciseItemSkeleton';
-
-// --- Color constants (assuming these are used by WorkoutExerciseItem too) ---
-const LIGHT_PAPER = '#F5F5F7';
 // const NEON_BLUE = '#3D5AFE'; // Removed as it's unused
 // const NEON_PINK = '#D500F9'; // Removed as it's unused
 
@@ -41,9 +36,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
             </Box>
         );
     }
-    if (!activeExercises.length) {
-        return <></>
-    }
+
 
     return (
         <Box>

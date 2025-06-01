@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { TrainingDataContext } from '@/client/context/TrainingDataContext';
+import { TrainingDataContext } from '@/client/context/TrainingPlanData';
 import {
     TrainingPlan,
     SavedWorkout,

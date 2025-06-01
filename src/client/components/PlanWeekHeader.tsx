@@ -18,6 +18,7 @@ interface PlanWeekHeaderProps {
   maxWeeks: number;
   onNavigate: (week: number) => void;
   isWeekLoading?: boolean;
+  isSyncingFromServer?: boolean;
   progressPercentage: number;
   completedSetsCount: number;
   totalSetsCount: number;
@@ -85,6 +86,7 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
   maxWeeks,
   onNavigate,
   isWeekLoading = false,
+  isSyncingFromServer = false,
   progressPercentage,
   completedSetsCount,
   totalSetsCount
@@ -246,25 +248,44 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
             {progressPercentage}%
           </Typography>
         </Stack>
-        <LinearProgress
-          variant="determinate"
-          value={progressPercentage}
-          sx={{
-            height: 10,
-            borderRadius: 2,
-            bgcolor: alpha(isCompleted ? NEON_GREEN : NEON_BLUE, 0.15),
-            '& .MuiLinearProgress-bar': {
-              bgcolor: isCompleted ? NEON_GREEN : NEON_BLUE,
+        <Box sx={{ position: 'relative' }}>
+          <LinearProgress
+            variant="determinate"
+            value={progressPercentage}
+            sx={{
+              height: 10,
               borderRadius: 2,
-              transition: 'transform .4s linear',
-              ...(showAnimation && isCompleted && {
-                animation: `${shimmerAnimation} 2s infinite`,
-                backgroundImage: `linear-gradient(to right, ${alpha(NEON_GREEN, 0.15)} 0%, ${alpha(NEON_GREEN, 0.5)} 50%, ${alpha(NEON_GREEN, 0.15)} 100%)`,
-                backgroundSize: '200% 100%',
-              }),
-            }
-          }}
-        />
+              bgcolor: alpha(isCompleted ? NEON_GREEN : NEON_BLUE, 0.15),
+              '& .MuiLinearProgress-bar': {
+                bgcolor: isCompleted ? NEON_GREEN : NEON_BLUE,
+                borderRadius: 2,
+                transition: 'transform .4s linear',
+                ...(showAnimation && isCompleted && {
+                  animation: `${shimmerAnimation} 2s infinite`,
+                  backgroundImage: `linear-gradient(to right, ${alpha(NEON_GREEN, 0.15)} 0%, ${alpha(NEON_GREEN, 0.5)} 50%, ${alpha(NEON_GREEN, 0.15)} 100%)`,
+                  backgroundSize: '200% 100%',
+                }),
+              }
+            }}
+          />
+          {isSyncingFromServer && (
+            <LinearProgress
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 10,
+                borderRadius: 2,
+                bgcolor: 'transparent',
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: alpha('#FFD700', 0.6),
+                  borderRadius: 2,
+                }
+              }}
+            />
+          )}
+        </Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
           <Typography variant="body2" sx={{ color: '#555', fontWeight: 500 }}>
             Sets: {completedSetsCount}/{totalSetsCount}

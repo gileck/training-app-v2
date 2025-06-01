@@ -56,6 +56,8 @@ export const apiClient = {
         throw new Error(`Failed to call ${name}: No data returned`);
       }
 
+      console.log('apiCall', { name, params, options, result });
+
       return result.data;
     };
 

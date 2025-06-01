@@ -33,6 +33,7 @@ interface TrainingDataState {
 interface TrainingDataContextType {
     state: TrainingDataState;
     updateState: (newState: Partial<TrainingDataState>) => void;
+    isLoadingFromServer: boolean;
 
     // Action functions that use updateState internally
     loadTrainingPlans: () => Promise<void>;
