@@ -6,6 +6,11 @@ import { appConfig } from '@/app.config';
 const MONGO_URI = process.env.MONGO_URI;
 const DB_NAME = appConfig.dbName;
 
+console.log('🔧 Database Configuration:');
+console.log('  - NODE_ENV:', process.env.NODE_ENV);
+console.log('  - PLAYWRIGHT_TEST:', process.env.PLAYWRIGHT_TEST);
+console.log('  - Selected DB_NAME:', DB_NAME);
+
 // --- Connection Management (Singleton Pattern) ---
 let client: MongoClient | null = null;
 let dbInstance: Db | null = null;
@@ -66,6 +71,7 @@ export async function getDb(): Promise<Db> {
     // Ensure client is connected first
     const connectedClient = await getClient();
     dbInstance = connectedClient.db(DB_NAME);
+    console.log('🔧 Connected to database:', DB_NAME);
     return dbInstance;
 }
 

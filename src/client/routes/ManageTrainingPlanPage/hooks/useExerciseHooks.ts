@@ -36,7 +36,14 @@ export type ExerciseHooksType = ReturnType<typeof useExerciseHooks>;
 
 export const useExerciseHooks = (planId: string | undefined) => {
     const [exerciseState, setExerciseState] = useState<ExerciseState>(getDefaultExerciseState());
-    const { exercises, error: contextError, deleteExercise, createExercise } = useExercises(planId || '');
+    const exerciseContext = useExercises(planId || '');
+    const { exercises, error: contextError, deleteExercise, createExercise, loadExercises } = planId ? exerciseContext : {
+        exercises: [],
+        error: null,
+        deleteExercise: () => Promise.reject('No plan ID'),
+        createExercise: () => Promise.reject('No plan ID'),
+        loadExercises: () => Promise.reject('No plan ID')
+    };
 
     const updateExerciseState = useCallback((partialState: Partial<ExerciseState>) => {
         setExerciseState(prevState => ({ ...prevState, ...partialState }));
@@ -114,15 +121,24 @@ export const useExerciseHooks = (planId: string | undefined) => {
         }
         updateExerciseState({ duplicatingExerciseId: exerciseToDuplicate._id.toString(), error: null });
         try {
-            const exerciseData = {
+            const exerciseData: any = {
                 trainingPlanId: planId,
                 exerciseDefinitionId: exerciseToDuplicate.exerciseDefinitionId.toString(),
                 sets: exerciseToDuplicate.sets,
                 reps: exerciseToDuplicate.reps,
-                weight: exerciseToDuplicate.weight,
-                durationSeconds: exerciseToDuplicate.durationSeconds,
-                comments: exerciseToDuplicate.comments,
             };
+
+            // Only add optional fields if they have values
+            if (exerciseToDuplicate.weight !== undefined && exerciseToDuplicate.weight !== null) {
+                exerciseData.weight = exerciseToDuplicate.weight;
+            }
+            if (exerciseToDuplicate.durationSeconds !== undefined && exerciseToDuplicate.durationSeconds !== null) {
+                exerciseData.durationSeconds = exerciseToDuplicate.durationSeconds;
+            }
+            if (exerciseToDuplicate.comments !== undefined && exerciseToDuplicate.comments !== null && exerciseToDuplicate.comments.trim() !== '') {
+                exerciseData.comments = exerciseToDuplicate.comments;
+            }
+
             await createExercise(exerciseData);
             if (loadInitialPageData) {
                 await loadInitialPageData();
@@ -217,5 +233,6 @@ export const useExerciseHooks = (planId: string | undefined) => {
         handleDuplicateExercise,
         duplicatingExerciseId: exerciseState.duplicatingExerciseId,
         fetchExercisesTabData,
+        loadExercises,
     };
 }; 

@@ -79,6 +79,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
         <>
             <Paper
                 elevation={2}
+                data-testid="exercise-progress-card"
                 onClick={handleCardClick}
                 sx={{
                     mb: 2.5,
@@ -168,11 +169,11 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                 {exercise.weight !== undefined && !exercise.definition?.bodyWeight && ` • ${exercise.weight}kg`}
                             </Typography>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <Typography sx={{ color: alpha('#000000', 0.8), fontWeight: 'medium' }}>
+                                <Typography data-testid="sets-completed" sx={{ color: alpha('#000000', 0.8), fontWeight: 'medium' }}>
                                     Sets: {setsDone}/{totalSets}
                                 </Typography>
                                 {isExerciseComplete && !isSelected && (
-                                    <CheckCircleIcon sx={{ color: NEON_GREEN, fontSize: '1.2rem' }} />
+                                    <CheckCircleIcon data-testid="exercise-complete-badge" sx={{ color: NEON_GREEN, fontSize: '1.2rem' }} />
                                 )}
                                 {exercise.definition?.hasComments && (
                                     <Chip
@@ -234,6 +235,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
 
                         <Stack direction="row" spacing={1}>
                             <IconButton
+                                data-testid="decrement-sets-button"
                                 onClick={(e) => { e.stopPropagation(); handleSetCheckboxClick(exerciseId, setsDone - 1, setsDone, totalSets); }}
                                 size="small"
                                 disabled={isUpdating || setsDone <= 0}
@@ -248,6 +250,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                 <RemoveIcon fontSize="small" />
                             </IconButton>
                             <IconButton
+                                data-testid="increment-sets-button"
                                 onClick={(e) => { e.stopPropagation(); handleSetCheckboxClick(exerciseId, setsDone + 1, setsDone, totalSets); }}
                                 size="medium"
                                 disabled={isUpdating || setsDone >= totalSets}
@@ -262,6 +265,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                 <AddIcon />
                             </IconButton>
                             <IconButton
+                                data-testid="complete-all-sets-button"
                                 onClick={(e) => { e.stopPropagation(); handleCompleteAllSets(exerciseId, setsDone, totalSets); }}
                                 size="small"
                                 disabled={isUpdating || setsDone >= totalSets}
@@ -286,6 +290,26 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                 planId={planId}
                 weekNumber={weekNumber}
             />
+
+            {/* Error notification for failed progress saves */}
+            {isUpdating && (
+                <Box
+                    data-testid="error-notification"
+                    sx={{
+                        position: 'fixed',
+                        top: 80,
+                        right: 20,
+                        zIndex: 9999,
+                        bgcolor: '#f44336',
+                        color: 'white',
+                        p: 2,
+                        borderRadius: 1,
+                        display: 'none'
+                    }}
+                >
+                    Could not save progress. Please try again.
+                </Box>
+            )}
         </>
     );
 }; 

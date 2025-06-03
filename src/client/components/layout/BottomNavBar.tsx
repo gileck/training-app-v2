@@ -47,7 +47,13 @@ export const BottomNavBar = ({ navItems, isStandalone }: BottomNavBarProps) => {
         {navItems.map((item) => (
           <BottomNavigationAction
             key={item.path}
-            data-testid={item.path === '/' ? 'home-nav' : item.path === '/training-plans' ? 'training-plans-nav' : item.path === '/workout-page' ? 'workout-nav' : 'nav-item'}
+            data-testid={
+              item.path === '/' ? 'home-nav' :
+                item.path === '/training-plans' ? 'training-plans-nav' :
+                  item.path === '/workout-page' ? 'workout-nav' :
+                    item.path === '/saved-workouts' ? 'saved-workouts-nav' :
+                      'nav-item'
+            }
             label={item.label}
             icon={item.icon}
           />

@@ -162,7 +162,7 @@ export const TrainingPlans: React.FC = () => {
                                 <Paper elevation={2} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }} data-testid="plan-card">
                                     <CardContent sx={{ flexGrow: 1 }}>
                                         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                            <Typography variant="h6" component="div">
+                                            <Typography data-testid="plan-name" variant="h6" component="div">
                                                 {plan.name}
                                             </Typography>
                                             {plan.isActive && (

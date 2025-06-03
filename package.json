@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
+    "dev:test": "PLAYWRIGHT_TEST=true TEST_USER_ID=683d55838f9d6cbb9cb17132 PORT=3002 yarn dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

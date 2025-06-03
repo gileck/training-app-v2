@@ -1,0 +1,1103 @@
+yarn run v1.22.22
+$ playwright test
+🚀 Setting up test database...
+🧹 Cleaning existing test data...
+👤 Creating test user...
+💪 Importing exercise definitions...
+📋 Creating test training plans...
+🏋️ Creating test exercises...
+✅ Test database setup complete!
+- Database: trainingPlanDb_test
+- User ID: 683d55838f9d6cbb9cb17132
+- Exercise definitions: 50
+- Training plans: 2
+- Exercises: 36
+
+Running 48 tests using 4 workers
+
+[1A[2K[1/48] [chromium] › tests/e2e/database-setup-demo.spec.ts:46:9 › Database Setup Demo › should have clean database on each test run
+[1A[2K[2/48] [chromium] › tests/e2e/debug-plans.spec.ts:4:5 › debug: what plans are visible on page vs database
+[1A[2K[3/48] [chromium] › tests/e2e/database-setup-demo.spec.ts:26:9 › Database Setup Demo › should allow creating additional test data
+[1A[2K[4/48] [chromium] › tests/e2e/database-setup-demo.spec.ts:5:9 › Database Setup Demo › should have pre-populated test database
+[1A[2K[chromium] › tests/e2e/debug-plans.spec.ts:4:5 › debug: what plans are visible on page vs database
+📊 Plans in database: [33m2[39m
+
+[1A[2K  1. "Test Plan 1" (active: false)
+
+[1A[2K  2. "Test Plan 2" (active: false)
+
+[1A[2K[5/48] [chromium] › tests/e2e/exercises.spec.ts:18:9 › Exercise Management › should add exercise from browser
+[1A[2K[6/48] [chromium] › tests/e2e/exercises.spec.ts:47:9 › Exercise Management › should edit an existing exercise
+[1A[2K[7/48] [chromium] › tests/e2e/exercises.spec.ts:83:9 › Exercise Management › should delete an exercise
+[1A[2K🖥️  Plans visible on page: 21
+
+[1A[2K  1. [Could not get plan name: TimeoutError: locator.textContent: Timeout 2000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid="plan-card"]').first().locator('h6')[22m
+]
+
+[1A[2K  2. [Could not get plan name: TimeoutError: locator.textContent: Timeout 2000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid="plan-card"]').nth(1).locator('h6')[22m
+]
+
+[1A[2K  3. [Could not get plan name: TimeoutError: locator.textContent: Timeout 2000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid="plan-card"]').nth(2).locator('h6')[22m
+]
+
+[1A[2K  1) [chromium] › tests/e2e/exercises.spec.ts:18:9 › Exercise Management › should add exercise from browser 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThan[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: > [32m0[39m
+    Received:   [31m0[39m
+
+      42 |         const exerciseCards = page.locator('[data-testid="exercise-card"]');
+      43 |         const exerciseCount = await exerciseCards.count();
+    > 44 |         expect(exerciseCount).toBeGreaterThan(0);
+         |                               ^
+      45 |     });
+      46 |
+      47 |     test('should edit an existing exercise', async ({ page }) => {
+        at /Users/gil/Projects/training-app-v2/tests/e2e/exercises.spec.ts:44:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/exercises-Exercise-Managem-4096f-d-add-exercise-from-browser-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/exercises-Exercise-Managem-4096f-d-add-exercise-from-browser-chromium/error-context.md
+
+
+[1A[2K[8/48] [chromium] › tests/e2e/exercises.spec.ts:147:9 › Exercise Management › should navigate between exercises and workouts tabs
+[1A[2K  4. [Could not get plan name: TimeoutError: locator.textContent: Timeout 2000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid="plan-card"]').nth(3).locator('h6')[22m
+]
+
+[1A[2K[9/48] [chromium] › tests/e2e/exercises.spec.ts:119:9 › Exercise Management › should duplicate an exercise
+[1A[2K  5. [Could not get plan name: TimeoutError: locator.textContent: Timeout 2000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid="plan-card"]').nth(4).locator('h6')[22m
+]
+
+[1A[2K  ... and 16 more plans
+
+[1A[2K🔍 "Test Plan 1" found: 11 times
+
+[1A[2K🔍 "Test Plan 2" found: 0 times
+
+[1A[2K📸 Screenshot saved as debug-training-plans.png
+
+[1A[2K[10/48] [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:9:9 › Navigation and Data Flow › should maintain data consistency across navigation
+[1A[2K  2) [chromium] › tests/e2e/exercises.spec.ts:47:9 › Exercise Management › should edit an existing exercise 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="exercise-card"]').first().locator('button[title="Edit Exercise"]')[22m
+
+
+      63 |         // Edit the first exercise
+      64 |         const exerciseCard = page.locator('[data-testid="exercise-card"]').first();
+    > 65 |         await exerciseCard.locator('button[title="Edit Exercise"]').click();
+         |                                                                     ^
+      66 |
+      67 |         // Wait for edit dialog to open
+      68 |         await page.waitForSelector('[role="dialog"] input[name="sets"]', { state: 'visible' });
+        at /Users/gil/Projects/training-app-v2/tests/e2e/exercises.spec.ts:65:69
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/exercises-Exercise-Managem-d539e-d-edit-an-existing-exercise-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/exercises-Exercise-Managem-d539e-d-edit-an-existing-exercise-chromium/error-context.md
+
+
+[1A[2K[11/48] [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:71:9 › Navigation and Data Flow › should maintain exercise data when switching between plans
+[1A[2K[12/48] [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:40:9 › Navigation and Data Flow › should persist training plan changes across different pages
+[1A[2K  3) [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:9:9 › Navigation and Data Flow › should maintain data consistency across navigation 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThan[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: > [32m0[39m
+    Received:   [31m0[39m
+
+      28 |         // Verify exercises are loaded
+      29 |         const exerciseCount = await page.locator('[data-testid="exercise-card"]').count();
+    > 30 |         expect(exerciseCount).toBeGreaterThan(0);
+         |                               ^
+      31 |
+      32 |         // Navigate back to home
+      33 |         await page.click('[data-testid="home-nav"]');
+        at /Users/gil/Projects/training-app-v2/tests/e2e/navigation-and-data-flow.spec.ts:30:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/navigation-and-data-flow-N-209fd-nsistency-across-navigation-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/navigation-and-data-flow-N-209fd-nsistency-across-navigation-chromium/error-context.md
+
+
+[1A[2K  4) [chromium] › tests/e2e/exercises.spec.ts:119:9 › Exercise Management › should duplicate an exercise 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m4[39m
+    Received: [31m3[39m
+
+      142 |         // Verify exercise was duplicated
+      143 |         const newExerciseCount = await page.locator('[data-testid="exercise-card"]').count();
+    > 144 |         expect(newExerciseCount).toBe(initialExerciseCount + 1);
+          |                                  ^
+      145 |     });
+      146 |
+      147 |     test('should navigate between exercises and workouts tabs', async ({ page }) => {
+        at /Users/gil/Projects/training-app-v2/tests/e2e/exercises.spec.ts:144:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/exercises-Exercise-Management-should-duplicate-an-exercise-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/exercises-Exercise-Management-should-duplicate-an-exercise-chromium/error-context.md
+
+
+[1A[2K[13/48] [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:118:9 › Navigation and Data Flow › should handle browser refresh without losing data
+[1A[2K[14/48] [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:150:9 › Navigation and Data Flow › should maintain weekly progress when navigating between weeks
+[1A[2K  5) [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:71:9 › Navigation and Data Flow › should maintain exercise data when switching between plans 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      71 |     test('should maintain exercise data when switching between plans', async ({ page }) => {
+      72 |         await page.goto('/training-plans');
+    > 73 |         await page.waitForLoadState('networkidle');
+         |                    ^
+      74 |
+      75 |         // Get all plan cards
+      76 |         const planCards = page.locator('[data-testid="plan-card"]');
+        at /Users/gil/Projects/training-app-v2/tests/e2e/navigation-and-data-flow.spec.ts:73:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/navigation-and-data-flow-N-a1002-hen-switching-between-plans-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  6) [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:40:9 › Navigation and Data Flow › should persist training plan changes across different pages 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.selectOption: Error: Element is not a <select> element
+    Call log:
+    [2m  - waiting for locator('[data-testid="plan-duration-select"]')[22m
+    [2m    - locator resolved to <div data-testid="plan-duration-select" class="MuiInputBase-root MuiInput-root MuiInput-underline MuiInputBase-colorPrimary MuiInputBase-formControl MuiSelect-root css-j218zi-MuiInputBase-root-MuiInput-root-MuiSelect-root">…</div>[22m
+    [2m  - attempting select option action[22m
+    [2m    - waiting for element to be visible and enabled[22m
+
+
+      48 |         await page.fill('[data-testid="plan-name-input"]', 'Navigation Test Plan');
+      49 |         await page.fill('[data-testid="plan-description-input"]', 'Testing data persistence');
+    > 50 |         await page.selectOption('[data-testid="plan-duration-select"]', '8');
+         |                    ^
+      51 |         await page.click('[data-testid="save-plan-button"]');
+      52 |         await page.waitForLoadState('networkidle');
+      53 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/navigation-and-data-flow.spec.ts:50:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/navigation-and-data-flow-N-571a3-nges-across-different-pages-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/navigation-and-data-flow-N-571a3-nges-across-different-pages-chromium/error-context.md
+
+
+[1A[2K[15/48] [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:193:9 › Navigation and Data Flow › should handle rapid navigation without data corruption
+[1A[2K[16/48] [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:219:9 › Navigation and Data Flow › should show loading states during navigation
+[1A[2K  7) [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:118:9 › Navigation and Data Flow › should handle browser refresh without losing data 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      119 |         // Make some changes to the state
+      120 |         await page.goto('/training-plans');
+    > 121 |         await page.waitForLoadState('networkidle');
+          |                    ^
+      122 |
+      123 |         const originalPlanCount = await page.locator('[data-testid="plan-card"]').count();
+      124 |         const firstPlanName = await page.locator('[data-testid="plan-card"]').first().locator('[data-testid="plan-name"]').textContent();
+        at /Users/gil/Projects/training-app-v2/tests/e2e/navigation-and-data-flow.spec.ts:121:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/navigation-and-data-flow-N-1e65f-refresh-without-losing-data-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  8) [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:150:9 › Navigation and Data Flow › should maintain weekly progress when navigating between weeks 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      151 |         // Navigate to workout view for week 1
+      152 |         await page.goto('/workout/week-1');
+    > 153 |         await page.waitForLoadState('networkidle');
+          |                    ^
+      154 |
+      155 |         // Make progress on an exercise
+      156 |         const firstExercise = page.locator('[data-testid="exercise-progress-card"]').first();
+        at /Users/gil/Projects/training-app-v2/tests/e2e/navigation-and-data-flow.spec.ts:153:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/navigation-and-data-flow-N-5161d-en-navigating-between-weeks-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[17/48] [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:236:9 › Navigation and Data Flow › should maintain active plan consistency across all pages
+[1A[2K[18/48] [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:264:9 › Navigation and Data Flow › should handle concurrent data updates
+[1A[2K  9) [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:219:9 › Navigation and Data Flow › should show loading states during navigation 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      226 |
+      227 |         // Wait for content to load
+    > 228 |         await page.waitForLoadState('networkidle');
+          |                    ^
+      229 |
+      230 |         // Verify content is loaded and loading state is gone
+      231 |         const planCount3 = await page.locator('[data-testid="plan-card"]').count();
+        at /Users/gil/Projects/training-app-v2/tests/e2e/navigation-and-data-flow.spec.ts:228:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/navigation-and-data-flow-N-5f90a-ng-states-during-navigation-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  10) [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:193:9 › Navigation and Data Flow › should handle rapid navigation without data corruption 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      194 |         // Rapidly navigate between different pages
+      195 |         await page.goto('/training-plans');
+    > 196 |         await page.waitForLoadState('networkidle');
+          |                    ^
+      197 |
+      198 |         await page.goto('/');
+      199 |         await page.waitForLoadState('networkidle');
+        at /Users/gil/Projects/training-app-v2/tests/e2e/navigation-and-data-flow.spec.ts:196:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/navigation-and-data-flow-N-75e4f-ion-without-data-corruption-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[19/48] [chromium] › tests/e2e/saved-workouts.spec.ts:39:9 › Saved Workouts › should edit a saved workout name
+[1A[2K[20/48] [chromium] › tests/e2e/saved-workouts.spec.ts:13:9 › Saved Workouts › should create a new saved workout
+[1A[2K  11) [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:264:9 › Navigation and Data Flow › should handle concurrent data updates 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      269 |         await page2.goto('/training-plans');
+      270 |
+    > 271 |         await page.waitForLoadState('networkidle');
+          |                    ^
+      272 |         await page2.waitForLoadState('networkidle');
+      273 |
+      274 |         const initialCount = await page.locator('[data-testid="plan-card"]').count();
+        at /Users/gil/Projects/training-app-v2/tests/e2e/navigation-and-data-flow.spec.ts:271:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/navigation-and-data-flow-N-ff6b1-dle-concurrent-data-updates-chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/navigation-and-data-flow-N-ff6b1-dle-concurrent-data-updates-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  12) [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:236:9 › Navigation and Data Flow › should maintain active plan consistency across all pages 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      237 |         // Get the active plan from home page
+      238 |         await page.goto('/');
+    > 239 |         await page.waitForLoadState('networkidle');
+          |                    ^
+      240 |
+      241 |         const activePlanName = await page.locator('[data-testid="active-plan-name"]').textContent();
+      242 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/navigation-and-data-flow.spec.ts:239:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/navigation-and-data-flow-N-f33b5-onsistency-across-all-pages-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[21/48] [chromium] › tests/e2e/saved-workouts.spec.ts:53:9 › Saved Workouts › should delete a saved workout
+[1A[2K[22/48] [chromium] › tests/e2e/saved-workouts.spec.ts:72:9 › Saved Workouts › should start a saved workout
+[1A[2K  13) [chromium] › tests/e2e/saved-workouts.spec.ts:39:9 › Saved Workouts › should edit a saved workout name 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      2 |
+      3 | test.describe('Saved Workouts', () => {
+    > 4 |     test.beforeEach(async ({ page }) => {
+        |          ^
+      5 |         await page.goto('/');
+      6 |         await page.waitForLoadState('networkidle');
+      7 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:4:10
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="saved-workouts-nav"]')[22m
+
+
+       7 |
+       8 |         // Navigate to saved workouts page
+    >  9 |         await page.click('[data-testid="saved-workouts-nav"]');
+         |                    ^
+      10 |         await page.waitForLoadState('networkidle');
+      11 |     });
+      12 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:9:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/saved-workouts-Saved-Worko-d3e83-d-edit-a-saved-workout-name-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/saved-workouts-Saved-Worko-d3e83-d-edit-a-saved-workout-name-chromium/error-context.md
+
+
+[1A[2K  14) [chromium] › tests/e2e/saved-workouts.spec.ts:13:9 › Saved Workouts › should create a new saved workout 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      2 |
+      3 | test.describe('Saved Workouts', () => {
+    > 4 |     test.beforeEach(async ({ page }) => {
+        |          ^
+      5 |         await page.goto('/');
+      6 |         await page.waitForLoadState('networkidle');
+      7 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:4:10
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="saved-workouts-nav"]')[22m
+
+
+       7 |
+       8 |         // Navigate to saved workouts page
+    >  9 |         await page.click('[data-testid="saved-workouts-nav"]');
+         |                    ^
+      10 |         await page.waitForLoadState('networkidle');
+      11 |     });
+      12 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:9:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/saved-workouts-Saved-Worko-5f0e9--create-a-new-saved-workout-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/saved-workouts-Saved-Worko-5f0e9--create-a-new-saved-workout-chromium/error-context.md
+
+
+[1A[2K[23/48] [chromium] › tests/e2e/saved-workouts.spec.ts:83:9 › Saved Workouts › should show workout exercises in detail view
+[1A[2K[24/48] [chromium] › tests/e2e/saved-workouts.spec.ts:99:9 › Saved Workouts › should filter workouts by search
+[1A[2K  15) [chromium] › tests/e2e/saved-workouts.spec.ts:53:9 › Saved Workouts › should delete a saved workout 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      2 |
+      3 | test.describe('Saved Workouts', () => {
+    > 4 |     test.beforeEach(async ({ page }) => {
+        |          ^
+      5 |         await page.goto('/');
+      6 |         await page.waitForLoadState('networkidle');
+      7 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:4:10
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="saved-workouts-nav"]')[22m
+
+
+       7 |
+       8 |         // Navigate to saved workouts page
+    >  9 |         await page.click('[data-testid="saved-workouts-nav"]');
+         |                    ^
+      10 |         await page.waitForLoadState('networkidle');
+      11 |     });
+      12 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:9:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/saved-workouts-Saved-Workouts-should-delete-a-saved-workout-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/saved-workouts-Saved-Workouts-should-delete-a-saved-workout-chromium/error-context.md
+
+
+[1A[2K  16) [chromium] › tests/e2e/saved-workouts.spec.ts:72:9 › Saved Workouts › should start a saved workout 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      2 |
+      3 | test.describe('Saved Workouts', () => {
+    > 4 |     test.beforeEach(async ({ page }) => {
+        |          ^
+      5 |         await page.goto('/');
+      6 |         await page.waitForLoadState('networkidle');
+      7 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:4:10
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="saved-workouts-nav"]')[22m
+
+
+       7 |
+       8 |         // Navigate to saved workouts page
+    >  9 |         await page.click('[data-testid="saved-workouts-nav"]');
+         |                    ^
+      10 |         await page.waitForLoadState('networkidle');
+      11 |     });
+      12 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:9:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/saved-workouts-Saved-Workouts-should-start-a-saved-workout-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/saved-workouts-Saved-Workouts-should-start-a-saved-workout-chromium/error-context.md
+
+
+[1A[2K[25/48] [chromium] › tests/e2e/saved-workouts.spec.ts:114:9 › Saved Workouts › should duplicate a saved workout
+[1A[2K[26/48] [chromium] › tests/e2e/saved-workouts.spec.ts:133:9 › Saved Workouts › should add exercise to existing workout
+[1A[2K  17) [chromium] › tests/e2e/saved-workouts.spec.ts:83:9 › Saved Workouts › should show workout exercises in detail view 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      2 |
+      3 | test.describe('Saved Workouts', () => {
+    > 4 |     test.beforeEach(async ({ page }) => {
+        |          ^
+      5 |         await page.goto('/');
+      6 |         await page.waitForLoadState('networkidle');
+      7 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:4:10
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="saved-workouts-nav"]')[22m
+
+
+       7 |
+       8 |         // Navigate to saved workouts page
+    >  9 |         await page.click('[data-testid="saved-workouts-nav"]');
+         |                    ^
+      10 |         await page.waitForLoadState('networkidle');
+      11 |     });
+      12 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:9:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/saved-workouts-Saved-Worko-ed611-ut-exercises-in-detail-view-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/saved-workouts-Saved-Worko-ed611-ut-exercises-in-detail-view-chromium/error-context.md
+
+
+[1A[2K[27/48] [chromium] › tests/e2e/saved-workouts.spec.ts:153:9 › Saved Workouts › should remove exercise from workout
+[1A[2K  18) [chromium] › tests/e2e/saved-workouts.spec.ts:99:9 › Saved Workouts › should filter workouts by search 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      2 |
+      3 | test.describe('Saved Workouts', () => {
+    > 4 |     test.beforeEach(async ({ page }) => {
+        |          ^
+      5 |         await page.goto('/');
+      6 |         await page.waitForLoadState('networkidle');
+      7 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:4:10
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="saved-workouts-nav"]')[22m
+
+
+       7 |
+       8 |         // Navigate to saved workouts page
+    >  9 |         await page.click('[data-testid="saved-workouts-nav"]');
+         |                    ^
+      10 |         await page.waitForLoadState('networkidle');
+      11 |     });
+      12 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:9:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/saved-workouts-Saved-Worko-c6db8-d-filter-workouts-by-search-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/saved-workouts-Saved-Worko-c6db8-d-filter-workouts-by-search-chromium/error-context.md
+
+
+[1A[2K[28/48] [chromium] › tests/e2e/saved-workouts.spec.ts:174:9 › Saved Workouts › should persist saved workouts across page reloads
+[1A[2K  19) [chromium] › tests/e2e/saved-workouts.spec.ts:133:9 › Saved Workouts › should add exercise to existing workout 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      2 |
+      3 | test.describe('Saved Workouts', () => {
+    > 4 |     test.beforeEach(async ({ page }) => {
+        |          ^
+      5 |         await page.goto('/');
+      6 |         await page.waitForLoadState('networkidle');
+      7 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:4:10
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="saved-workouts-nav"]')[22m
+
+
+       7 |
+       8 |         // Navigate to saved workouts page
+    >  9 |         await page.click('[data-testid="saved-workouts-nav"]');
+         |                    ^
+      10 |         await page.waitForLoadState('networkidle');
+      11 |     });
+      12 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:9:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/saved-workouts-Saved-Worko-2f31b-xercise-to-existing-workout-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/saved-workouts-Saved-Worko-2f31b-xercise-to-existing-workout-chromium/error-context.md
+
+
+[1A[2K  20) [chromium] › tests/e2e/saved-workouts.spec.ts:114:9 › Saved Workouts › should duplicate a saved workout 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      2 |
+      3 | test.describe('Saved Workouts', () => {
+    > 4 |     test.beforeEach(async ({ page }) => {
+        |          ^
+      5 |         await page.goto('/');
+      6 |         await page.waitForLoadState('networkidle');
+      7 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:4:10
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="saved-workouts-nav"]')[22m
+
+
+       7 |
+       8 |         // Navigate to saved workouts page
+    >  9 |         await page.click('[data-testid="saved-workouts-nav"]');
+         |                    ^
+      10 |         await page.waitForLoadState('networkidle');
+      11 |     });
+      12 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:9:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/saved-workouts-Saved-Worko-8177d-d-duplicate-a-saved-workout-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/saved-workouts-Saved-Worko-8177d-d-duplicate-a-saved-workout-chromium/error-context.md
+
+
+[1A[2K[29/48] [chromium] › tests/e2e/saved-workouts.spec.ts:187:9 › Saved Workouts › should show empty state when no workouts exist
+[1A[2K[30/48] [chromium] › tests/e2e/test-setup-example.spec.ts:16:9 › Test Setup Example › should use pre-populated test data
+[1A[2K[chromium] › tests/e2e/test-setup-example.spec.ts:16:9 › Test Setup Example › should use pre-populated test data
+✅ Found 21 training plans - setup working!
+
+[1A[2K[31/48] [chromium] › tests/e2e/test-setup-example.spec.ts:34:9 › Test Setup Example › should create additional test data during test
+[1A[2K  21) [chromium] › tests/e2e/saved-workouts.spec.ts:153:9 › Saved Workouts › should remove exercise from workout 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      2 |
+      3 | test.describe('Saved Workouts', () => {
+    > 4 |     test.beforeEach(async ({ page }) => {
+        |          ^
+      5 |         await page.goto('/');
+      6 |         await page.waitForLoadState('networkidle');
+      7 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:4:10
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="saved-workouts-nav"]')[22m
+
+
+       7 |
+       8 |         // Navigate to saved workouts page
+    >  9 |         await page.click('[data-testid="saved-workouts-nav"]');
+         |                    ^
+      10 |         await page.waitForLoadState('networkidle');
+      11 |     });
+      12 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:9:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/saved-workouts-Saved-Worko-37a61-emove-exercise-from-workout-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/saved-workouts-Saved-Worko-37a61-emove-exercise-from-workout-chromium/error-context.md
+
+
+[1A[2K[32/48] [chromium] › tests/e2e/test-setup-example.spec.ts:46:9 › Test Setup Example › should verify test database has expected data
+[1A[2K  22) [chromium] › tests/e2e/saved-workouts.spec.ts:174:9 › Saved Workouts › should persist saved workouts across page reloads 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      2 |
+      3 | test.describe('Saved Workouts', () => {
+    > 4 |     test.beforeEach(async ({ page }) => {
+        |          ^
+      5 |         await page.goto('/');
+      6 |         await page.waitForLoadState('networkidle');
+      7 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:4:10
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="saved-workouts-nav"]')[22m
+
+
+       7 |
+       8 |         // Navigate to saved workouts page
+    >  9 |         await page.click('[data-testid="saved-workouts-nav"]');
+         |                    ^
+      10 |         await page.waitForLoadState('networkidle');
+      11 |     });
+      12 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:9:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/saved-workouts-Saved-Worko-dbf5b-orkouts-across-page-reloads-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/saved-workouts-Saved-Worko-dbf5b-orkouts-across-page-reloads-chromium/error-context.md
+
+
+[1A[2K[33/48] [chromium] › tests/e2e/test-setup-example.spec.ts:60:9 › Test Setup Example › should work with exercises from pre-populated data
+[1A[2K  23) [chromium] › tests/e2e/saved-workouts.spec.ts:187:9 › Saved Workouts › should show empty state when no workouts exist 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      2 |
+      3 | test.describe('Saved Workouts', () => {
+    > 4 |     test.beforeEach(async ({ page }) => {
+        |          ^
+      5 |         await page.goto('/');
+      6 |         await page.waitForLoadState('networkidle');
+      7 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:4:10
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="saved-workouts-nav"]')[22m
+
+
+       7 |
+       8 |         // Navigate to saved workouts page
+    >  9 |         await page.click('[data-testid="saved-workouts-nav"]');
+         |                    ^
+      10 |         await page.waitForLoadState('networkidle');
+      11 |     });
+      12 |
+        at /Users/gil/Projects/training-app-v2/tests/e2e/saved-workouts.spec.ts:9:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/saved-workouts-Saved-Worko-953ca-tate-when-no-workouts-exist-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/saved-workouts-Saved-Worko-953ca-tate-when-no-workouts-exist-chromium/error-context.md
+
+
+[1A[2K[34/48] [chromium] › tests/e2e/training-plans.spec.ts:9:9 › Training Plans › should create a new training plan
+[1A[2K  24) [chromium] › tests/e2e/test-setup-example.spec.ts:34:9 › Test Setup Example › should create additional test data during test 
+
+    Error: [31mTimed out 5000ms waiting for [39m[2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m
+
+    Locator: locator('[data-testid="plan-card"]').filter({ hasText: 'Dynamic Test Plan' })
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+    [2m  - expect.toBeVisible with timeout 5000ms[22m
+    [2m  - waiting for locator('[data-testid="plan-card"]').filter({ hasText: 'Dynamic Test Plan' })[22m
+
+
+      41 |
+      42 |         // Verify the dynamically created plan is visible
+    > 43 |         await expect(page.locator('[data-testid="plan-card"]').filter({ hasText: 'Dynamic Test Plan' })).toBeVisible();
+         |                                                                                                          ^
+      44 |     });
+      45 |
+      46 |     test('should verify test database has expected data', async ({ page }) => {
+        at /Users/gil/Projects/training-app-v2/tests/e2e/test-setup-example.spec.ts:43:106
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test-setup-example-Test-Se-f1844-ional-test-data-during-test-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test-setup-example-Test-Se-f1844-ional-test-data-during-test-chromium/error-context.md
+
+
+[1A[2K[35/48] [chromium] › tests/e2e/training-plans.spec.ts:35:9 › Training Plans › should navigate to manage exercises
+[1A[2K  25) [chromium] › tests/e2e/test-setup-example.spec.ts:46:9 › Test Setup Example › should verify test database has expected data 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m4[39m
+    Received: [31m21[39m
+
+      55 |         const planCards = page.locator('[data-testid="plan-card"]');
+      56 |         const planCount = await planCards.count();
+    > 57 |         expect(planCount).toBe(testPlans.length);
+         |                           ^
+      58 |     });
+      59 |
+      60 |     test('should work with exercises from pre-populated data', async ({ page }) => {
+        at /Users/gil/Projects/training-app-v2/tests/e2e/test-setup-example.spec.ts:57:27
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test-setup-example-Test-Se-01c9c--database-has-expected-data-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test-setup-example-Test-Se-01c9c--database-has-expected-data-chromium/error-context.md
+
+
+[1A[2K[36/48] [chromium] › tests/e2e/training-plans.spec.ts:97:9 › Training Plans › should delete a training plan
+[1A[2K[37/48] [chromium] › tests/e2e/training-plans.spec.ts:61:9 › Training Plans › should duplicate a training plan
+[1A[2K  26) [chromium] › tests/e2e/test-setup-example.spec.ts:60:9 › Test Setup Example › should work with exercises from pre-populated data 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForSelector: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="week-tab"]') to be visible[22m
+
+
+      72 |         // Check if we have pre-populated exercises
+      73 |         // The global setup creates exercises for the test plans
+    > 74 |         await page.waitForSelector('[data-testid="week-tab"]', { timeout: 10000 });
+         |                    ^
+      75 |         const weekTabs = page.locator('[data-testid="week-tab"]');
+      76 |         const weekTabCount = await weekTabs.count();
+      77 |         expect(weekTabCount).toBeGreaterThan(0);
+        at /Users/gil/Projects/training-app-v2/tests/e2e/test-setup-example.spec.ts:74:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test-setup-example-Test-Se-1470f-ses-from-pre-populated-data-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test-setup-example-Test-Se-1470f-ses-from-pre-populated-data-chromium/error-context.md
+
+
+[1A[2K[38/48] [chromium] › tests/e2e/training-plans.spec.ts:137:9 › Training Plans › should set active training plan
+[1A[2K[39/48] [chromium] › tests/e2e/user-authentication.spec.ts:5:9 › User Authentication in Tests › should automatically be logged in as test user
+[1A[2K  27) [chromium] › tests/e2e/training-plans.spec.ts:97:9 › Training Plans › should delete a training plan 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+       97 |     test('should delete a training plan', async ({ page }) => {
+       98 |         await page.goto('/training-plans');
+    >  99 |         await page.waitForLoadState('networkidle');
+          |                    ^
+      100 |
+      101 |         // Get initial plan count
+      102 |         const initialPlanCount = await page.locator('[data-testid="plan-card"]').count();
+        at /Users/gil/Projects/training-app-v2/tests/e2e/training-plans.spec.ts:99:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/training-plans-Training-Plans-should-delete-a-training-plan-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  28) [chromium] › tests/e2e/training-plans.spec.ts:61:9 › Training Plans › should duplicate a training plan 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      61 |     test('should duplicate a training plan', async ({ page }) => {
+      62 |         await page.goto('/training-plans');
+    > 63 |         await page.waitForLoadState('networkidle');
+         |                    ^
+      64 |
+      65 |         // Ensure we have at least one plan
+      66 |         const initialPlanCount = await page.locator('[data-testid="plan-card"]').count();
+        at /Users/gil/Projects/training-app-v2/tests/e2e/training-plans.spec.ts:63:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/training-plans-Training-Pl-8f949-d-duplicate-a-training-plan-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[40/48] [chromium] › tests/e2e/user-authentication.spec.ts:24:9 › User Authentication in Tests › should be able to create new training plan as authenticated user
+[1A[2K[41/48] [chromium] › tests/e2e/weekly-progress.spec.ts:9:9 › Weekly Progress › should track set completion for exercises
+[1A[2K[chromium] › tests/e2e/user-authentication.spec.ts:5:9 › User Authentication in Tests › should automatically be logged in as test user
+✅ Successfully authenticated as test user: testuser
+
+[1A[2K✅ Can see 22 training plans
+
+[1A[2K[42/48] [chromium] › tests/e2e/weekly-progress.spec.ts:30:9 › Weekly Progress › should complete all sets for an exercise
+[1A[2K  29) [chromium] › tests/e2e/training-plans.spec.ts:137:9 › Training Plans › should set active training plan 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      137 |     test('should set active training plan', async ({ page }) => {
+      138 |         await page.goto('/training-plans');
+    > 139 |         await page.waitForLoadState('networkidle');
+          |                    ^
+      140 |
+      141 |         // Ensure we have at least two plans (one active, one to activate)
+      142 |         const planCount = await page.locator('[data-testid="plan-card"]').count();
+        at /Users/gil/Projects/training-app-v2/tests/e2e/training-plans.spec.ts:139:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/training-plans-Training-Pl-1b8f9-ld-set-active-training-plan-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[43/48] [chromium] › tests/e2e/weekly-progress.spec.ts:46:9 › Weekly Progress › should decrement set completion
+[1A[2K[chromium] › tests/e2e/user-authentication.spec.ts:24:9 › User Authentication in Tests › should be able to create new training plan as authenticated user
+✅ Successfully created training plan as authenticated test user
+
+[1A[2K[44/48] [chromium] › tests/e2e/weekly-progress.spec.ts:68:9 › Weekly Progress › should persist progress across page reloads
+[1A[2K  30) [chromium] › tests/e2e/weekly-progress.spec.ts:9:9 › Weekly Progress › should track set completion for exercises 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      10 |         // Navigate to workout view for week 1
+      11 |         await page.goto('/workout/week-1');
+    > 12 |         await page.waitForLoadState('networkidle');
+         |                    ^
+      13 |
+      14 |         // Find the first exercise and track progress
+      15 |         const firstExercise = page.locator('[data-testid="exercise-progress-card"]').first();
+        at /Users/gil/Projects/training-app-v2/tests/e2e/weekly-progress.spec.ts:12:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/weekly-progress-Weekly-Pro-2ec2b-et-completion-for-exercises-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  31) [chromium] › tests/e2e/weekly-progress.spec.ts:30:9 › Weekly Progress › should complete all sets for an exercise 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      30 |     test('should complete all sets for an exercise', async ({ page }) => {
+      31 |         await page.goto('/workout/week-1');
+    > 32 |         await page.waitForLoadState('networkidle');
+         |                    ^
+      33 |
+      34 |         // Find an exercise that's not fully completed
+      35 |         const incompleteExercise = page.locator('[data-testid="exercise-progress-card"]')
+        at /Users/gil/Projects/training-app-v2/tests/e2e/weekly-progress.spec.ts:32:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/weekly-progress-Weekly-Pro-ffa1c-te-all-sets-for-an-exercise-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[45/48] [chromium] › tests/e2e/weekly-progress.spec.ts:91:9 › Weekly Progress › should track progress across different weeks
+[1A[2K[46/48] [chromium] › tests/e2e/weekly-progress.spec.ts:119:9 › Weekly Progress › should show weekly progress summary
+[1A[2K  32) [chromium] › tests/e2e/weekly-progress.spec.ts:46:9 › Weekly Progress › should decrement set completion 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      46 |     test('should decrement set completion', async ({ page }) => {
+      47 |         await page.goto('/workout/week-1');
+    > 48 |         await page.waitForLoadState('networkidle');
+         |                    ^
+      49 |
+      50 |         // Find an exercise with at least one completed set
+      51 |         const exerciseWithProgress = page.locator('[data-testid="exercise-progress-card"]')
+        at /Users/gil/Projects/training-app-v2/tests/e2e/weekly-progress.spec.ts:48:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/weekly-progress-Weekly-Pro-eca74-ld-decrement-set-completion-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[47/48] [chromium] › tests/e2e/weekly-progress.spec.ts:139:9 › Weekly Progress › should handle offline progress updates
+[1A[2K  33) [chromium] › tests/e2e/weekly-progress.spec.ts:68:9 › Weekly Progress › should persist progress across page reloads 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      68 |     test('should persist progress across page reloads', async ({ page }) => {
+      69 |         await page.goto('/workout/week-1');
+    > 70 |         await page.waitForLoadState('networkidle');
+         |                    ^
+      71 |
+      72 |         // Make progress on an exercise
+      73 |         const firstExercise = page.locator('[data-testid="exercise-progress-card"]').first();
+        at /Users/gil/Projects/training-app-v2/tests/e2e/weekly-progress.spec.ts:70:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/weekly-progress-Weekly-Pro-69473-rogress-across-page-reloads-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[48/48] [chromium] › tests/e2e/weekly-progress.spec.ts:164:9 › Weekly Progress › should show error notification when progress fails to save
+[1A[2K  34) [chromium] › tests/e2e/weekly-progress.spec.ts:91:9 › Weekly Progress › should track progress across different weeks 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      92 |         // Track progress in week 1
+      93 |         await page.goto('/workout/week-1');
+    > 94 |         await page.waitForLoadState('networkidle');
+         |                    ^
+      95 |
+      96 |         const firstExercise = page.locator('[data-testid="exercise-progress-card"]').first();
+      97 |         await firstExercise.locator('[data-testid="increment-sets-button"]').click();
+        at /Users/gil/Projects/training-app-v2/tests/e2e/weekly-progress.spec.ts:94:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/weekly-progress-Weekly-Pro-8ab96-ress-across-different-weeks-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  35) [chromium] › tests/e2e/weekly-progress.spec.ts:119:9 › Weekly Progress › should show weekly progress summary 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      119 |     test('should show weekly progress summary', async ({ page }) => {
+      120 |         await page.goto('/progress-view');
+    > 121 |         await page.waitForLoadState('networkidle');
+          |                    ^
+      122 |
+      123 |         // Verify progress summary is displayed
+      124 |         await expect(page.locator('[data-testid="weekly-progress-summary"]')).toBeVisible();
+        at /Users/gil/Projects/training-app-v2/tests/e2e/weekly-progress.spec.ts:121:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/weekly-progress-Weekly-Pro-89626-how-weekly-progress-summary-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  36) [chromium] › tests/e2e/weekly-progress.spec.ts:139:9 › Weekly Progress › should handle offline progress updates 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      139 |     test('should handle offline progress updates', async ({ page }) => {
+      140 |         await page.goto('/workout/week-1');
+    > 141 |         await page.waitForLoadState('networkidle');
+          |                    ^
+      142 |
+      143 |         // Go offline
+      144 |         await page.context().setOffline(true);
+        at /Users/gil/Projects/training-app-v2/tests/e2e/weekly-progress.spec.ts:141:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/weekly-progress-Weekly-Pro-c0244-le-offline-progress-updates-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  37) [chromium] › tests/e2e/weekly-progress.spec.ts:164:9 › Weekly Progress › should show error notification when progress fails to save 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="exercise-progress-card"]').first().locator('[data-testid="increment-sets-button"]')[22m
+
+
+      176 |         // Try to make progress
+      177 |         const firstExercise = page.locator('[data-testid="exercise-progress-card"]').first();
+    > 178 |         await firstExercise.locator('[data-testid="increment-sets-button"]').click();
+          |                                                                              ^
+      179 |
+      180 |         // Wait for error notification
+      181 |         await expect(page.locator('[data-testid="error-notification"]')).toBeVisible({ timeout: 5000 });
+        at /Users/gil/Projects/training-app-v2/tests/e2e/weekly-progress.spec.ts:178:78
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/weekly-progress-Weekly-Pro-004f6-when-progress-fails-to-save-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/weekly-progress-Weekly-Pro-004f6-when-progress-fails-to-save-chromium/error-context.md
+
+
+🧹 Cleaning up test database...
+✅ Test database cleanup complete!
+- Dropped database: trainingPlanDb_test
+[1A[2K  37 failed
+    [chromium] › tests/e2e/exercises.spec.ts:18:9 › Exercise Management › should add exercise from browser 
+    [chromium] › tests/e2e/exercises.spec.ts:47:9 › Exercise Management › should edit an existing exercise 
+    [chromium] › tests/e2e/exercises.spec.ts:119:9 › Exercise Management › should duplicate an exercise 
+    [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:9:9 › Navigation and Data Flow › should maintain data consistency across navigation 
+    [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:40:9 › Navigation and Data Flow › should persist training plan changes across different pages 
+    [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:71:9 › Navigation and Data Flow › should maintain exercise data when switching between plans 
+    [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:118:9 › Navigation and Data Flow › should handle browser refresh without losing data 
+    [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:150:9 › Navigation and Data Flow › should maintain weekly progress when navigating between weeks 
+    [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:193:9 › Navigation and Data Flow › should handle rapid navigation without data corruption 
+    [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:219:9 › Navigation and Data Flow › should show loading states during navigation 
+    [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:236:9 › Navigation and Data Flow › should maintain active plan consistency across all pages 
+    [chromium] › tests/e2e/navigation-and-data-flow.spec.ts:264:9 › Navigation and Data Flow › should handle concurrent data updates 
+    [chromium] › tests/e2e/saved-workouts.spec.ts:13:9 › Saved Workouts › should create a new saved workout 
+    [chromium] › tests/e2e/saved-workouts.spec.ts:39:9 › Saved Workouts › should edit a saved workout name 
+    [chromium] › tests/e2e/saved-workouts.spec.ts:53:9 › Saved Workouts › should delete a saved workout 
+    [chromium] › tests/e2e/saved-workouts.spec.ts:72:9 › Saved Workouts › should start a saved workout 
+    [chromium] › tests/e2e/saved-workouts.spec.ts:83:9 › Saved Workouts › should show workout exercises in detail view 
+    [chromium] › tests/e2e/saved-workouts.spec.ts:99:9 › Saved Workouts › should filter workouts by search 
+    [chromium] › tests/e2e/saved-workouts.spec.ts:114:9 › Saved Workouts › should duplicate a saved workout 
+    [chromium] › tests/e2e/saved-workouts.spec.ts:133:9 › Saved Workouts › should add exercise to existing workout 
+    [chromium] › tests/e2e/saved-workouts.spec.ts:153:9 › Saved Workouts › should remove exercise from workout 
+    [chromium] › tests/e2e/saved-workouts.spec.ts:174:9 › Saved Workouts › should persist saved workouts across page reloads 
+    [chromium] › tests/e2e/saved-workouts.spec.ts:187:9 › Saved Workouts › should show empty state when no workouts exist 
+    [chromium] › tests/e2e/test-setup-example.spec.ts:34:9 › Test Setup Example › should create additional test data during test 
+    [chromium] › tests/e2e/test-setup-example.spec.ts:46:9 › Test Setup Example › should verify test database has expected data 
+    [chromium] › tests/e2e/test-setup-example.spec.ts:60:9 › Test Setup Example › should work with exercises from pre-populated data 
+    [chromium] › tests/e2e/training-plans.spec.ts:61:9 › Training Plans › should duplicate a training plan 
+    [chromium] › tests/e2e/training-plans.spec.ts:97:9 › Training Plans › should delete a training plan 
+    [chromium] › tests/e2e/training-plans.spec.ts:137:9 › Training Plans › should set active training plan 
+    [chromium] › tests/e2e/weekly-progress.spec.ts:9:9 › Weekly Progress › should track set completion for exercises 
+    [chromium] › tests/e2e/weekly-progress.spec.ts:30:9 › Weekly Progress › should complete all sets for an exercise 
+    [chromium] › tests/e2e/weekly-progress.spec.ts:46:9 › Weekly Progress › should decrement set completion 
+    [chromium] › tests/e2e/weekly-progress.spec.ts:68:9 › Weekly Progress › should persist progress across page reloads 
+    [chromium] › tests/e2e/weekly-progress.spec.ts:91:9 › Weekly Progress › should track progress across different weeks 
+    [chromium] › tests/e2e/weekly-progress.spec.ts:119:9 › Weekly Progress › should show weekly progress summary 
+    [chromium] › tests/e2e/weekly-progress.spec.ts:139:9 › Weekly Progress › should handle offline progress updates 
+    [chromium] › tests/e2e/weekly-progress.spec.ts:164:9 › Weekly Progress › should show error notification when progress fails to save 
+  11 passed (6.4m)
+
+[36m  Serving HTML report at http://localhost:9323. Press Ctrl+C to quit.[39m

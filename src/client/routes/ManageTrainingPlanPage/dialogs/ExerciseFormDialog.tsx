@@ -236,10 +236,12 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
                     <Box sx={{ flexGrow: 1, overflowY: 'auto', px: { xs: 0, sm: 1 } }}>
                         {paginatedDefinitions.length > 0 ? (
                             <Box
-                                display="flex"
-                                flexWrap="wrap"
-                                gap={CARD_GAP} // Use theme spacing unit for gap
-                                justifyContent="center" // Center cards if they don't fill the row
+                                sx={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: CARD_GAP, // Use theme spacing unit for gap
+                                    justifyContent: "center" // Center cards if they don't fill the row
+                                }}
                             >
                                 {paginatedDefinitions.map(definition => {
                                     const defIdStr = definition._id.toString();
@@ -262,7 +264,7 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
                                                 }
                                             }}
                                         >
-                                            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                                            <Card data-testid="exercise-definition-card" sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                                                 {isInPlan && (
                                                     <CheckCircleIcon
                                                         color="success"

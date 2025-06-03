@@ -73,7 +73,13 @@ export const TopNavBar = ({ navItems, isStandalone, onDrawerToggle }: TopNavBarP
             {navItems.map((item) => (
               <Button
                 key={item.path}
-                data-testid={item.path === '/' ? 'home-nav' : item.path === '/training-plans' ? 'training-plans-nav' : item.path === '/workout-page' ? 'workout-nav' : 'nav-item'}
+                data-testid={
+                  item.path === '/' ? 'home-nav' :
+                    item.path === '/training-plans' ? 'training-plans-nav' :
+                      item.path === '/workout-page' ? 'workout-nav' :
+                        item.path === '/saved-workouts' ? 'saved-workouts-nav' :
+                          'nav-item'
+                }
                 sx={{
                   color: '#fff',
                   backgroundColor: currentPath === item.path ? 'rgba(255, 255, 255, 0.1)' : 'transparent',

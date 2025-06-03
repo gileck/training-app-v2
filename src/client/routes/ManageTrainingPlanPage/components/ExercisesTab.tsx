@@ -26,6 +26,9 @@ export const ExercisesTab: React.FC<ExercisesTabProps> = ({
     exerciseHooks,
     definitionsMapMPE
 }) => {
+    const handleDuplicateWithRefresh = React.useCallback(async (exercise: ExerciseBase) => {
+        await exerciseHooks.handleDuplicateExercise(exercise);
+    }, [exerciseHooks]);
     return (
         <>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, mt: 2 }}>
@@ -34,6 +37,7 @@ export const ExercisesTab: React.FC<ExercisesTabProps> = ({
                     startIcon={<AddIcon />}
                     onClick={exerciseHooks.handleOpenExerciseBrowser}
                     disabled={isPageLoading || !planDetails || !!error}
+                    data-testid="add-exercise-to-plan-button"
                 >
                     Add Exercise
                 </Button>
@@ -61,7 +65,7 @@ export const ExercisesTab: React.FC<ExercisesTabProps> = ({
                                         definition={definition}
                                         onRequestDelete={exerciseHooks.handleRequestDeleteExercise}
                                         onEdit={exerciseHooks.handleOpenEditForm}
-                                        onDuplicate={exerciseHooks.handleDuplicateExercise}
+                                        onDuplicate={handleDuplicateWithRefresh}
                                         isDeleting={exerciseHooks.deletingExerciseId === exercise._id.toString()}
                                         isDuplicating={exerciseHooks.duplicatingExerciseId === exercise._id.toString()}
                                     />

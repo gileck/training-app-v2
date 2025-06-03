@@ -216,6 +216,7 @@ export const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({
                     required
                     margin="dense"
                     id={isEditMode ? `edit-sets-${exerciseToEdit?._id}` : `add-sets-${exerciseDefinition._id}`}
+                    name="sets"
                     label="Sets"
                     type="number"
                     fullWidth
@@ -229,6 +230,7 @@ export const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({
                     required
                     margin="dense"
                     id={isEditMode ? `edit-reps-${exerciseToEdit?._id}` : `add-reps-${exerciseDefinition._id}`}
+                    name="reps"
                     label="Reps"
                     type="number"
                     fullWidth
@@ -242,6 +244,7 @@ export const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({
                 <TextField
                     margin="dense"
                     id={isEditMode ? `edit-weight-${exerciseToEdit?._id}` : `add-weight-${exerciseDefinition._id}`}
+                    name="weight"
                     label="Weight (kg, optional)"
                     type="number"
                     fullWidth
@@ -282,7 +285,7 @@ export const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose} disabled={isSubmitting}>Cancel</Button>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting} data-testid="save-exercise-button">
                     {isSubmitting ? <CircularProgress size={24} /> : (isEditMode ? 'Save Changes' : 'Add Exercise')}
                 </Button>
             </DialogActions>

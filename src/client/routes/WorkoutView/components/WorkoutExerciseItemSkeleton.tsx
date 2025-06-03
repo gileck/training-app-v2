@@ -14,6 +14,7 @@ const SKELETON_BG = alpha('#000000', 0.05); // A light grey for skeleton element
 export const WorkoutExerciseItemSkeleton: React.FC = () => {
     return (
         <Paper
+            data-testid="loading-indicator"
             elevation={2}
             sx={{
                 mb: 2.5,

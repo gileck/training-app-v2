@@ -14,10 +14,26 @@ const COOKIE_NAME = 'auth_token';
 
 
 export function getUserContext(req: NextApiRequest, res: NextApiResponse) {
+  // Check for test environment first
+  if (process.env.PLAYWRIGHT_TEST === 'true') {
+    if (!process.env.TEST_USER_ID) {
+      throw new Error("TEST_USER_ID is not set for test environment")
+    }
+    console.log('🧪 TEST MODE: Using TEST_USER_ID:', process.env.TEST_USER_ID);
+    return {
+      userId: process.env.TEST_USER_ID,
+      getCookieValue: () => undefined,
+      setCookie: () => undefined,
+      clearCookie: () => undefined
+    };
+  }
+
+  // Check for development environment
   if (process.env.NODE_ENV === 'development') {
     if (!process.env.LOCAL_USER_ID) {
-      throw new Error("LOCAL_USER_ID is not set")
+      throw new Error("LOCAL_USER_ID is not set for development environment")
     }
+    console.log('🔧 DEV MODE: Using LOCAL_USER_ID:', process.env.LOCAL_USER_ID);
     return {
       userId: process.env.LOCAL_USER_ID,
       getCookieValue: () => undefined,
@@ -26,6 +42,7 @@ export function getUserContext(req: NextApiRequest, res: NextApiResponse) {
     };
   }
 
+  console.log('🔒 PROD MODE: Using JWT token authentication');
 
   let userId = undefined;
   const cookies = parse(req.headers.cookie || '');
@@ -36,7 +53,7 @@ export function getUserContext(req: NextApiRequest, res: NextApiResponse) {
       // Verify and decode the token
       const decoded = jwt.verify(token, JWT_SECRET) as unknown as AuthTokenPayload;
       userId = decoded.userId;
-      console.log('userId', userId);
+      console.log('🔒 PROD MODE: Decoded userId from JWT:', userId);
     } catch (err) {
       // Invalid token - clear it
       console.warn('Invalid auth token:', err);

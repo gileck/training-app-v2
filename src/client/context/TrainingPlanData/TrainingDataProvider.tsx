@@ -35,7 +35,7 @@ export const TrainingDataProvider: React.FC<TrainingDataProviderProps> = ({ chil
 
     return (
         <TrainingDataContext.Provider value={contextValue}>
-            {!hooks.state.isInitialLoading && children}
+            {children}
 
             {/* Notification for sync errors */}
             <Snackbar

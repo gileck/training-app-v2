@@ -153,7 +153,16 @@ export const useTrainingPlanHooks = (
             const response = await apiSetActiveTrainingPlan({ planId });
 
             if (response.data) {
-                updateStateAndSave({ activePlanId: planId });
+                // Update both activePlanId and the isActive flags on all plans
+                const updatedTrainingPlans = state.trainingPlans.map(plan => ({
+                    ...plan,
+                    isActive: plan._id === planId
+                }));
+
+                updateStateAndSave({
+                    activePlanId: planId,
+                    trainingPlans: updatedTrainingPlans
+                });
             } else {
                 updateState({ error: 'Failed to set active training plan' });
             }
@@ -162,7 +171,7 @@ export const useTrainingPlanHooks = (
                 error: error instanceof Error ? error.message : 'Failed to set active training plan'
             });
         }
-    }, [updateState, updateStateAndSave]);
+    }, [updateState, updateStateAndSave, state.trainingPlans]);
 
     return {
         loadTrainingPlans,

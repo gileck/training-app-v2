@@ -63,7 +63,7 @@ export const ExerciseItemCard: React.FC<ExerciseItemProps> = ({ exercise, defini
     };
 
     return (
-        <Paper elevation={2} sx={{ mb: 2, borderRadius: 2, overflow: 'hidden' }}>
+        <Paper data-testid="exercise-card" elevation={2} sx={{ mb: 2, borderRadius: 2, overflow: 'hidden' }}>
             <Card>
                 <Stack direction="row" spacing={0}>
                     <CardMedia
@@ -86,7 +86,7 @@ export const ExerciseItemCard: React.FC<ExerciseItemProps> = ({ exercise, defini
                             {exerciseName}
                         </Typography>
 
-                        <Stack spacing={0.5} mb={1.5}>
+                        <Stack spacing={0.5} sx={{ mb: 1.5 }}>
                             {renderDetail(<RepeatIcon fontSize="small" />, "Sets", exercise.sets)}
                             {renderDetail(<RepeatIcon fontSize="small" />, "Reps", exercise.reps)}
                             {renderDetail(<ScaleIcon fontSize="small" />, "Weight", exercise.weight ? `${exercise.weight}kg` : null)}
@@ -95,10 +95,10 @@ export const ExerciseItemCard: React.FC<ExerciseItemProps> = ({ exercise, defini
 
                         {definition && (definition.primaryMuscle || definition.secondaryMuscles?.length > 0) && (
                             <Box sx={{ mb: 1.5 }}>
-                                <Typography variant="caption" color="text.secondary" display="block" mb={0.5} sx={{ fontSize: '0.7rem' }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
                                     Muscle Groups:
                                 </Typography>
-                                <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap">
+                                <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
                                     {definition.primaryMuscle && <Chip label={definition.primaryMuscle} size="small" color="primary" variant="filled" sx={{ fontSize: '0.65rem', height: '20px' }} />}
                                     {definition.secondaryMuscles?.slice(0, 2).map(muscle => (
                                         <Chip key={muscle} label={muscle} size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: '20px' }} />
@@ -127,13 +127,13 @@ export const ExerciseItemCard: React.FC<ExerciseItemProps> = ({ exercise, defini
 
                 <Divider />
                 <CardActions sx={{ justifyContent: 'flex-end', p: 1, backgroundColor: theme.palette.action.hover, width: '100%' }}>
-                    <Button size="small" startIcon={<EditIcon />} onClick={handleEdit} disabled={isDeleting || isDuplicating} color="primary">
+                    <Button size="small" startIcon={<EditIcon />} onClick={handleEdit} disabled={isDeleting || isDuplicating} color="primary" title="Edit Exercise">
                         Edit
                     </Button>
-                    <Button size="small" startIcon={<FileCopyIcon />} onClick={handleDuplicate} disabled={isDeleting || isDuplicating}>
+                    <Button size="small" startIcon={<FileCopyIcon />} onClick={handleDuplicate} disabled={isDeleting || isDuplicating} title="Duplicate Exercise">
                         Duplicate
                     </Button>
-                    <Button size="small" startIcon={<DeleteIcon />} onClick={handleDeleteClick} disabled={isDeleting || isDuplicating} color="error">
+                    <Button size="small" startIcon={<DeleteIcon />} onClick={handleDeleteClick} disabled={isDeleting || isDuplicating} color="error" title="Delete Exercise">
                         Delete
                     </Button>
                 </CardActions>

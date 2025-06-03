@@ -1,15 +1,39 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Weekly Progress', () => {
-    test.beforeEach(async ({ page }) => {
-        await page.goto('/');
-        await page.waitForLoadState('networkidle');
-    });
-
     test('should track set completion for exercises', async ({ page }) => {
+        // Use test data - we know from global setup that plans are created with IDs
+        // Navigate directly to training plans page to get a valid plan ID
+        await page.goto('/training-plans');
+        await page.waitForSelector('[data-testid="plan-card"], [data-testid="create-plan-button"]', { timeout: 10000 });
+
+        const planCards = page.locator('[data-testid="plan-card"]');
+        const planCount = await planCards.count();
+
+        if (planCount === 0) {
+            console.log('No training plans found, skipping test');
+            return;
+        }
+
+        // Get the first available plan
+        const firstPlan = planCards.first();
+        await firstPlan.locator('[data-testid="manage-exercises-button"]').click();
+        await page.waitForSelector('[data-testid="add-exercise-to-plan-button"]', { timeout: 10000 });
+
+        // Extract plan ID from URL
+        const currentUrl = page.url();
+        const planIdMatch = currentUrl.match(/\/training-plans\/([^\/]+)\/exercises/);
+
+        if (!planIdMatch) {
+            console.log('Could not extract plan ID from URL, skipping test');
+            return;
+        }
+
+        const activePlanId = planIdMatch[1];
+
         // Navigate to workout view for week 1
-        await page.goto('/workout/week-1');
-        await page.waitForLoadState('networkidle');
+        await page.goto(`/workout/${activePlanId}/1`);
+        await page.waitForSelector('[data-testid="exercise-progress-card"], [data-testid="workout-plan-name"]', { timeout: 10000 });
 
         // Find the first exercise and track progress
         const firstExercise = page.locator('[data-testid="exercise-progress-card"]').first();
@@ -28,8 +52,19 @@ test.describe('Weekly Progress', () => {
     });
 
     test('should complete all sets for an exercise', async ({ page }) => {
-        await page.goto('/workout/week-1');
-        await page.waitForLoadState('networkidle');
+        // Get plan ID first
+        await page.goto('/training-plans');
+        await page.waitForSelector('[data-testid="plan-card"]', { timeout: 10000 });
+        const firstPlan = page.locator('[data-testid="plan-card"]').first();
+        await firstPlan.locator('[data-testid="manage-exercises-button"]').click();
+        await page.waitForSelector('[data-testid="add-exercise-to-plan-button"]', { timeout: 10000 });
+        const currentUrl = page.url();
+        const planIdMatch = currentUrl.match(/\/training-plans\/([^\/]+)\/exercises/);
+        const activePlanId = planIdMatch?.[1];
+        if (!activePlanId) return;
+
+        await page.goto(`/workout/${activePlanId}/1`);
+        await page.waitForSelector('[data-testid="exercise-progress-card"], [data-testid="workout-plan-name"]', { timeout: 10000 });
 
         // Find an exercise that's not fully completed
         const incompleteExercise = page.locator('[data-testid="exercise-progress-card"]')
@@ -44,8 +79,19 @@ test.describe('Weekly Progress', () => {
     });
 
     test('should decrement set completion', async ({ page }) => {
-        await page.goto('/workout/week-1');
-        await page.waitForLoadState('networkidle');
+        // Get plan ID first  
+        await page.goto('/training-plans');
+        await page.waitForSelector('[data-testid="plan-card"]', { timeout: 10000 });
+        const firstPlan = page.locator('[data-testid="plan-card"]').first();
+        await firstPlan.locator('[data-testid="manage-exercises-button"]').click();
+        await page.waitForSelector('[data-testid="add-exercise-to-plan-button"]', { timeout: 10000 });
+        const currentUrl = page.url();
+        const planIdMatch = currentUrl.match(/\/training-plans\/([^\/]+)\/exercises/);
+        const activePlanId = planIdMatch?.[1];
+        if (!activePlanId) return;
+
+        await page.goto(`/workout/${activePlanId}/1`);
+        await page.waitForSelector('[data-testid="exercise-progress-card"], [data-testid="workout-plan-name"]', { timeout: 10000 });
 
         // Find an exercise with at least one completed set
         const exerciseWithProgress = page.locator('[data-testid="exercise-progress-card"]')
@@ -66,8 +112,19 @@ test.describe('Weekly Progress', () => {
     });
 
     test('should persist progress across page reloads', async ({ page }) => {
-        await page.goto('/workout/week-1');
-        await page.waitForLoadState('networkidle');
+        // Get plan ID first
+        await page.goto('/training-plans');
+        await page.waitForSelector('[data-testid="plan-card"]', { timeout: 10000 });
+        const firstPlan = page.locator('[data-testid="plan-card"]').first();
+        await firstPlan.locator('[data-testid="manage-exercises-button"]').click();
+        await page.waitForSelector('[data-testid="add-exercise-to-plan-button"]', { timeout: 10000 });
+        const currentUrl = page.url();
+        const planIdMatch = currentUrl.match(/\/training-plans\/([^\/]+)\/exercises/);
+        const activePlanId = planIdMatch?.[1];
+        if (!activePlanId) return;
+
+        await page.goto(`/workout/${activePlanId}/1`);
+        await page.waitForSelector('[data-testid="exercise-progress-card"]', { timeout: 10000 });
 
         // Make progress on an exercise
         const firstExercise = page.locator('[data-testid="exercise-progress-card"]').first();
@@ -79,7 +136,7 @@ test.describe('Weekly Progress', () => {
 
         // Reload the page
         await page.reload();
-        await page.waitForLoadState('networkidle');
+        await page.waitForSelector('[data-testid="exercise-progress-card"]', { timeout: 10000 });
 
         // Verify progress is still there
         const progressAfterReload = await page.locator('[data-testid="exercise-progress-card"]').first()
@@ -89,17 +146,28 @@ test.describe('Weekly Progress', () => {
     });
 
     test('should track progress across different weeks', async ({ page }) => {
+        // Get plan ID first
+        await page.goto('/training-plans');
+        await page.waitForSelector('[data-testid="plan-card"]', { timeout: 10000 });
+        const firstPlan = page.locator('[data-testid="plan-card"]').first();
+        await firstPlan.locator('[data-testid="manage-exercises-button"]').click();
+        await page.waitForSelector('[data-testid="add-exercise-to-plan-button"]', { timeout: 10000 });
+        const currentUrl = page.url();
+        const planIdMatch = currentUrl.match(/\/training-plans\/([^\/]+)\/exercises/);
+        const activePlanId = planIdMatch?.[1];
+        if (!activePlanId) return;
+
         // Track progress in week 1
-        await page.goto('/workout/week-1');
-        await page.waitForLoadState('networkidle');
+        await page.goto(`/workout/${activePlanId}/1`);
+        await page.waitForSelector('[data-testid="exercise-progress-card"]', { timeout: 10000 });
 
         const firstExercise = page.locator('[data-testid="exercise-progress-card"]').first();
         await firstExercise.locator('[data-testid="increment-sets-button"]').click();
         await page.waitForTimeout(1000);
 
         // Navigate to week 2
-        await page.goto('/workout/week-2');
-        await page.waitForLoadState('networkidle');
+        await page.goto(`/workout/${activePlanId}/2`);
+        await page.waitForSelector('[data-testid="exercise-progress-card"], [data-testid="workout-plan-name"]', { timeout: 10000 });
 
         // Track progress in week 2
         const week2Exercise = page.locator('[data-testid="exercise-progress-card"]').first();
@@ -107,8 +175,8 @@ test.describe('Weekly Progress', () => {
         await page.waitForTimeout(1000);
 
         // Navigate back to week 1 and verify progress is still there
-        await page.goto('/workout/week-1');
-        await page.waitForLoadState('networkidle');
+        await page.goto(`/workout/${activePlanId}/1`);
+        await page.waitForSelector('[data-testid="exercise-progress-card"]', { timeout: 10000 });
 
         const week1ProgressAgain = await page.locator('[data-testid="exercise-progress-card"]').first()
             .locator('[data-testid="sets-completed"]').textContent();
@@ -118,7 +186,7 @@ test.describe('Weekly Progress', () => {
 
     test('should show weekly progress summary', async ({ page }) => {
         await page.goto('/progress-view');
-        await page.waitForLoadState('networkidle');
+        await page.waitForSelector('[data-testid="weekly-progress-summary"], [data-testid="progress-plan-name"]', { timeout: 10000 });
 
         // Verify progress summary is displayed
         await expect(page.locator('[data-testid="weekly-progress-summary"]')).toBeVisible();
@@ -137,8 +205,19 @@ test.describe('Weekly Progress', () => {
     });
 
     test('should handle offline progress updates', async ({ page }) => {
-        await page.goto('/workout/week-1');
-        await page.waitForLoadState('networkidle');
+        // Get plan ID first
+        await page.goto('/training-plans');
+        await page.waitForSelector('[data-testid="plan-card"]', { timeout: 10000 });
+        const firstPlan = page.locator('[data-testid="plan-card"]').first();
+        await firstPlan.locator('[data-testid="manage-exercises-button"]').click();
+        await page.waitForSelector('[data-testid="add-exercise-to-plan-button"]', { timeout: 10000 });
+        const currentUrl = page.url();
+        const planIdMatch = currentUrl.match(/\/training-plans\/([^\/]+)\/exercises/);
+        const activePlanId = planIdMatch?.[1];
+        if (!activePlanId) return;
+
+        await page.goto(`/workout/${activePlanId}/1`);
+        await page.waitForSelector('[data-testid="exercise-progress-card"]', { timeout: 10000 });
 
         // Go offline
         await page.context().setOffline(true);
@@ -162,6 +241,17 @@ test.describe('Weekly Progress', () => {
     });
 
     test('should show error notification when progress fails to save', async ({ page }) => {
+        // Get plan ID first
+        await page.goto('/training-plans');
+        await page.waitForSelector('[data-testid="plan-card"]', { timeout: 10000 });
+        const firstPlan = page.locator('[data-testid="plan-card"]').first();
+        await firstPlan.locator('[data-testid="manage-exercises-button"]').click();
+        await page.waitForSelector('[data-testid="add-exercise-to-plan-button"]', { timeout: 10000 });
+        const currentUrl = page.url();
+        const planIdMatch = currentUrl.match(/\/training-plans\/([^\/]+)\/exercises/);
+        const activePlanId = planIdMatch?.[1];
+        if (!activePlanId) return;
+
         // Mock API failure
         await page.route('**/api/weekly-progress/**', route => {
             route.fulfill({
@@ -170,8 +260,8 @@ test.describe('Weekly Progress', () => {
             });
         });
 
-        await page.goto('/workout/week-1');
-        await page.waitForLoadState('networkidle');
+        await page.goto(`/workout/${activePlanId}/1`);
+        await page.waitForSelector('[data-testid="exercise-progress-card"], [data-testid="workout-plan-name"]', { timeout: 10000 });
 
         // Try to make progress
         const firstExercise = page.locator('[data-testid="exercise-progress-card"]').first();

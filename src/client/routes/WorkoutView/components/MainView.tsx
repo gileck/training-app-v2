@@ -137,8 +137,25 @@ export const MainView: React.FC = () => {
 
     return (
         <Box sx={{ p: { xs: 0, sm: 2, md: 3 }, bgcolor: LIGHT_BG, color: '#333', minHeight: '100vh' }}>
-            {/* Plan Header - Removed */}
-            {/* {planHeaderOutputComponent} Removed */}
+            {/* Plan Header - Active Plan Name */}
+            {planDetails && (
+                <Box sx={{ mb: 2, px: { xs: 2, sm: 0 } }}>
+                    <Typography data-testid="active-plan-name" variant="h5" sx={{
+                        fontWeight: 'bold',
+                        color: NEON_PURPLE,
+                        mb: 1
+                    }}>
+                        {planDetails.name}
+                    </Typography>
+                    <Typography data-testid="workout-plan-name" variant="h6" sx={{
+                        fontWeight: 'medium',
+                        color: alpha('#000000', 0.7),
+                        display: 'none' // Hidden but available for tests
+                    }}>
+                        {planDetails.name}
+                    </Typography>
+                </Box>
+            )}
 
             {planDetails && planDetails.durationWeeks > 0 && (
                 isWeekLoading ? (

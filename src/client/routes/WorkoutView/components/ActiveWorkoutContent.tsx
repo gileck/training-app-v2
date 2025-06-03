@@ -73,6 +73,7 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
     return (
         <Box sx={{ pt: 2, pb: 4 }}>
             <Paper
+                data-testid="active-workout-header"
                 elevation={2}
                 sx={{
                     mb: 2.5, // Margin below the header paper

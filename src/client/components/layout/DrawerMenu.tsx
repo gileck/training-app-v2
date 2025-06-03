@@ -22,7 +22,13 @@ export const DrawerMenu = ({ navItems, mobileOpen, onDrawerToggle }: DrawerMenuP
         {navItems.map((item) => (
           <ListItem key={item.path} disablePadding>
             <ListItemButton
-              data-testid={item.path === '/' ? 'home-nav' : item.path === '/training-plans' ? 'training-plans-nav' : item.path === '/settings' ? 'settings-nav' : 'nav-item'}
+              data-testid={
+                item.path === '/' ? 'home-nav' :
+                  item.path === '/training-plans' ? 'training-plans-nav' :
+                    item.path === '/settings' ? 'settings-nav' :
+                      item.path === '/saved-workouts' ? 'saved-workouts-nav' :
+                        'nav-item'
+              }
               sx={{ textAlign: 'center' }}
               onClick={() => handleNavigation(item.path)}
               selected={currentPath === item.path}
