@@ -31,7 +31,7 @@ export function getUserContext(req: NextApiRequest, res: NextApiResponse) {
   // Check for development environment
   if (process.env.NODE_ENV === 'development') {
     if (!process.env.LOCAL_USER_ID) {
-      throw new Error("LOCAL_USER_ID is not set for development environment")
+      // throw new Error("LOCAL_USER_ID is not set for development environment")
     }
     console.log('🔧 DEV MODE: Using LOCAL_USER_ID:', process.env.LOCAL_USER_ID);
     return {

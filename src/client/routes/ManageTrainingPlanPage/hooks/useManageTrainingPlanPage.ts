@@ -124,7 +124,7 @@ export const useManageTrainingPlanPage = () => {
         createDefinitionMapMPE(exerciseDefinitions), [exerciseDefinitions]);
 
     const existingExerciseDefinitionIdsInPlan = useMemo(() =>
-        exercises.map(ex => ex.exerciseDefinitionId.toString()), [exercises]);
+        exercises?.map(ex => ex.exerciseDefinitionId.toString()) || [], [exercises]);
 
     // Setup message clearing
     const clearMessages = useCallback(() => {
@@ -133,12 +133,11 @@ export const useManageTrainingPlanPage = () => {
         });
     }, [pageActions, workoutActions]);
 
-    // Enhanced exercise hooks that use loadInitialPageData
+        // Enhanced exercise hooks that use loadInitialPageData
     const enhancedExerciseHooks = useMemo(() => ({
         ...exerciseHooks,
         handleDetailsDialogSave: async (exerciseData: ExerciseBase) => {
             await exerciseActions.handleDetailsDialogSave(exerciseData);
-            await loadInitialPageData();
         },
         executeDeleteExercise: async () => {
             await exerciseActions.executeDeleteExercise(loadInitialPageData);

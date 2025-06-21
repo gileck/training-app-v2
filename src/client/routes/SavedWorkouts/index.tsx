@@ -6,9 +6,6 @@ import {
     Button,
     Paper,
     TextField,
-    Card,
-    CardContent,
-    CardActions,
     IconButton,
     Dialog,
     DialogTitle,
@@ -17,8 +14,7 @@ import {
     Select,
     MenuItem,
     FormControl,
-    InputLabel,
-    alpha
+    InputLabel
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -40,7 +36,7 @@ export const SavedWorkouts: React.FC = () => {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isAddExerciseOpen, setIsAddExerciseOpen] = useState(false);
-    const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
+    const [selectedWorkout, setSelectedWorkout] = useState<{ id: number; name: string; description: string; exercises: string[] } | null>(null);
     const [newWorkoutName, setNewWorkoutName] = useState('');
     const [newWorkoutDescription, setNewWorkoutDescription] = useState('');
 
@@ -62,6 +58,7 @@ export const SavedWorkouts: React.FC = () => {
     };
 
     const handleEditWorkout = () => {
+        if (!selectedWorkout) return;
         setWorkouts(workouts.map(w =>
             w.id === selectedWorkout.id
                 ? { ...w, name: newWorkoutName }
@@ -71,11 +68,12 @@ export const SavedWorkouts: React.FC = () => {
     };
 
     const handleDeleteWorkout = () => {
+        if (!selectedWorkout) return;
         setWorkouts(workouts.filter(w => w.id !== selectedWorkout.id));
         setIsDeleteDialogOpen(false);
     };
 
-    const handleDuplicateWorkout = (workout: any) => {
+    const handleDuplicateWorkout = (workout: { id: number; name: string; description: string; exercises: string[] }) => {
         const duplicated = {
             ...workout,
             id: Date.now(),

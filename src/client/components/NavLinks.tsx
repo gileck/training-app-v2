@@ -1,25 +1,16 @@
 import { NavItem } from './layout/types';
 import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { Book, WorkOutline, FitnessCenter } from '@mui/icons-material';
+import { Book, WorkOutline, FitnessCenter, List, ListAltSharp } from '@mui/icons-material';
 
 export const navItems: NavItem[] = [
-  { path: '/', label: 'Home', icon: <HomeIcon /> },
+  { path: '/', label: 'Workout', icon: <FitnessCenter /> },
   {
     path: '/training-plans',
     label: 'Training Plans',
-    icon: <Book />
+    icon: <ListAltSharp />
   },
-  {
-    path: '/workout-page',
-    label: 'Workout',
-    icon: <WorkOutline />
-  },
-  {
-    path: '/saved-workouts',
-    label: 'Saved Workouts',
-    icon: <FitnessCenter />
-  }
+  { path: '/settings', label: 'Settings', icon: <SettingsIcon /> },
 ];
 
 export const menuItems: NavItem[] = [
@@ -27,17 +18,12 @@ export const menuItems: NavItem[] = [
   {
     path: '/training-plans',
     label: 'Training Plans',
-    icon: <Book />
+    icon: <ListAltSharp />
   },
   {
     path: '/workout-page',
     label: 'Workout',
     icon: <WorkOutline />
-  },
-  {
-    path: '/saved-workouts',
-    label: 'Saved Workouts',
-    icon: <FitnessCenter />
   },
   { path: '/settings', label: 'Settings', icon: <SettingsIcon /> },
 ];

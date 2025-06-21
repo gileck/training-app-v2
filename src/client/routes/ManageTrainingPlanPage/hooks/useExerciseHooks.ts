@@ -121,7 +121,15 @@ export const useExerciseHooks = (planId: string | undefined) => {
         }
         updateExerciseState({ duplicatingExerciseId: exerciseToDuplicate._id.toString(), error: null });
         try {
-            const exerciseData: any = {
+            const exerciseData: {
+                trainingPlanId: string;
+                exerciseDefinitionId: string;
+                sets: number;
+                reps: number;
+                weight?: number;
+                durationSeconds?: number;
+                comments?: string;
+            } = {
                 trainingPlanId: planId,
                 exerciseDefinitionId: exerciseToDuplicate.exerciseDefinitionId.toString(),
                 sets: exerciseToDuplicate.sets,
@@ -182,20 +190,30 @@ export const useExerciseHooks = (planId: string | undefined) => {
         });
     }, [updateExerciseState]);
 
-    const handleDetailsDialogSave = useCallback(async (exerciseData: ExerciseBase, loadInitialPageData?: () => Promise<void>) => {
-        // Actual save logic would go here (API call to update/add exercise)
-        // For now, just simulate and call loadInitialPageData if provided
-        // This function is often enhanced by the parent hook to include the actual save API call
-        // and then trigger a refresh.
-        if (loadInitialPageData) {
-            await loadInitialPageData();
-        }
-        updateExerciseState({
-            exerciseBeingEdited: null,
-            isExerciseDetailsDialogOpen: false,
-            selectedDefinitionForDetails: null
+    const handleDetailsDialogSave = useCallback(async (exerciseData: ExerciseBase) => {
+        setExerciseState(prevState => {
+            const isEditing = prevState.exerciseBeingEdited !== null;
+            
+            let updatedExercises;
+            if (isEditing) {
+                // Update existing exercise
+                updatedExercises = prevState.exercises.map(ex => 
+                    ex._id === exerciseData._id ? exerciseData : ex
+                );
+            } else {
+                // Add new exercise
+                updatedExercises = [...prevState.exercises, exerciseData];
+            }
+            
+            return {
+                ...prevState,
+                exercises: updatedExercises,
+                exerciseBeingEdited: null,
+                isExerciseDetailsDialogOpen: false,
+                selectedDefinitionForDetails: null
+            };
         });
-    }, [updateExerciseState]); // Removed loadInitialPageData from deps, parent will pass it if needed
+    }, []);
 
     const handleDetailsDialogClose = useCallback(() => {
         updateExerciseState({

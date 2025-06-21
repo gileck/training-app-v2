@@ -48,7 +48,7 @@ export const ExercisesTab: React.FC<ExercisesTabProps> = ({
             />
             {!isPageLoading && planDetails && (!error || error === 'Training plan not found.') && (
                 <Box>
-                    {exercises.length === 0 ? (
+                    {exercises?.length === 0 ? (
                         <Box sx={{ textAlign: 'center', py: 4 }}>
                             <Typography sx={{ mb: 2 }}>
                                 No exercises found for this plan. Click &quot;Add Exercise&quot; above to get started.
@@ -56,7 +56,7 @@ export const ExercisesTab: React.FC<ExercisesTabProps> = ({
                         </Box>
                     ) : (
                         <Stack spacing={2}>
-                            {exercises.map((exercise) => {
+                            {exercises?.map((exercise) => {
                                 const definition = definitionsMapMPE[exercise.exerciseDefinitionId.toString()];
                                 return (
                                     <ExerciseItemCard

@@ -115,14 +115,6 @@ export const TrainingPlans: React.FC = () => {
                 </Typography>
                 <Stack direction="row" spacing={1}>
                     <Button
-                        variant="outlined"
-                        startIcon={<ListAltIcon />}
-                        onClick={() => navigate('/saved-workouts')}
-                        size="small"
-                    >
-                        Saved Workouts
-                    </Button>
-                    <Button
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={handleAddPlanClick}
