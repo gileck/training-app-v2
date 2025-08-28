@@ -1,7 +1,7 @@
 import { NavItem } from './layout/types';
 import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { Book, WorkOutline, FitnessCenter, List, ListAltSharp } from '@mui/icons-material';
+import { WorkOutline, FitnessCenter, ListAltSharp } from '@mui/icons-material';
 
 export const navItems: NavItem[] = [
   { path: '/', label: 'Workout', icon: <FitnessCenter /> },

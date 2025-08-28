@@ -51,7 +51,9 @@ export const useExerciseHooks = (planId: string | undefined) => {
 
     // Update local state with context data
     useEffect(() => {
-        updateExerciseState({ exercises, error: contextError });
+        // Ensure exercises is always an array to avoid non-iterable errors
+        const safeExercises = Array.isArray(exercises) ? exercises : [];
+        updateExerciseState({ exercises: safeExercises, error: contextError });
     }, [exercises, contextError, updateExerciseState]);
 
     const fetchExercisesTabData = useCallback(async () => {
@@ -193,18 +195,19 @@ export const useExerciseHooks = (planId: string | undefined) => {
     const handleDetailsDialogSave = useCallback(async (exerciseData: ExerciseBase) => {
         setExerciseState(prevState => {
             const isEditing = prevState.exerciseBeingEdited !== null;
-            
+            const prevExercises = Array.isArray(prevState.exercises) ? prevState.exercises : [];
+
             let updatedExercises;
             if (isEditing) {
                 // Update existing exercise
-                updatedExercises = prevState.exercises.map(ex => 
+                updatedExercises = prevExercises.map(ex =>
                     ex._id === exerciseData._id ? exerciseData : ex
                 );
             } else {
                 // Add new exercise
-                updatedExercises = [...prevState.exercises, exerciseData];
+                updatedExercises = [...prevExercises, exerciseData];
             }
-            
+
             return {
                 ...prevState,
                 exercises: updatedExercises,
