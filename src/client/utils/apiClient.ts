@@ -18,8 +18,6 @@ export const apiClient = {
     options?: ApiOptions
   ): Promise<CacheResult<ResponseType>> => {
 
-    console.log('options', options);
-    // Client-side caching wrapper
     const apiCall = async (): Promise<ResponseType> => {
       const response = await fetch('/api/process', {
         method: 'POST',
