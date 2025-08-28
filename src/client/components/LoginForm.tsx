@@ -23,32 +23,17 @@ const LoginForm: React.FC = () => {
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-            {isRegistering && (
-                <TextField
-                    margin="normal"
-                    required
-                    fullWidth
-                    id="username"
-                    label="Username"
-                    name="username"
-                    autoComplete="username"
-                    autoFocus
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    disabled={isLoading}
-                />
-            )}
             <TextField
                 margin="normal"
                 required
                 fullWidth
-                id="email"
-                label="Email Address"
-                name="email"
-                autoComplete="email"
-                autoFocus={!isRegistering} // Autofocus email on login
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                label="Username"
+                name="username"
+                autoComplete="username"
+                autoFocus
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
             />
             <TextField
@@ -76,7 +61,7 @@ const LoginForm: React.FC = () => {
             <Typography variant="body2" align="center">
                 {isRegistering ? 'Already have an account? ' : "Don't have an account? "}
                 <Link href="#" onClick={(e) => { e.preventDefault(); setIsRegistering(!isRegistering); }} sx={{ cursor: 'pointer' }}>
-                    {isRegistering ? 'Sign In' : 'Sign Up'}
+                    {isRegistering ? 'Login' : 'Sign Up'}
                 </Link>
             </Typography>
         </Box>
