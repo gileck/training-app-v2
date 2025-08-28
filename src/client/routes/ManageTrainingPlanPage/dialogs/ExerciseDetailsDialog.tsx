@@ -9,7 +9,7 @@ import {
     CircularProgress,
     Alert
 } from '@mui/material';
-import { addExercise, updateExercise } from '@/apis/exercises/client';
+import { useExercises } from '@/client/hooks/useTrainingData';
 import type { AddExerciseRequest, UpdateExerciseRequest, ExerciseBase } from '@/apis/exercises/types';
 import type { ExerciseDefinition } from '@/apis/exerciseDefinitions/types';
 
@@ -31,6 +31,7 @@ export const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({
     exerciseToEdit,
 }) => {
     const isEditMode = !!exerciseToEdit;
+    const { createExercise, updateExercise } = useExercises(planId);
 
     const [sets, setSets] = useState('');
     const [reps, setReps] = useState('');
@@ -112,7 +113,6 @@ export const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({
 
         setIsSubmitting(true);
         try {
-            let savedExerciseData: ExerciseBase | null = null;
 
             const finalReps = isStaticExercise ? 0 : repsNum;
             const finalDuration = isStaticExercise ? durationNum : 0;
@@ -143,14 +143,7 @@ export const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({
                         trainingPlanId: planId,
                         updates
                     };
-                    const response = await updateExercise(requestData);
-                    if (response.data && '_id' in response.data) {
-                        savedExerciseData = response.data;
-                    } else {
-                        throw new Error((response.data as { error?: string })?.error || 'Failed to update exercise.');
-                    }
-                } else {
-                    savedExerciseData = exerciseToEdit;
+                    await updateExercise(exerciseToEdit._id.toString(), requestData);
                 }
             } else {
                 const requestData: AddExerciseRequest = {
@@ -162,18 +155,10 @@ export const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({
                     ...(weightNum !== undefined && { weight: weightNum }),
                     ...(comments && { comments }),
                 };
-                const response = await addExercise(requestData);
-                if (response.data && '_id' in response.data) {
-                    savedExerciseData = response.data;
-                } else {
-                    throw new Error((response.data as { error?: string })?.error || 'Failed to add exercise.');
-                }
+                await createExercise(requestData);
             }
 
-            if (savedExerciseData) {
-                onSave(savedExerciseData);
-                onClose();
-            }
+            onClose();
 
         } catch (err) {
             console.error(`Failed to ${isEditMode ? 'update' : 'add'} exercise:`, err);

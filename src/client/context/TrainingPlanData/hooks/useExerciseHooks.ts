@@ -13,6 +13,29 @@ export const useExerciseHooks = (
     updateState: (newState: Partial<TrainingDataState>) => void,
     updateStateAndSave: (newState: Partial<TrainingDataState>) => void
 ) => {
+    const refreshExercises = useCallback(async (planId: string) => {
+        try {
+            const response = await getExercises({ trainingPlanId: planId });
+            const exercises = response.data || [];
+
+            const currentPlanData = state.planData[planId];
+            updateStateAndSave({
+                planData: {
+                    ...state.planData,
+                    [planId]: {
+                        ...currentPlanData,
+                        exercises,
+                        isLoaded: true,
+                        isLoading: false
+                    }
+                }
+            });
+        } catch (error) {
+            updateState({
+                error: error instanceof Error ? error.message : 'Failed to refresh exercises'
+            });
+        }
+    }, [state.planData, updateState, updateStateAndSave]);
     const loadExercises = useCallback(async (planId: string) => {
         const existing = state.planData[planId];
         if (existing?.isLoaded) {
@@ -130,6 +153,7 @@ export const useExerciseHooks = (
 
     return {
         loadExercises,
+        refreshExercises,
         createExercise,
         updateExercise,
         deleteExercise

@@ -3,7 +3,7 @@ import { Box, Typography, Button, Paper, CircularProgress, Divider, IconButton, 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
 import { useRouter } from '@/client/router';
-import { getExercises } from '@/apis/exercises/client';
+import { useExercises } from '@/client/hooks/useTrainingData';
 import { getExerciseDefinitionById } from '@/apis/exerciseDefinitions/client';
 import { getWeeklyProgress, updateSetCompletion } from '@/apis/weeklyProgress/client';
 import { createSavedWorkout } from '@/apis/savedWorkouts/client';
@@ -190,6 +190,14 @@ export const WorkoutPage: React.FC = () => {
     const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
     const [savedWorkout, setSavedWorkout] = useState<{ name: string, id: string } | null>(null);
 
+    // Use centralized training data context for plan exercises
+    const {
+        exercises: planExercises,
+        isLoading: isPlanLoading,
+        isLoaded: isPlanLoaded,
+        error: planError,
+    } = useExercises(planId);
+
     // Function to fetch exercise data
     const fetchExercises = useCallback(async () => {
         if (!planId || isNaN(weekNumber) || exerciseIds.length === 0) {
@@ -200,34 +208,21 @@ export const WorkoutPage: React.FC = () => {
             return;
         }
 
-        // Check if we already have loaded exactly these exercises to prevent infinite loops
-        const currentExerciseIds = new Set(workoutExercises.map(ex => ex._id.toString()));
-        const requestedExerciseIds = new Set(exerciseIds);
-
-        // If sets have the same size and all elements match, no need to reload
-        if (currentExerciseIds.size === requestedExerciseIds.size &&
-            [...currentExerciseIds].every(id => requestedExerciseIds.has(id))) {
-            if (isMountedRef.current) {
-                setIsLoading(false);
-            }
+        // Wait until plan exercises are loaded by context
+        if (!isPlanLoaded) {
+            // Show loading state while plan data loads
+            if (isMountedRef.current) setIsLoading(true);
             return;
         }
 
         if (isMountedRef.current) {
             setIsLoading(true);
-            setError(null);
+            setError(planError);
         }
 
         try {
-            // Fetch all exercises for the plan
-            const exercisesResponse = await getExercises({ trainingPlanId: planId });
-
-            if (!exercisesResponse.data || !Array.isArray(exercisesResponse.data)) {
-                throw new Error('Failed to fetch exercises');
-            }
-
-            // Filter to only get the selected exercises
-            const selectedExercises = exercisesResponse.data
+            // Filter to only get the selected exercises from context
+            const selectedExercises = (planExercises || [])
                 .filter(ex => exerciseIds.includes(ex._id.toString()));
 
             if (selectedExercises.length === 0) {
@@ -282,7 +277,7 @@ export const WorkoutPage: React.FC = () => {
                 setIsLoading(false);
             }
         }
-    }, [planId, weekNumber, exerciseIds, workoutExercises]);
+    }, [planId, weekNumber, exerciseIds, isPlanLoaded, planExercises, planError]);
 
     // Only run the effect once on mount or when dependencies actually change
     useEffect(() => {

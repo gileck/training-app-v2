@@ -19,8 +19,12 @@ import {
 export const getExercises = async (params: GetExercisesRequest): Promise<CacheResult<GetExercisesResponse>> => {
     return apiClient.call<GetExercisesResponse, GetExercisesRequest>(
         getExercisesApiName,
-        params
-        // Caching options can be added here if needed
+        params,
+        {
+            // Always fetch fresh exercises to avoid showing stale data after mutations
+            bypassCache: true,
+            staleWhileRevalidate: false,
+        }
     );
 };
 
@@ -31,6 +35,10 @@ export const addExercise = async (params: AddExerciseRequest): Promise<CacheResu
     return apiClient.call<AddExerciseResponse, AddExerciseRequest>(
         addExerciseApiName,
         params,
+        {
+            disableCache: true,
+            staleWhileRevalidate: false,
+        }
     );
 };
 
@@ -41,6 +49,10 @@ export const updateExercise = async (params: UpdateExerciseRequest): Promise<Cac
     return apiClient.call<UpdateExerciseResponse, UpdateExerciseRequest>(
         updateExerciseApiName,
         params,
+        {
+            disableCache: true,
+            staleWhileRevalidate: false,
+        }
     );
 };
 
@@ -51,5 +63,9 @@ export const deleteExercise = async (params: DeleteExerciseRequest): Promise<Cac
     return apiClient.call<DeleteExerciseResponse, DeleteExerciseRequest>(
         deleteExerciseApiName,
         params,
+        {
+            disableCache: true,
+            staleWhileRevalidate: false,
+        }
     );
 }; 
