@@ -121,36 +121,41 @@ export const useWorkoutHooks = (planId: string | undefined, generalDefinitions: 
         updateWorkoutsState({ savedWorkout_error: null, savedWorkout_successMessage: null });
         try {
             await loadSavedWorkouts();
-
-            // Convert context savedWorkouts to ClientWorkoutDisplay format
-            const formatDate = (dateValue: string | number | Date | null | undefined): string => {
-                if (!dateValue) return new Date().toISOString();
-                if (dateValue instanceof Date) return dateValue.toISOString();
-                if (typeof dateValue === 'string') { try { return new Date(dateValue).toISOString(); } catch { /* ignore */ } }
-                if (typeof dateValue === 'number') return new Date(dateValue).toISOString();
-                return new Date().toISOString();
-            };
-
-            const clientWorkouts: ClientWorkoutDisplay[] = savedWorkouts.map(workout => ({
-                _id: workout._id,
-                userId: workout.userId,
-                name: workout.name,
-                trainingPlanId: workout.trainingPlanId,
-                createdAt: formatDate(workout.createdAt),
-                updatedAt: formatDate(workout.updatedAt),
-                exercises: workout.exercises.map(ex => exercises.find(e => e._id === ex.exerciseId)).filter(Boolean) as ExerciseBase[],
-                isExercisesLoading: false,
-                exercisesError: null,
-            }));
-
-            updateWorkoutsState({ savedWorkout_workouts: clientWorkouts });
+            // The state will be synchronized by the reactive effect below.
             return Promise.resolve();
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'An error occurred while loading workouts for this plan';
             updateWorkoutsState({ savedWorkout_error: errorMessage });
             return Promise.reject(errorMessage);
         }
-    }, [planId, updateWorkoutsState]);
+    }, [planId, updateWorkoutsState, loadSavedWorkouts]);
+
+    // Keep local workouts state in sync with context changes (e.g., after create/delete/rename)
+    useEffect(() => {
+        if (!planId) return;
+
+        const formatDate = (dateValue: string | number | Date | null | undefined): string => {
+            if (!dateValue) return new Date().toISOString();
+            if (dateValue instanceof Date) return dateValue.toISOString();
+            if (typeof dateValue === 'string') { try { return new Date(dateValue).toISOString(); } catch { /* ignore */ } }
+            if (typeof dateValue === 'number') return new Date(dateValue).toISOString();
+            return new Date().toISOString();
+        };
+
+        const clientWorkouts: ClientWorkoutDisplay[] = savedWorkouts.map(workout => ({
+            _id: workout._id,
+            userId: workout.userId,
+            name: workout.name,
+            trainingPlanId: workout.trainingPlanId,
+            createdAt: formatDate(workout.createdAt),
+            updatedAt: formatDate(workout.updatedAt),
+            exercises: workout.exercises.map(ex => exercises.find(e => e._id === ex.exerciseId)).filter(Boolean) as ExerciseBase[],
+            isExercisesLoading: false,
+            exercisesError: null,
+        }));
+
+        updateWorkoutsState({ savedWorkout_workouts: clientWorkouts });
+    }, [planId, savedWorkouts, exercises, updateWorkoutsState]);
 
     const savedWorkout_handleToggleExpand = async (workoutId: string) => {
         const isCurrentlyExpanded = workoutsState.savedWorkout_expandedWorkoutId === workoutId;
