@@ -17,6 +17,8 @@ export const apiClient = {
     params?: Params,
     options?: ApiOptions
   ): Promise<CacheResult<ResponseType>> => {
+
+    console.log('options', options);
     // Client-side caching wrapper
     const apiCall = async (): Promise<ResponseType> => {
       const response = await fetch('/api/process', {
@@ -66,7 +68,7 @@ export const apiClient = {
         },
         {
           bypassCache: options?.bypassCache ?? false,
-          disableCache: options?.disableCache ?? true,
+          disableCache: options?.disableCache ?? false,
           staleWhileRevalidate: options?.staleWhileRevalidate ?? false,
           ttl: options?.ttl,
           maxStaleAge: options?.maxStaleAge,

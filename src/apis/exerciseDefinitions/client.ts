@@ -8,7 +8,11 @@ import { getAllOptionsApiName, getByIdApiName } from "./index";
 export const getAllExerciseDefinitionOptions = async (): Promise<CacheResult<GetAllExerciseDefinitionsResponse>> => {
     return apiClient.call<GetAllExerciseDefinitionsResponse, GetAllExerciseDefinitionsRequest>(
         getAllOptionsApiName, // Use the specific name for this API call
-        {}
+        {},
+        {
+            staleWhileRevalidate: true,
+            disableCache: false,
+        }
     );
 };
 
@@ -16,6 +20,10 @@ export const getAllExerciseDefinitionOptions = async (): Promise<CacheResult<Get
 export const getExerciseDefinitionById = async (params: GetExerciseDefinitionByIdRequestParams): Promise<CacheResult<GetExerciseDefinitionByIdResponse>> => {
     return apiClient.call<GetExerciseDefinitionByIdResponse, GetExerciseDefinitionByIdRequestParams>(
         getByIdApiName, // Use the specific name for this API call
-        params
+        params,
+        {
+            staleWhileRevalidate: true,
+            disableCache: false,
+        }
     );
 }; 
