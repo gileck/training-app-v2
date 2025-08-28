@@ -8,9 +8,9 @@ interface AuthWrapperProps {
 }
 
 const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isLoading, isInitialLoading } = useAuth();
 
-    if (isLoading) {
+    if (isLoading || isInitialLoading) {
         // Show a loading spinner centered on the screen
         return <></>
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Tabs, Tab, Typography, Button, Alert, alpha } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useWorkoutView } from '../hooks/useWorkoutView';
 import { ExerciseTabContent } from './ExerciseTabContent';
@@ -10,12 +11,11 @@ import { PlanWeekHeaderSkeleton } from '@/client/components/PlanWeekHeaderSkelet
 import { SelectedExercisesBar } from './SelectedExercisesBar';
 import { useTrainingData } from '@/client/hooks/useTrainingData';
 
-// --- Color constants for the light theme --- //
-const LIGHT_BG = '#FFFFFF';
-const NEON_PURPLE = '#9C27B0';
+// Colors are now derived from the MUI theme to support light/dark modes
 
 // Main Component
 export const MainView: React.FC = () => {
+    const theme = useTheme();
     const {
         planId,
         weekNumber,
@@ -69,23 +69,18 @@ export const MainView: React.FC = () => {
     // This was previously handled by PlanHeader.
     if (!planId) {
         return (
-            <Box sx={{ p: 3, bgcolor: '#FFFFFF', color: '#333', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography variant="h5" sx={{ mb: 2, color: '#D32F2F', fontWeight: 'bold' }}>
+            <Box sx={{ p: 3, bgcolor: theme.palette.background.default, color: theme.palette.text.primary, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <Typography variant="h5" sx={{ mb: 2, color: theme.palette.error.main, fontWeight: 'bold' }}>
                     No Training Plan Selected
                 </Typography>
-                <Typography variant="body1" sx={{ mb: 3, color: alpha('#000000', 0.6), textAlign: 'center' }}>
+                <Typography variant="body1" sx={{ mb: 3, color: alpha(theme.palette.text.primary, 0.6), textAlign: 'center' }}>
                     Please select a training plan to view its details and workouts.
                 </Typography>
                 <Button
                     onClick={() => navigate('/training-plans')}
                     startIcon={<ArrowBackIcon />}
                     variant="contained"
-                    sx={{
-                        bgcolor: '#9C27B0', // NEON_PURPLE from PlanHeader
-                        '&:hover': {
-                            bgcolor: alpha('#9C27B0', 0.9)
-                        }
-                    }}
+                    color="primary"
                 >
                     Go to Training Plans
                 </Button>
@@ -97,16 +92,16 @@ export const MainView: React.FC = () => {
     // This was also partially handled by PlanHeader.
     if (error) {
         return (
-            <Box sx={{ p: 3, bgcolor: '#FFFFFF', color: '#333', textAlign: 'center' }}>
-                <Typography variant="h5" sx={{ mb: 2, color: '#9C27B0', fontWeight: 'bold' }}>
+            <Box sx={{ p: 3, bgcolor: theme.palette.background.default, color: theme.palette.text.primary, textAlign: 'center' }}>
+                <Typography variant="h5" sx={{ mb: 2, color: theme.palette.primary.main, fontWeight: 'bold' }}>
                     {planDetails?.name || `Training Plan`} - Week {weekNumber}
                 </Typography>
                 <Alert
                     severity="error"
                     sx={{
-                        bgcolor: alpha('#FF0000', 0.1),
-                        color: '#D32F2F',
-                        border: `1px solid ${alpha('#FF0000', 0.2)}`,
+                        bgcolor: alpha(theme.palette.error.main, 0.1),
+                        color: theme.palette.error.main,
+                        border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
                         borderRadius: 2,
                         textAlign: 'left',
                         mb: 2,
@@ -120,14 +115,7 @@ export const MainView: React.FC = () => {
                     onClick={() => navigate('/training-plans')}
                     startIcon={<ArrowBackIcon />}
                     variant="outlined"
-                    sx={{
-                        color: '#9C27B0',
-                        borderColor: '#9C27B0',
-                        '&:hover': {
-                            borderColor: alpha('#9C27B0', 0.7),
-                            bgcolor: alpha('#9C27B0', 0.05)
-                        }
-                    }}
+                    color="primary"
                 >
                     Back to Plans
                 </Button>
@@ -136,24 +124,34 @@ export const MainView: React.FC = () => {
     }
 
     return (
-        <Box sx={{ p: { xs: 0, sm: 2, md: 3 }, bgcolor: LIGHT_BG, color: '#333', minHeight: '100vh' }}>
+        <Box sx={{ p: { xs: 0, sm: 2, md: 3 }, bgcolor: theme.palette.background.default, color: theme.palette.text.primary, minHeight: '100vh' }}>
             {/* Plan Header - Active Plan Name */}
             {planDetails && (
-                <Box sx={{ mb: 2, px: { xs: 2, sm: 0 } }}>
-                    <Typography data-testid="active-plan-name" variant="h5" sx={{
-                        fontWeight: 'bold',
-                        color: NEON_PURPLE,
-                        mb: 1
-                    }}>
-                        {planDetails.name}
-                    </Typography>
-                    <Typography data-testid="workout-plan-name" variant="h6" sx={{
-                        fontWeight: 'medium',
-                        color: alpha('#000000', 0.7),
-                        display: 'none' // Hidden but available for tests
-                    }}>
-                        {planDetails.name}
-                    </Typography>
+                <Box sx={{ mb: 2, px: { xs: 2, sm: 0 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                        <Typography data-testid="active-plan-name" variant="h5" sx={{
+                            fontWeight: 'bold',
+                            color: theme.palette.primary.main,
+                            mb: 1
+                        }}>
+                            {planDetails.name}
+                        </Typography>
+                        <Typography data-testid="workout-plan-name" variant="h6" sx={{
+                            fontWeight: 'medium',
+                            color: alpha(theme.palette.text.primary, 0.7),
+                            display: 'none' // Hidden but available for tests
+                        }}>
+                            {planDetails.name}
+                        </Typography>
+                    </Box>
+                    <Button
+                        onClick={() => navigate(`/training-plans/${planId}/exercises`)}
+                        variant="outlined"
+                        color="primary"
+                        size="small"
+                    >
+                        Manage
+                    </Button>
                 </Box>
             )}
 
@@ -177,14 +175,14 @@ export const MainView: React.FC = () => {
             <Tabs
                 value={activeTab}
                 onChange={handleTabChange}
-                sx={{ '& .MuiTabs-indicator': { backgroundColor: NEON_PURPLE } }}
+                sx={{ '& .MuiTabs-indicator': { backgroundColor: theme.palette.primary.main } }}
             >
-                <Tab label="Exercises" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === EXERCISES_TAB_INDEX ? NEON_PURPLE : alpha('#000000', 0.6), '&.Mui-selected': { color: NEON_PURPLE } }} />
-                <Tab label="Workouts" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === WORKOUTS_TAB_INDEX ? NEON_PURPLE : alpha('#000000', 0.6), '&.Mui-selected': { color: NEON_PURPLE } }} />
+                <Tab label="Exercises" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === EXERCISES_TAB_INDEX ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.6), '&.Mui-selected': { color: theme.palette.primary.main } }} />
+                <Tab label="Workouts" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === WORKOUTS_TAB_INDEX ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.6), '&.Mui-selected': { color: theme.palette.primary.main } }} />
                 <Tab
                     label="Active Workout"
                     disabled={!activeWorkoutSession || activeWorkoutSession.length === 0}
-                    sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === ACTIVE_WORKOUT_TAB_INDEX ? NEON_PURPLE : alpha('#000000', 0.6), '&.Mui-selected': { color: NEON_PURPLE } }}
+                    sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === ACTIVE_WORKOUT_TAB_INDEX ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.6), '&.Mui-selected': { color: theme.palette.primary.main } }}
                 />
             </Tabs>
 

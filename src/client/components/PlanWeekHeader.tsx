@@ -1,4 +1,4 @@
-import { useEffect, useState, FC, useRef } from 'react';
+import { useEffect, useState, FC, useRef, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -12,6 +12,7 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { useTheme } from '@mui/material/styles';
 
 interface PlanWeekHeaderProps {
   currentWeek: number;
@@ -24,10 +25,7 @@ interface PlanWeekHeaderProps {
   totalSetsCount: number;
 }
 
-const NEON_PURPLE = '#9C27B0';
-const NEON_BLUE = '#3D5AFE';
-const NEON_GREEN = '#00C853';
-const LIGHT_PAPER = '#F5F5F7';
+// Colors derived from theme for light/dark support
 
 // Define animations
 const pulseAnimation = keyframes`
@@ -54,32 +52,7 @@ const shimmerAnimation = keyframes`
   }
 `;
 
-const borderAnimation = keyframes`
-  0% {
-    box-shadow: 0 0 0 0 ${alpha(NEON_GREEN, 0.7)};
-  }
-  70% {
-    box-shadow: 0 0 0 8px ${alpha(NEON_GREEN, 0)};
-  }
-  100% {
-    box-shadow: 0 0 0 0 ${alpha(NEON_GREEN, 0)};
-  }
-`;
-
-const glowingBorderAnimation = keyframes`
-  0% {
-    border-color: ${alpha(NEON_GREEN, 0.3)};
-    box-shadow: 0 0 5px ${alpha(NEON_GREEN, 0.3)};
-  }
-  50% {
-    border-color: ${alpha(NEON_GREEN, 0.8)};
-    box-shadow: 0 0 20px ${alpha(NEON_GREEN, 0.8)};
-  }
-  100% {
-    border-color: ${alpha(NEON_GREEN, 0.3)};
-    box-shadow: 0 0 5px ${alpha(NEON_GREEN, 0.3)};
-  }
-`;
+// Keyframes that will be themed inside the component using useMemo
 
 export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
   currentWeek,
@@ -91,6 +64,7 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
   completedSetsCount,
   totalSetsCount
 }) => {
+  const theme = useTheme();
   const isCompleted = progressPercentage >= 100;
   const [showAnimation, setShowAnimation] = useState(false);
 
@@ -132,14 +106,33 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
     }
   }, [isCompleted, completedSetsCount, totalSetsCount, currentWeek]);
 
+  // Themed values
+  const accentColor = isCompleted ? theme.palette.success.main : theme.palette.primary.main;
+  const paperBg = theme.palette.background.paper;
+  const textPrimary = theme.palette.text.primary;
+  const textSecondary = theme.palette.text.secondary;
+
+  // Build keyframes that depend on theme colors
+  const borderAnimation = useMemo(() => keyframes`
+    0% { box-shadow: 0 0 0 0 ${alpha(theme.palette.success.main, 0.7)}; }
+    70% { box-shadow: 0 0 0 8px ${alpha(theme.palette.success.main, 0)}; }
+    100% { box-shadow: 0 0 0 0 ${alpha(theme.palette.success.main, 0)}; }
+  `, [theme.palette.success.main]);
+
+  const glowingBorderAnimation = useMemo(() => keyframes`
+    0% { border-color: ${alpha(theme.palette.success.main, 0.3)}; box-shadow: 0 0 5px ${alpha(theme.palette.success.main, 0.3)}; }
+    50% { border-color: ${alpha(theme.palette.success.main, 0.8)}; box-shadow: 0 0 20px ${alpha(theme.palette.success.main, 0.8)}; }
+    100% { border-color: ${alpha(theme.palette.success.main, 0.3)}; box-shadow: 0 0 5px ${alpha(theme.palette.success.main, 0.3)}; }
+  `, [theme.palette.success.main]);
+
   // Define styles based on completion state
   const paperStyles = {
     mb: 3,
-    bgcolor: LIGHT_PAPER,
+    bgcolor: paperBg,
     borderRadius: 4,
     overflow: 'hidden',
-    border: `${isCompleted ? 2 : 1}px solid ${alpha(isCompleted ? NEON_GREEN : NEON_PURPLE, isCompleted ? 0.5 : 0.2)}`,
-    boxShadow: `0 4px 12px ${alpha(isCompleted ? NEON_GREEN : NEON_PURPLE, 0.15)}`,
+    border: `${isCompleted ? 2 : 1}px solid ${alpha(accentColor, isCompleted ? 0.5 : 0.2)}`,
+    boxShadow: `0 4px 12px ${alpha(accentColor, 0.15)}`,
     p: { xs: 2, sm: 2.5 },
     position: 'relative',
   };
@@ -157,7 +150,7 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
         bottom: -2,
         borderRadius: '20px',
         padding: '2px',
-        background: `linear-gradient(45deg, ${alpha(NEON_GREEN, 0.5)} 0%, ${alpha(NEON_GREEN, 1)} 50%, ${alpha(NEON_GREEN, 0.5)} 100%)`,
+        background: `linear-gradient(45deg, ${alpha(theme.palette.success.main, 0.5)} 0%, ${alpha(theme.palette.success.main, 1)} 50%, ${alpha(theme.palette.success.main, 0.5)} 100%)`,
         WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
         WebkitMaskComposite: 'xor',
         maskComposite: 'exclude',
@@ -181,8 +174,8 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
           onClick={() => onNavigate(currentWeek - 1)}
           disabled={currentWeek <= 1 || isWeekLoading}
           sx={{
-            color: isCompleted ? NEON_GREEN : NEON_PURPLE,
-            '&.Mui-disabled': { color: alpha(isCompleted ? NEON_GREEN : NEON_PURPLE, 0.3) }
+            color: accentColor,
+            '&.Mui-disabled': { color: alpha(accentColor, 0.3) }
           }}
         >
           <ArrowBackIcon />
@@ -192,12 +185,12 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: '#333',
-              textShadow: `0 0 1px ${alpha(isCompleted ? NEON_GREEN : NEON_PURPLE, 0.3)}`,
+              color: textPrimary,
+              textShadow: `0 0 1px ${alpha(accentColor, 0.3)}`,
               display: 'flex',
               alignItems: 'center',
               ...(showAnimation && isCompleted && {
-                color: NEON_GREEN,
+                color: theme.palette.success.main,
                 transition: 'color 0.5s ease-in-out',
               }),
             }}
@@ -207,7 +200,7 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
               <CheckCircleIcon
                 sx={{
                   ml: 1,
-                  color: NEON_GREEN,
+                  color: theme.palette.success.main,
                   ...(showAnimation && {
                     animation: `${pulseAnimation} 0.5s ease-in-out infinite`,
                   }),
@@ -220,8 +213,8 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
           onClick={() => onNavigate(currentWeek + 1)}
           disabled={currentWeek >= maxWeeks || isWeekLoading}
           sx={{
-            color: isCompleted ? NEON_GREEN : NEON_PURPLE,
-            '&.Mui-disabled': { color: alpha(isCompleted ? NEON_GREEN : NEON_PURPLE, 0.3) }
+            color: accentColor,
+            '&.Mui-disabled': { color: alpha(accentColor, 0.3) }
           }}
         >
           <ArrowForwardIcon />
@@ -231,14 +224,14 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
       {/* Weekly Progress */}
       <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#222' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: textPrimary }}>
             Weekly Progress
           </Typography>
           <Typography
             variant="subtitle1"
             sx={{
               fontWeight: 600,
-              color: isCompleted ? NEON_GREEN : NEON_BLUE,
+              color: accentColor,
               ...(showAnimation && isCompleted && {
                 fontWeight: 700,
                 animation: `${pulseAnimation} 0.5s ease-in-out infinite`,
@@ -255,14 +248,14 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
             sx={{
               height: 10,
               borderRadius: 2,
-              bgcolor: alpha(isCompleted ? NEON_GREEN : NEON_BLUE, 0.15),
+              bgcolor: alpha(accentColor, 0.15),
               '& .MuiLinearProgress-bar': {
-                bgcolor: isCompleted ? NEON_GREEN : NEON_BLUE,
+                bgcolor: accentColor,
                 borderRadius: 2,
                 transition: 'transform .4s linear',
                 ...(showAnimation && isCompleted && {
                   animation: `${shimmerAnimation} 2s infinite`,
-                  backgroundImage: `linear-gradient(to right, ${alpha(NEON_GREEN, 0.15)} 0%, ${alpha(NEON_GREEN, 0.5)} 50%, ${alpha(NEON_GREEN, 0.15)} 100%)`,
+                  backgroundImage: `linear-gradient(to right, ${alpha(theme.palette.success.main, 0.15)} 0%, ${alpha(theme.palette.success.main, 0.5)} 50%, ${alpha(theme.palette.success.main, 0.15)} 100%)`,
                   backgroundSize: '200% 100%',
                 }),
               }
@@ -279,7 +272,7 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
                 borderRadius: 2,
                 bgcolor: 'transparent',
                 '& .MuiLinearProgress-bar': {
-                  bgcolor: alpha('#FFD700', 0.6),
+                  bgcolor: alpha(theme.palette.warning.main, 0.6),
                   borderRadius: 2,
                 }
               }}
@@ -287,10 +280,10 @@ export const PlanWeekHeader: FC<PlanWeekHeaderProps> = ({
           )}
         </Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
-          <Typography variant="body2" sx={{ color: '#555', fontWeight: 500 }}>
+          <Typography variant="body2" sx={{ color: textSecondary, fontWeight: 500 }}>
             Sets: {completedSetsCount}/{totalSetsCount}
           </Typography>
-          <Typography variant="body2" sx={{ color: '#555', fontWeight: 500 }}>
+          <Typography variant="body2" sx={{ color: textSecondary, fontWeight: 500 }}>
             {isCompleted ? 'Week Complete!' : 'Keep Going!'}
           </Typography>
         </Stack>

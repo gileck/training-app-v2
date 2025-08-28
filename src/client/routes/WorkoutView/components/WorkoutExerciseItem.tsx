@@ -16,17 +16,13 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import Image from 'next/image';
+import { useTheme } from '@mui/material/styles';
 
 import { WorkoutExerciseItemProps } from './types'; // WorkoutExercise type will come via props.exercise
 import { ExerciseDetailModal } from '@/client/components/ExerciseDetailModal';
 import { useExerciseSetCompletion } from '../hooks/useExerciseSetCompletion';
 
-// --- Color constants ---
-const LIGHT_CARD = '#FFFFFF';
-const NEON_PURPLE = '#9C27B0';
-const NEON_BLUE = '#3D5AFE';
-const NEON_GREEN = '#00C853';
-const NEON_PINK = '#D500F9';
+// Colors are derived from the MUI theme to support light/dark modes
 
 export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
     exercise,
@@ -37,6 +33,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
     handleExerciseSelect,
     showSelectionMode
 }) => {
+    const theme = useTheme();
     const [isDetailModalOpen, setIsDetailModalOpen] = React.useState(false);
     const setsDone = exercise.progress?.setsCompleted || 0;
     const totalSets = exercise.sets;
@@ -57,9 +54,9 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
     const progressPercent = totalSets > 0 ? (setsDone / totalSets) * 100 : 0;
 
     const getAccentColor = () => {
-        if (isExerciseComplete) return NEON_GREEN;
-        if (progressPercent > 0) return NEON_BLUE;
-        return NEON_PURPLE;
+        if (isExerciseComplete) return theme.palette.success.main;
+        if (progressPercent > 0) return theme.palette.primary.main;
+        return theme.palette.secondary.main;
     };
     const accentColor = getAccentColor();
 
@@ -83,17 +80,17 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                 onClick={handleCardClick}
                 sx={{
                     mb: 2.5,
-                    bgcolor: LIGHT_CARD,
+                    bgcolor: theme.palette.background.paper,
                     borderRadius: 3,
                     overflow: 'hidden',
-                    border: `1px solid ${isSelected ? alpha(NEON_PINK, 0.5) : alpha(accentColor, 0.2)}`,
+                    border: `1px solid ${isSelected ? alpha(theme.palette.secondary.main, 0.5) : alpha(accentColor, 0.2)}`,
                     transition: 'all 0.3s ease',
                     boxShadow: isSelected
-                        ? `0 4px 12px ${alpha(NEON_PINK, 0.2)}`
+                        ? `0 4px 12px ${alpha(theme.palette.secondary.main, 0.2)}`
                         : `0 4px 12px ${alpha(accentColor, 0.1)}`,
                     '&:hover': {
                         boxShadow: isSelected
-                            ? `0 8px 16px ${alpha(NEON_PINK, 0.25)}`
+                            ? `0 8px 16px ${alpha(theme.palette.secondary.main, 0.25)}`
                             : `0 8px 16px ${alpha(accentColor, 0.15)}`,
                         transform: 'translateY(-3px)',
                         cursor: showSelectionMode ? 'pointer' : 'default'
@@ -110,7 +107,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                             position: 'relative',
                             borderRadius: 2,
                             overflow: 'hidden',
-                            bgcolor: alpha('#000000', 0.03),
+                            bgcolor: alpha(theme.palette.text.primary, 0.03),
                             border: `1px solid ${alpha(accentColor, 0.1)}`,
                             flexShrink: 0
                         }}
@@ -145,10 +142,10 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                     variant="h6" // Larger for exercise name
                                     sx={{
                                         fontWeight: 'bold',
-                                        color: isSelected ? NEON_PINK : '#333',
+                                        color: isSelected ? theme.palette.secondary.main : theme.palette.text.primary,
                                         mb: 0.5,
                                         textShadow: isSelected
-                                            ? `0 0 1px ${alpha(NEON_PINK, 0.3)}`
+                                            ? `0 0 1px ${alpha(theme.palette.secondary.main, 0.3)}`
                                             : `0 0 1px ${alpha(accentColor, 0.3)}`
                                     }}
                                 >
@@ -157,23 +154,23 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                 <IconButton
                                     onClick={(e) => { e.stopPropagation(); handleOpenDetailModal(); }}
                                     size="small"
-                                    sx={{ color: NEON_PURPLE, mt: -0.5 }} // Align with top
+                                    sx={{ color: theme.palette.info.main, mt: -0.5 }} // Align with top
                                 >
                                     <InfoIcon fontSize="small" />
                                 </IconButton>
                             </Box>
 
-                            <Typography variant="body2" sx={{ color: alpha('#000000', 0.7), mb: 0.5 }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 0.5 }}>
                                 {exercise.reps} reps
                                 {exercise.definition?.bodyWeight ? ' (body weight)' : ''}
                                 {exercise.weight !== undefined && !exercise.definition?.bodyWeight && ` • ${exercise.weight}kg`}
                             </Typography>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <Typography data-testid="sets-completed" sx={{ color: alpha('#000000', 0.8), fontWeight: 'medium' }}>
+                                <Typography data-testid="sets-completed" sx={{ color: alpha(theme.palette.text.primary, 0.8), fontWeight: 'medium' }}>
                                     Sets: {setsDone}/{totalSets}
                                 </Typography>
                                 {isExerciseComplete && !isSelected && (
-                                    <CheckCircleIcon data-testid="exercise-complete-badge" sx={{ color: NEON_GREEN, fontSize: '1.2rem' }} />
+                                    <CheckCircleIcon data-testid="exercise-complete-badge" sx={{ color: theme.palette.success.main, fontSize: '1.2rem' }} />
                                 )}
                                 {exercise.definition?.hasComments && (
                                     <Chip
@@ -182,9 +179,9 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                         sx={{
                                             height: 20,
                                             fontSize: '0.65rem',
-                                            bgcolor: alpha(NEON_PINK, 0.1),
-                                            color: NEON_PINK,
-                                            border: `1px solid ${alpha(NEON_PINK, 0.2)}`
+                                            bgcolor: alpha(theme.palette.secondary.main, 0.1),
+                                            color: theme.palette.secondary.main,
+                                            border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`
                                         }}
                                     />
                                 )}
@@ -198,9 +195,9 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                             sx={{
                                 height: 6, // Slightly thicker as per drawing
                                 borderRadius: 1,
-                                bgcolor: alpha(isSelected ? NEON_PINK : accentColor, 0.15),
+                                bgcolor: alpha(isSelected ? theme.palette.secondary.main : accentColor, 0.15),
                                 '& .MuiLinearProgress-bar': {
-                                    bgcolor: isSelected ? NEON_PINK : accentColor,
+                                    bgcolor: isSelected ? theme.palette.secondary.main : accentColor,
                                     borderRadius: 1,
                                 },
                                 my: 1 // Margin top and bottom
@@ -211,7 +208,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
 
                 {/* Controls and Chips Section - Revised as per new drawing */}
                 <Box sx={{ px: 1.5, pb: 0.5 }}>
-                    <Divider sx={{ bgcolor: alpha('#000000', 0.12), my: 1.5 }} />
+                    <Divider sx={{ bgcolor: alpha(theme.palette.divider, 1), my: 1.5 }} />
 
                     {/* First Row: Primary Muscle Chip + Controls */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
@@ -223,9 +220,9 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                     sx={{
                                         height: 24,
                                         fontSize: '0.75rem',
-                                        bgcolor: alpha(NEON_BLUE, 0.15),
-                                        color: NEON_BLUE,
-                                        border: `1px solid ${alpha(NEON_BLUE, 0.3)}`,
+                                        bgcolor: alpha(theme.palette.primary.main, 0.15),
+                                        color: theme.palette.primary.main,
+                                        border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                                         fontWeight: 500
                                     }}
                                 />
@@ -240,10 +237,10 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                 size="small"
                                 disabled={isUpdating || setsDone <= 0}
                                 sx={{
-                                    color: '#333',
-                                    bgcolor: alpha('#000000', 0.05),
-                                    '&:hover': { bgcolor: alpha('#000000', 0.08) },
-                                    '&.Mui-disabled': { color: alpha('#000000', 0.3) },
+                                    color: theme.palette.text.primary,
+                                    bgcolor: alpha(theme.palette.text.primary, 0.05),
+                                    '&:hover': { bgcolor: alpha(theme.palette.text.primary, 0.08) },
+                                    '&.Mui-disabled': { color: alpha(theme.palette.text.primary, 0.3) },
                                     width: 36, height: 36
                                 }}
                             >
@@ -255,10 +252,10 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                 size="medium"
                                 disabled={isUpdating || setsDone >= totalSets}
                                 sx={{
-                                    color: '#fff',
-                                    bgcolor: alpha(NEON_BLUE, 0.9),
-                                    '&:hover': { bgcolor: NEON_BLUE },
-                                    '&.Mui-disabled': { color: '#fff', bgcolor: alpha(NEON_BLUE, 0.4) },
+                                    color: theme.palette.getContrastText(theme.palette.primary.main),
+                                    bgcolor: alpha(theme.palette.primary.main, 0.9),
+                                    '&:hover': { bgcolor: theme.palette.primary.main },
+                                    '&.Mui-disabled': { color: theme.palette.getContrastText(theme.palette.primary.main), bgcolor: alpha(theme.palette.primary.main, 0.4) },
                                     width: 36, height: 36
                                 }}
                             >
@@ -270,10 +267,10 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                 size="small"
                                 disabled={isUpdating || setsDone >= totalSets}
                                 sx={{
-                                    color: '#fff',
-                                    bgcolor: alpha(NEON_GREEN, 0.9),
-                                    '&:hover': { bgcolor: NEON_GREEN },
-                                    '&.Mui-disabled': { color: '#fff', bgcolor: alpha(NEON_GREEN, 0.4) },
+                                    color: theme.palette.getContrastText(theme.palette.success.main),
+                                    bgcolor: alpha(theme.palette.success.main, 0.9),
+                                    '&:hover': { bgcolor: theme.palette.success.main },
+                                    '&.Mui-disabled': { color: theme.palette.getContrastText(theme.palette.success.main), bgcolor: alpha(theme.palette.success.main, 0.4) },
                                     width: 36, height: 36
                                 }}
                             >
@@ -300,8 +297,8 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                         top: 80,
                         right: 20,
                         zIndex: 9999,
-                        bgcolor: '#f44336',
-                        color: 'white',
+                        bgcolor: theme.palette.error.main,
+                        color: theme.palette.getContrastText(theme.palette.error.main),
                         p: 2,
                         borderRadius: 1,
                         display: 'none'

@@ -58,6 +58,7 @@ export const ManageTrainingPlanPage: React.FC = () => {
         <Box sx={{ p: { xs: 1, sm: 2 } }}>
             {/* Page Header */}
             <PageHeader
+                planName={planDetails?.name ?? ''}
                 planId={planId}
                 isMobile={isMobile}
                 navigate={navigate}
