@@ -19,7 +19,7 @@ export const sanitizeUser = (user: User): UserResponse => {
         id: user._id.toString(),
         username: user.username,
         email: user.email,
-        createdAt: user.createdAt && new Date(user.createdAt).toISOString(),
+        createdAt: user.createdAt.toISOString(),
         profilePicture: user.profilePicture
     };
 };

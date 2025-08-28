@@ -63,7 +63,7 @@ const eslintConfig = [
       }],
       "api-guidelines/server-reexport-from-index": "warn",
       "api-guidelines/client-returns-cache-result": "warn",
-      "api-guidelines/no-duplicate-api-types": "off",
+      "api-guidelines/no-duplicate-api-types": "warn",
       "api-guidelines/no-direct-api-client-call": "warn",
       "api-guidelines/export-name-from-index": "warn",
       "api-guidelines/no-export-process-from-index": ["warn", {

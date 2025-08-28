@@ -2,7 +2,7 @@ import apiClient, { ApiOptions } from '@/client/utils/apiClient';
 import {
     login,
     logout,
-    getCurrentUserApiName,
+    me,
     register,
     updateProfile
 } from './index';
@@ -26,7 +26,7 @@ export const apiRegister = (params: RegisterRequest) => {
 };
 
 export const apiFetchCurrentUser = (options?: ApiOptions) => {
-    return apiClient.call<CurrentUserResponse>(getCurrentUserApiName, {}, options);
+    return apiClient.call<CurrentUserResponse>(me, {}, options);
 };
 
 export const apiLogout = () => {

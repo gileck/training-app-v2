@@ -6,6 +6,8 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const response = await processApiCall(req, res);
+
+  // console.log('API response:', response);
   return res.status(200).json(response);
 }
 

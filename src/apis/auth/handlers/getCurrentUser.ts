@@ -1,4 +1,4 @@
-import { getCurrentUserApiName } from '../index';
+import { me } from '../index';
 import {
     ApiHandlerContext,
     CurrentUserResponse,
@@ -16,27 +16,6 @@ export const getCurrentUser = async (
             return { error: "Not authenticated" };
         }
 
-        // Special handling for test environment
-        if (process.env.PLAYWRIGHT_TEST === 'true') {
-            const user = await users.findUserById(context.userId);
-            if (user) {
-                console.log('Test environment: Found existing user in database');
-                return { user: sanitizeUser(user) };
-            } else {
-                console.log('Test environment: User not found in database, returning mock user for ID:', context.userId);
-                // Return a mock user that should have the same ID as the training plans
-                return {
-                    user: {
-                        id: context.userId,
-                        username: 'testuser',
-                        email: 'test@example.com',
-                        createdAt: new Date().toISOString(),
-                        profilePicture: undefined
-                    }
-                };
-            }
-        }
-
         const user = await users.findUserById(context.userId);
         if (!user) {
             return { error: "User not found" };
@@ -50,4 +29,4 @@ export const getCurrentUser = async (
 };
 
 // Export API endpoint name
-export { getCurrentUserApiName }; 
+export { me }; 

@@ -4,7 +4,7 @@ import { CacheOptions, CacheParams, CacheResult, CacheStatus, CacheProvider } fr
  * Default cache options
  */
 const DEFAULT_OPTIONS: CacheOptions = {
-    isStaleTTL: 1000 * 10, // 10 seconds
+    isStaleTTL: 10000, // 10 seconds
     ttl: 3600000, // 1 hour
     bypassCache: false,
     maxStaleAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
@@ -54,6 +54,15 @@ export const createCache = (provider: CacheProvider) => {
         if (opts.bypassCache) {
             const result = await callback();
 
+            // Check if data is valid for caching
+            const isDataValid = opts.isDataValidForCache ? opts.isDataValidForCache(result) : true;
+            
+            if (!isDataValid) {
+                // Delete existing cache if data is not valid
+                await provider.deleteCache(cacheKey);
+                return { data: result, isFromCache: false };
+            }
+
             // Only cache successful results (no error property)
             if (!hasErrorProperty(result)) {
                 const metadata = await provider.writeCache(cacheKey, result);
@@ -84,6 +93,15 @@ export const createCache = (provider: CacheProvider) => {
                         // Stale but acceptable, return it and revalidate in background
                         // Don't await the revalidation to return stale data immediately
                         callback().then(async (freshResult) => {
+                            // Check if fresh data is valid for caching
+                            const isDataValid = opts.isDataValidForCache ? opts.isDataValidForCache(freshResult) : true;
+                            
+                            if (!isDataValid) {
+                                // Delete existing cache if fresh data is not valid
+                                await provider.deleteCache(cacheKey);
+                                return;
+                            }
+
                             // Only cache successful results (no error property)
                             if (!hasErrorProperty(freshResult)) {
                                 await provider.writeCache(cacheKey, freshResult);
@@ -115,6 +133,15 @@ export const createCache = (provider: CacheProvider) => {
 
         // Execute the callback to get fresh data
         const result = await callback();
+
+        // Check if data is valid for caching
+        const isDataValid = opts.isDataValidForCache ? opts.isDataValidForCache(result) : true;
+        
+        if (!isDataValid) {
+            // Delete existing cache if data is not valid
+            await provider.deleteCache(cacheKey);
+            return { data: result, isFromCache: false };
+        }
 
         // Only cache successful results (no error property)
         if (!hasErrorProperty(result)) {
