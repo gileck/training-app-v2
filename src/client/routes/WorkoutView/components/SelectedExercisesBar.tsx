@@ -7,17 +7,22 @@ import {
 } from '@mui/material';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
 import { SelectedExercisesBarProps } from './types';
+import { useTheme } from '@mui/material/styles';
 
-// --- Color constants ---
-const LIGHT_PAPER = '#F5F5F7'; // Or get from theme
-const NEON_PURPLE = '#9C27B0';
-const NEON_GREEN = '#00C853';
+// Colors are derived from the theme to support light/dark modes
 
 export const SelectedExercisesBar: React.FC<SelectedExercisesBarProps> = ({
     selectedExercises,
     activeTab,
     handleStartWorkout
 }) => {
+    const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
+
+    const paperBg = alpha(theme.palette.background.paper, isDark ? 0.85 : 0.95);
+    const borderColor = alpha(theme.palette.primary.main, isDark ? 0.35 : 0.3);
+    const shadowColor = alpha(theme.palette.primary.main, isDark ? 0.35 : 0.2);
+    const successColor = theme.palette.success.main;
     if (selectedExercises.length === 0 || activeTab !== 0) {
         return null;
     }
@@ -32,18 +37,16 @@ export const SelectedExercisesBar: React.FC<SelectedExercisesBarProps> = ({
                 transform: 'translateX(-50%)',
                 width: 'calc(100% - 32px)',
                 maxWidth: 500,
-                p: 2,
-                borderRadius: 3,
+                p: 0,
+                borderRadius: 8,
                 zIndex: 100,
-                bgcolor: alpha(LIGHT_PAPER, 0.95),
-                border: `1px solid ${alpha(NEON_PURPLE, 0.3)}`,
+                bgcolor: paperBg,
+                border: `1px solid ${borderColor}`,
                 backdropFilter: 'blur(10px)',
-                boxShadow: `0 5px 15px ${alpha(NEON_PURPLE, 0.2)}`
+                boxShadow: `0 5px 15px ${shadowColor}`
             }}
         >
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, color: '#333' }}>
-                {selectedExercises.length} {selectedExercises.length === 1 ? 'Exercise' : 'Exercises'} Selected
-            </Typography>
+
             <Button
                 variant="contained"
                 onClick={handleStartWorkout}
@@ -51,19 +54,19 @@ export const SelectedExercisesBar: React.FC<SelectedExercisesBarProps> = ({
                 fullWidth
                 sx={{
                     py: 1,
-                    bgcolor: NEON_GREEN,
-                    color: 'white',
+                    bgcolor: successColor,
+                    color: theme.palette.getContrastText(successColor),
                     fontWeight: 'bold',
                     borderRadius: 8,
                     textTransform: 'none',
-                    boxShadow: `0 4px 12px ${alpha(NEON_GREEN, 0.3)}`,
+                    boxShadow: `0 4px 12px ${alpha(successColor, isDark ? 0.45 : 0.3)}`,
                     '&:hover': {
-                        bgcolor: alpha(NEON_GREEN, 0.9),
-                        boxShadow: `0 6px 14px ${alpha(NEON_GREEN, 0.4)}`
+                        bgcolor: alpha(successColor, isDark ? 0.85 : 0.9),
+                        boxShadow: `0 6px 14px ${alpha(successColor, isDark ? 0.55 : 0.4)}`
                     }
                 }}
             >
-                Start Workout
+                Start Workout ({selectedExercises.length} {selectedExercises.length === 1 ? 'Exercise' : 'Exercises'})
             </Button>
         </Paper>
     );

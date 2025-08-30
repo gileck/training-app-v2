@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, LinearProgress, alpha, Paper, CircularProgress, Alert, IconButton } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { WorkoutExercise } from '@/client/types/workout';
 import { LargeExerciseCard } from './LargeExerciseCard';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; // For completion indication
@@ -10,7 +11,7 @@ import { SaveWorkoutDialog } from './SaveWorkoutDialog'; // Import the new dialo
 // Neon color constants
 const NEON_BLUE = '#3D5AFE';
 const NEON_GREEN = '#00C853';
-const LIGHT_PAPER_BG = '#F5F5F7'; // Background for the new Paper header
+const LIGHT_PAPER_BG = '#F5F5F7'; // Light-mode fallback for header background
 const DEFAULT_CUSTOM_WORKOUT_NAME = 'Workout'; // Default name from useWorkoutView
 
 interface ActiveWorkoutContentProps {
@@ -37,6 +38,8 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
     saveError
 }) => {
     const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+    const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
 
     if (!exercises || exercises.length === 0) {
         return (
@@ -54,6 +57,7 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
     const isWorkoutComplete = overallProgressPercent >= 100 && totalSetsInSession > 0;
     const currentWorkoutName = workoutName || 'Active Workout';
     const headerAccentColor = isWorkoutComplete ? NEON_GREEN : NEON_BLUE;
+    const headerBackground = isDark ? alpha(theme.palette.background.paper, 0.9) : LIGHT_PAPER_BG;
 
     const showSaveButton = workoutName === DEFAULT_CUSTOM_WORKOUT_NAME;
 
@@ -77,7 +81,7 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
                 elevation={2}
                 sx={{
                     mb: 2.5, // Margin below the header paper
-                    bgcolor: LIGHT_PAPER_BG,
+                    bgcolor: headerBackground,
                     borderRadius: 3, // Consistent with LargeExerciseCard
                     border: `1.5px solid ${alpha(headerAccentColor, 0.4)}`,
                     boxShadow: `0 4px 12px ${alpha(headerAccentColor, 0.1)}`,
@@ -101,7 +105,7 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
                     )}
                     {!showSaveButton && <Box sx={{ width: 40 }} />}
 
-                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', color: alpha('#000000', 0.85) }}>
+                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>
                         {currentWorkoutName}
                     </Typography>
 
@@ -110,9 +114,13 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
                         onClick={onEndWorkout}
                         disabled={isSavingWorkout}
                         sx={{
-                            bgcolor: isWorkoutComplete ? alpha(NEON_GREEN, 0.1) : alpha('#000000', 0.05),
+                            bgcolor: isWorkoutComplete
+                                ? alpha(NEON_GREEN, 0.1)
+                                : alpha(theme.palette.text.primary, 0.08),
                             '&:hover': {
-                                bgcolor: isWorkoutComplete ? alpha(NEON_GREEN, 0.2) : alpha('#000000', 0.1)
+                                bgcolor: isWorkoutComplete
+                                    ? alpha(NEON_GREEN, 0.2)
+                                    : alpha(theme.palette.text.primary, 0.15)
                             }
                         }}
                         size="small"
@@ -135,7 +143,7 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
                     }}
                 />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
-                    <Typography variant="caption" sx={{ color: alpha('#000000', 0.7) }}>
+                    <Typography variant="caption" sx={{ color: alpha(theme.palette.text.primary, 0.7) }}>
                         Overall Progress: {completedSetsInSession} / {totalSetsInSession} sets
                     </Typography>
                     {isWorkoutComplete && (

@@ -50,7 +50,7 @@ export const WorkoutItem: React.FC<WorkoutItemProps> = ({
     const totalSets = workout.exercises ? workout.exercises.reduce((total: number, exercise: ExerciseBase) => total + (exercise.sets || 0), 0) : 0;
 
     return (
-        <Paper elevation={2} sx={{ mb: 2, borderRadius: 2, overflow: 'hidden' }}>
+        <Paper elevation={2} sx={{ mb: 2, borderRadius: 2, overflow: 'hidden', border: `1px solid ${theme.palette.divider}` }}>
             <Card sx={{ width: '100%' }}>
                 <Box sx={{ backgroundColor: theme.palette.primary.main }}>
                     <Box sx={{

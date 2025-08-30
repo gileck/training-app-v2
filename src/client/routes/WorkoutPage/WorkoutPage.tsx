@@ -193,7 +193,6 @@ export const WorkoutPage: React.FC = () => {
     // Use centralized training data context for plan exercises
     const {
         exercises: planExercises,
-        isLoading: isPlanLoading,
         isLoaded: isPlanLoaded,
         error: planError,
     } = useExercises(planId);

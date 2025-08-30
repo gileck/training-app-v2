@@ -9,6 +9,7 @@ import {
     LinearProgress,
     Alert
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -22,7 +23,6 @@ import { WorkoutExerciseItem } from './WorkoutExerciseItem';
 import { WorkoutItemSkeleton } from './WorkoutItemSkeleton';
 
 // --- Color constants ---
-const LIGHT_PAPER = '#F5F5F7';
 const NEON_BLUE = '#3D5AFE';
 const NEON_GREEN = '#00C853';
 
@@ -48,26 +48,28 @@ const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, 
         return `${completedSetsInWorkout} / ${totalSetsInWorkout} sets completed`;
     };
 
+    const theme = useTheme();
+
     return (
         <Paper
             elevation={2}
             sx={{
                 mb: 2,
                 borderRadius: 3,
-                bgcolor: LIGHT_PAPER,
-                border: `1px solid ${alpha(NEON_BLUE, 0.2)}`,
-                boxShadow: `0 4px 12px ${alpha(NEON_BLUE, 0.1)}`,
+                bgcolor: theme.palette.background.paper,
+                border: `1px solid ${alpha(theme.palette.text.primary, 0.15)}`,
+                boxShadow: `0 4px 12px ${alpha(theme.palette.text.primary, 0.08)}`,
                 transition: 'all 0.2s ease',
-                '&:hover': { boxShadow: `0 6px 14px ${alpha(NEON_BLUE, 0.2)}` }
+                '&:hover': { boxShadow: `0 6px 14px ${alpha(theme.palette.text.primary, 0.15)}` }
             }}
         >
             <Box onClick={() => onToggleExpand(workoutId)} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                 <Box flexGrow={1}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: alpha('#000000', 0.8) }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: alpha(theme.palette.text.primary, 0.85) }}>
                         {workout.name}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                        <Typography variant="body2" sx={{ color: alpha('#000000', 0.6), fontSize: '0.8rem' }}>
+                        <Typography variant="body2" sx={{ color: alpha(theme.palette.text.primary, 0.6), fontSize: '0.8rem' }}>
                             {getStatusText()}
                         </Typography>
                     </Box>
@@ -97,7 +99,7 @@ const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, 
                 >
                     Start
                 </Button>
-                <IconButton size="small" sx={{ color: alpha('#000000', 0.6) }} onClick={(e) => { e.stopPropagation(); onToggleExpand(workoutId); }}>
+                <IconButton size="small" sx={{ color: alpha(theme.palette.text.primary, 0.6) }} onClick={(e) => { e.stopPropagation(); onToggleExpand(workoutId); }}>
                     {workout.isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
             </Box>
@@ -106,19 +108,19 @@ const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, 
                 value={progressPercent}
                 sx={{
                     height: 4,
-                    bgcolor: alpha(NEON_BLUE, 0.1),
+                    bgcolor: alpha(NEON_BLUE, 0.15),
                     '& .MuiLinearProgress-bar': { bgcolor: progressPercent >= 100 ? NEON_GREEN : NEON_BLUE }
                 }}
             />
             {workout.isExpanded && (
-                <Box sx={{ p: 2, pt: 1, borderTop: `1px solid ${alpha('#000000', 0.05)}` }}>
+                <Box sx={{ p: 2, pt: 1, borderTop: `1px solid ${alpha(theme.palette.text.primary, 0.08)}` }}>
                     {workout.error ? (
-                        <Alert severity="error" sx={{ py: 0, bgcolor: alpha('#FF0000', 0.1), color: '#D32F2F', border: `1px solid ${alpha('#FF0000', 0.2)}`, '& .MuiAlert-icon': { color: '#D32F2F' } }}>
+                        <Alert severity="error" sx={{ py: 0, bgcolor: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main, border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`, '& .MuiAlert-icon': { color: theme.palette.error.main } }}>
                             {workout.error}
                         </Alert>
                     ) : exercises.length === 0 ? (
                         <Box sx={{ textAlign: 'center', py: 1 }}>
-                            <Typography variant="body2" sx={{ color: alpha('#000000', 0.5) }}>No exercises in this workout</Typography>
+                            <Typography variant="body2" sx={{ color: alpha(theme.palette.text.primary, 0.6) }}>No exercises in this workout</Typography>
                         </Box>
                     ) : (
                         <Box sx={{ pt: 1 }}>
@@ -192,7 +194,7 @@ export const WorkoutTabContent: React.FC<WorkoutTabContentProps> = ({
                         mt: 6,
                         p: 4,
                         borderRadius: 3,
-                        bgcolor: LIGHT_PAPER,
+                        bgcolor: 'transparent',
                         border: `1px dashed ${alpha('#000000', 0.2)}`
                     }}
                 >

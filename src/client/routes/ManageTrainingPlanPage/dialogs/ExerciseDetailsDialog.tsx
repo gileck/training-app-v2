@@ -16,7 +16,6 @@ import type { ExerciseDefinition } from '@/apis/exerciseDefinitions/types';
 interface ExerciseDetailsDialogProps {
     open: boolean;
     onClose: () => void;
-    onSave: (savedExercise: ExerciseBase) => void;
     planId: string;
     exerciseDefinition: ExerciseDefinition | null; // The definition of the exercise to add/edit
     exerciseToEdit?: ExerciseBase | null; // Existing exercise data if in edit mode
@@ -25,7 +24,6 @@ interface ExerciseDetailsDialogProps {
 export const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({
     open,
     onClose,
-    onSave,
     planId,
     exerciseDefinition,
     exerciseToEdit,

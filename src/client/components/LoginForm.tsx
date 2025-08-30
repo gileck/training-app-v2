@@ -5,14 +5,14 @@ import { Box, TextField, Button, Typography, Link, CircularProgress, Alert } fro
 const LoginForm: React.FC = () => {
     const { login, register, isLoading, error } = useAuth();
     const [isRegistering, setIsRegistering] = useState(false);
-    const [email, setEmail] = useState('');
+    // Email is optional for registration; omitted to keep form minimal
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState(''); // Only for registration
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (isRegistering) {
-            await register({ username, email, password });
+            await register({ username, password });
         } else {
             await login({ username, password });
         }

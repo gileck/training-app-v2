@@ -80,7 +80,6 @@ export const DialogsSection: React.FC<DialogsSectionProps> = ({
                 <ExerciseDetailsDialog
                     open={exerciseHooks.isExerciseDetailsDialogOpen}
                     onClose={exerciseHooks.handleDetailsDialogClose}
-                    onSave={exerciseHooks.handleDetailsDialogSave}
                     planId={planId || ''}
                     exerciseDefinition={exerciseHooks.selectedDefinitionForDetails}
                     exerciseToEdit={exerciseHooks.exerciseBeingEdited}

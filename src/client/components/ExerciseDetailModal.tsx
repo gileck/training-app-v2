@@ -48,14 +48,14 @@ import {
 } from '@/apis/weeklyProgress/types';
 import { addWeeklyNote, editWeeklyNote, deleteWeeklyNote } from '@/apis/weeklyProgress/client';
 import { WorkoutExercise } from '@/client/types/workout';
+import { useTheme } from '@mui/material/styles';
 
 // Neon Light Theme colors
 const NEON_PURPLE = '#9C27B0';
 const NEON_BLUE = '#3D5AFE';
 const NEON_GREEN = '#00C853';
 const NEON_PINK = '#D500F9';
-const LIGHT_PAPER = '#F5F5F7';
-const LIGHT_CARD = '#FFFFFF';
+// Light color constants removed in favor of theme-based colors
 
 interface ExerciseDetailModalProps {
     isOpen: boolean;
@@ -89,6 +89,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
     planId,
     weekNumber
 }) => {
+    const theme = useTheme();
     const [definition, setDefinition] = useState<ExerciseDefinition | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -383,7 +384,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
             fullWidth
             PaperProps={{
                 sx: {
-                    bgcolor: LIGHT_PAPER,
+                    bgcolor: theme.palette.background.paper,
                     borderRadius: 3,
                     overflow: 'hidden',
                     boxShadow: `0 8px 32px ${alpha(NEON_PURPLE, 0.2)}`,
@@ -394,7 +395,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
             <DialogTitle sx={{
                 position: 'relative',
                 borderBottom: `1px solid ${alpha(NEON_PURPLE, 0.1)}`,
-                bgcolor: LIGHT_CARD,
+                bgcolor: theme.palette.background.paper,
                 px: 3,
                 py: 2
             }}>
@@ -405,7 +406,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                         component="div"
                         sx={{
                             fontWeight: 'bold',
-                            color: '#333',
+                            color: theme.palette.text.primary,
                             textShadow: `0 0 1px ${alpha(NEON_PURPLE, 0.2)}`
                         }}
                     >
@@ -419,7 +420,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                         position: 'absolute',
                         right: 8,
                         top: 8,
-                        color: alpha('#000000', 0.5),
+                        color: alpha(theme.palette.text.primary, 0.5),
                         '&:hover': {
                             color: NEON_PURPLE,
                             bgcolor: alpha(NEON_PURPLE, 0.05)
@@ -431,7 +432,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                 </IconButton>
             </DialogTitle>
 
-            <DialogContent sx={{ bgcolor: LIGHT_PAPER, p: 0 }}>
+            <DialogContent sx={{ bgcolor: theme.palette.background.default, p: 0 }}>
                 {isLoading && (
                     <Box display="flex" justifyContent="center" my={4}>
                         <CircularProgress sx={{ color: NEON_PURPLE }} />
@@ -443,9 +444,9 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                         severity="error"
                         sx={{
                             m: 3,
-                            bgcolor: alpha('#FF0000', 0.05),
-                            color: '#D32F2F',
-                            border: `1px solid ${alpha('#FF0000', 0.1)}`,
+                            bgcolor: alpha(theme.palette.error.main, 0.1),
+                            color: theme.palette.error.main,
+                            border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
                         }}
                     >
                         {error}
@@ -458,7 +459,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                         <Box sx={{
                             display: 'flex',
                             flexDirection: { xs: 'column', sm: 'row' },
-                            bgcolor: LIGHT_CARD,
+                            bgcolor: theme.palette.background.paper,
                             p: 3
                         }}>
                             {/* Image */}
@@ -511,32 +512,32 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
 
                                     <Stack spacing={1}>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <Typography variant="body2" sx={{ color: alpha('#000', 0.6) }}>Sets:</Typography>
+                                            <Typography variant="body2" sx={{ color: alpha(theme.palette.text.primary, 0.6) }}>Sets:</Typography>
                                             <Typography variant="body2" sx={{ fontWeight: 'medium' }}>{exercise.sets}</Typography>
                                         </Box>
 
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <Typography variant="body2" sx={{ color: alpha('#000', 0.6) }}>Reps:</Typography>
+                                            <Typography variant="body2" sx={{ color: alpha(theme.palette.text.primary, 0.6) }}>Reps:</Typography>
                                             <Typography variant="body2" sx={{ fontWeight: 'medium' }}>{exercise.reps}</Typography>
                                         </Box>
 
                                         {exercise.weight !== undefined && (
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <Typography variant="body2" sx={{ color: alpha('#000', 0.6) }}>Weight:</Typography>
+                                                <Typography variant="body2" sx={{ color: alpha(theme.palette.text.primary, 0.6) }}>Weight:</Typography>
                                                 <Typography variant="body2" sx={{ fontWeight: 'medium' }}>{exercise.weight}kg</Typography>
                                             </Box>
                                         )}
 
                                         {definition.bodyWeight && (
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <Typography variant="body2" sx={{ color: alpha('#000', 0.6) }}>Type:</Typography>
+                                                <Typography variant="body2" sx={{ color: alpha(theme.palette.text.primary, 0.6) }}>Type:</Typography>
                                                 <Typography variant="body2" sx={{ fontWeight: 'medium' }}>Bodyweight</Typography>
                                             </Box>
                                         )}
 
                                         {definition.primaryMuscle && (
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <Typography variant="body2" sx={{ color: alpha('#000', 0.6) }}>Primary Muscle:</Typography>
+                                                <Typography variant="body2" sx={{ color: alpha(theme.palette.text.primary, 0.6) }}>Primary Muscle:</Typography>
                                                 <Chip
                                                     label={definition.primaryMuscle}
                                                     size="small"
@@ -558,7 +559,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
 
                         {/* Comments/Instructions Section */}
                         {exercise.comments && (
-                            <Box sx={{ px: 3, py: 2.5, bgcolor: alpha(LIGHT_PAPER, 0.5) }}>
+                            <Box sx={{ px: 3, py: 2.5, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
                                 <Paper
                                     elevation={0}
                                     sx={{
@@ -586,7 +587,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                                         variant="body2"
                                         sx={{
                                             whiteSpace: 'pre-wrap',
-                                            color: alpha('#000', 0.75),
+                                            color: alpha(theme.palette.text.primary, 0.75),
                                             lineHeight: 1.6
                                         }}
                                     >
@@ -598,38 +599,38 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
 
                         {/* History Section */}
                         {isLoadingHistory ? (
-                            <Box sx={{ px: 3, py: 2.5, bgcolor: LIGHT_PAPER, display: 'flex', justifyContent: 'center' }}>
+                            <Box sx={{ px: 3, py: 2.5, bgcolor: theme.palette.background.default, display: 'flex', justifyContent: 'center' }}>
                                 <CircularProgress size={24} sx={{ color: NEON_PURPLE }} />
                             </Box>
                         ) : historyError ? (
-                            <Box sx={{ px: 3, py: 2.5, bgcolor: LIGHT_PAPER }}>
+                            <Box sx={{ px: 3, py: 2.5, bgcolor: theme.palette.background.default }}>
                                 <Alert
                                     severity="error"
                                     sx={{
                                         mb: 2,
-                                        bgcolor: alpha('#FF0000', 0.05),
-                                        color: '#D32F2F',
-                                        border: `1px solid ${alpha('#FF0000', 0.1)}`,
+                                        bgcolor: alpha(theme.palette.error.main, 0.1),
+                                        color: theme.palette.error.main,
+                                        border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
                                     }}
                                 >
                                     {historyError}
                                 </Alert>
                             </Box>
                         ) : historyData.length > 0 && (
-                            <Box sx={{ px: 3, py: 2.5, bgcolor: LIGHT_PAPER }}>
+                            <Box sx={{ px: 3, py: 2.5, bgcolor: theme.palette.background.default }}>
                                 <Paper
                                     elevation={0}
                                     sx={{
                                         p: 0,
                                         borderRadius: 2,
                                         overflow: 'hidden',
-                                        border: `1px solid ${alpha('#000', 0.1)}`
+                                        border: `1px solid ${alpha(theme.palette.text.primary, 0.15)}`
                                     }}
                                 >
                                     <Box sx={{
                                         p: 2,
                                         bgcolor: alpha(NEON_PURPLE, 0.05),
-                                        borderBottom: `1px solid ${alpha('#000', 0.05)}`,
+                                        borderBottom: `1px solid ${alpha(theme.palette.text.primary, 0.08)}`,
                                         display: 'flex',
                                         alignItems: 'center'
                                     }}>
@@ -652,7 +653,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                                                     <TableCell
                                                         sx={{
                                                             fontWeight: 'bold',
-                                                            bgcolor: LIGHT_CARD
+                                                            bgcolor: theme.palette.background.paper
                                                         }}
                                                     >
                                                         Date
@@ -660,7 +661,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                                                     <TableCell
                                                         sx={{
                                                             fontWeight: 'bold',
-                                                            bgcolor: LIGHT_CARD
+                                                            bgcolor: theme.palette.background.paper
                                                         }}
                                                     >
                                                         Sets
@@ -668,7 +669,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                                                     <TableCell
                                                         sx={{
                                                             fontWeight: 'bold',
-                                                            bgcolor: LIGHT_CARD
+                                                            bgcolor: theme.palette.background.paper
                                                         }}
                                                     >
                                                         Reps
@@ -676,7 +677,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                                                     <TableCell
                                                         sx={{
                                                             fontWeight: 'bold',
-                                                            bgcolor: LIGHT_CARD
+                                                            bgcolor: theme.palette.background.paper
                                                         }}
                                                     >
                                                         Weight
@@ -688,9 +689,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                                                     <TableRow
                                                         key={entry._id.toString()}
                                                         sx={{
-                                                            '&:nth-of-type(odd)': {
-                                                                bgcolor: alpha('#f5f5f5', 0.5),
-                                                            },
+                                                            '&:nth-of-type(odd)': { bgcolor: alpha(theme.palette.text.primary, 0.04) },
                                                             '&:hover': {
                                                                 bgcolor: alpha(NEON_PURPLE, 0.05)
                                                             },
@@ -718,7 +717,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                         )}
 
                         {/* Workout Notes Section */}
-                        <Box sx={{ px: 3, py: 2.5, bgcolor: LIGHT_PAPER }}>
+                        <Box sx={{ px: 3, py: 2.5, bgcolor: theme.palette.background.default }}>
                             <Paper
                                 elevation={0}
                                 sx={{
@@ -846,7 +845,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                                     )}
 
                                     {weeklyNotes.length === 0 ? (
-                                        <Typography variant="body2" sx={{ color: alpha('#000', 0.5), textAlign: 'center', py: 2 }}>
+                                        <Typography variant="body2" sx={{ color: alpha(theme.palette.text.primary, 0.6), textAlign: 'center', py: 2 }}>
                                             No notes yet. Add your first note to keep track of your progress.
                                         </Typography>
                                     ) : (
@@ -887,7 +886,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                                                                     startIcon={<CancelIcon />}
                                                                     onClick={cancelEditing}
                                                                     sx={{
-                                                                        color: alpha('#000', 0.6),
+                                                                        color: alpha(theme.palette.text.primary, 0.6),
                                                                         textTransform: 'none'
                                                                     }}
                                                                 >
@@ -934,7 +933,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                                                                         onClick={() => startEditingNote(note._id, note.text)}
                                                                         disabled={isProcessingNote}
                                                                         sx={{
-                                                                            color: alpha('#000', 0.5),
+                                                                            color: alpha(theme.palette.text.primary, 0.5),
                                                                             '&:hover': {
                                                                                 color: NEON_BLUE,
                                                                                 bgcolor: alpha(NEON_BLUE, 0.05)
@@ -950,7 +949,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                                                                         onClick={() => handleDeleteNote(note._id)}
                                                                         disabled={isProcessingNote}
                                                                         sx={{
-                                                                            color: alpha('#000', 0.5),
+                                                                            color: alpha(theme.palette.text.primary, 0.5),
                                                                             '&:hover': {
                                                                                 color: '#f44336',
                                                                                 bgcolor: alpha('#f44336', 0.05)
@@ -966,7 +965,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                                                                 variant="body2"
                                                                 sx={{
                                                                     whiteSpace: 'pre-wrap',
-                                                                    color: alpha('#000', 0.75)
+                                                                    color: alpha(theme.palette.text.primary, 0.75)
                                                                 }}
                                                             >
                                                                 {note.text}
@@ -986,7 +985,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
 
             <DialogActions sx={{
                 p: 2,
-                bgcolor: LIGHT_CARD,
+                bgcolor: theme.palette.background.paper,
                 borderTop: `1px solid ${alpha(NEON_PURPLE, 0.1)}`
             }}>
                 <Button

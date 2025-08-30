@@ -4,6 +4,7 @@ import {
     Button,
     alpha
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
@@ -26,6 +27,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
     handleExerciseSelect,
     toggleShowCompleted
 }) => {
+    const theme = useTheme();
 
     if (isLoading) {
         return (
@@ -111,12 +113,12 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
                                     px: 3,
                                     mb: 2,
                                     borderRadius: 8,
-                                    color: alpha('#000000', 0.8),
-                                    borderColor: alpha('#000000', 0.2),
+                                    color: alpha(theme.palette.text.primary, 0.8),
+                                    borderColor: alpha(theme.palette.text.primary, 0.2),
                                     textTransform: 'none',
                                     '&:hover': {
-                                        borderColor: alpha('#000000', 0.4),
-                                        bgcolor: alpha('#000000', 0.03)
+                                        borderColor: alpha(theme.palette.text.primary, 0.4),
+                                        bgcolor: alpha(theme.palette.text.primary, 0.06)
                                     }
                                 }}
                                 endIcon={showCompleted ? <ExpandLessIcon /> : <ExpandMoreIcon />}

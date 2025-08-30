@@ -59,6 +59,11 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
         return theme.palette.secondary.main;
     };
     const accentColor = getAccentColor();
+    const isDarkMode = theme.palette.mode === 'dark';
+    const defaultCardBorderColor = isDarkMode ? 'gray' : 'lightgray';
+    const selectedCardBorderColor = isDarkMode
+        ? (theme.palette.primary.dark)
+        : defaultCardBorderColor;
 
     const handleCardClick = (e: React.MouseEvent) => {
         // Prevent click action if clicking on interactive elements like buttons
@@ -83,18 +88,13 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                     bgcolor: theme.palette.background.paper,
                     borderRadius: 3,
                     overflow: 'hidden',
-                    border: `1px solid ${isSelected ? alpha(theme.palette.secondary.main, 0.5) : alpha(accentColor, 0.2)}`,
-                    transition: 'all 0.3s ease',
+                    // Keep border width constant to avoid layout shift; use a ring via box-shadow when selected
+                    border: `1px solid ${defaultCardBorderColor}`,
                     boxShadow: isSelected
-                        ? `0 4px 12px ${alpha(theme.palette.secondary.main, 0.2)}`
+                        ? `0 0 0 2px ${selectedCardBorderColor}, 0 4px 12px ${alpha(theme.palette.secondary.main, 0.2)}`
                         : `0 4px 12px ${alpha(accentColor, 0.1)}`,
-                    '&:hover': {
-                        boxShadow: isSelected
-                            ? `0 8px 16px ${alpha(theme.palette.secondary.main, 0.25)}`
-                            : `0 8px 16px ${alpha(accentColor, 0.15)}`,
-                        transform: 'translateY(-3px)',
-                        cursor: showSelectionMode ? 'pointer' : 'default'
-                    }
+                    transition: 'none',
+
                 }}
             >
                 {/* Main content area: Image on left, details on right */}
@@ -142,10 +142,10 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                     variant="h6" // Larger for exercise name
                                     sx={{
                                         fontWeight: 'bold',
-                                        color: isSelected ? theme.palette.secondary.main : theme.palette.text.primary,
+                                        color: isSelected ? theme.palette.primary.main : theme.palette.text.primary,
                                         mb: 0.5,
                                         textShadow: isSelected
-                                            ? `0 0 1px ${alpha(theme.palette.secondary.main, 0.3)}`
+                                            ? `0 0 1px ${alpha(theme.palette.primary.main, 0.3)}`
                                             : `0 0 1px ${alpha(accentColor, 0.3)}`
                                     }}
                                 >
@@ -195,9 +195,9 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                             sx={{
                                 height: 6, // Slightly thicker as per drawing
                                 borderRadius: 1,
-                                bgcolor: alpha(isSelected ? theme.palette.secondary.main : accentColor, 0.15),
+                                bgcolor: alpha(theme.palette.primary.main, 0.15),
                                 '& .MuiLinearProgress-bar': {
-                                    bgcolor: isSelected ? theme.palette.secondary.main : accentColor,
+                                    bgcolor: theme.palette.primary.main,
                                     borderRadius: 1,
                                 },
                                 my: 1 // Margin top and bottom
@@ -208,7 +208,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
 
                 {/* Controls and Chips Section - Revised as per new drawing */}
                 <Box sx={{ px: 1.5, pb: 0.5 }}>
-                    <Divider sx={{ bgcolor: alpha(theme.palette.divider, 1), my: 1.5 }} />
+                    <Divider sx={{ bgcolor: defaultCardBorderColor, my: 1.5 }} />
 
                     {/* First Row: Primary Muscle Chip + Controls */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
