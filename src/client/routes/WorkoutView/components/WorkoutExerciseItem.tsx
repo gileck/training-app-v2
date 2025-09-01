@@ -54,9 +54,9 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
     const progressPercent = totalSets > 0 ? (setsDone / totalSets) * 100 : 0;
 
     const getAccentColor = () => {
-        if (isExerciseComplete) return theme.palette.success.main;
+        if (isExerciseComplete) return '#30d219';
         if (progressPercent > 0) return theme.palette.primary.main;
-        return theme.palette.secondary.main;
+        return theme.palette.primary.main;
     };
     const accentColor = getAccentColor();
     const isDarkMode = theme.palette.mode === 'dark';
@@ -85,14 +85,17 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                 onClick={handleCardClick}
                 sx={{
                     mb: 2.5,
-                    bgcolor: theme.palette.background.paper,
+                    bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.25) : theme.palette.background.paper,
                     borderRadius: 3,
                     overflow: 'hidden',
                     // Keep border width constant to avoid layout shift; use a ring via box-shadow when selected
                     border: `1px solid ${defaultCardBorderColor}`,
                     boxShadow: isSelected
-                        ? `0 0 0 2px ${selectedCardBorderColor}, 0 4px 12px ${alpha(theme.palette.secondary.main, 0.2)}`
-                        : `0 4px 12px ${alpha(accentColor, 0.1)}`,
+                        ? `0 0 0 3px ${selectedCardBorderColor}, 0 4px 12px ${alpha(theme.palette.secondary.main, 0.2)}`
+                        :
+                        isExerciseComplete
+                            ? `0 0 0 0.5px #30d219` :
+                            `0 4px 12px ${alpha(accentColor, 0.1)}`,
                     transition: 'none',
 
                 }}
@@ -142,7 +145,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                     variant="h6" // Larger for exercise name
                                     sx={{
                                         fontWeight: 'bold',
-                                        color: isSelected ? theme.palette.primary.main : theme.palette.text.primary,
+                                        color: theme.palette.text.primary,
                                         mb: 0.5,
                                         textShadow: isSelected
                                             ? `0 0 1px ${alpha(theme.palette.primary.main, 0.3)}`
@@ -154,7 +157,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                 <IconButton
                                     onClick={(e) => { e.stopPropagation(); handleOpenDetailModal(); }}
                                     size="small"
-                                    sx={{ color: theme.palette.info.main, mt: -0.5 }} // Align with top
+                                    sx={{ color: theme.palette.primary.main, mt: -0.5 }} // Align with top
                                 >
                                     <InfoIcon fontSize="small" />
                                 </IconButton>
@@ -169,7 +172,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                                 <Typography data-testid="sets-completed" sx={{ color: alpha(theme.palette.text.primary, 0.8), fontWeight: 'medium' }}>
                                     Sets: {setsDone}/{totalSets}
                                 </Typography>
-                                {isExerciseComplete && !isSelected && (
+                                {isExerciseComplete && (
                                     <CheckCircleIcon data-testid="exercise-complete-badge" sx={{ color: theme.palette.success.main, fontSize: '1.2rem' }} />
                                 )}
                                 {exercise.definition?.hasComments && (
@@ -195,9 +198,9 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                             sx={{
                                 height: 6, // Slightly thicker as per drawing
                                 borderRadius: 1,
-                                bgcolor: alpha(theme.palette.primary.main, 0.15),
+                                bgcolor: alpha(accentColor, 0.15),
                                 '& .MuiLinearProgress-bar': {
-                                    bgcolor: theme.palette.primary.main,
+                                    bgcolor: accentColor,
                                     borderRadius: 1,
                                 },
                                 my: 1 // Margin top and bottom

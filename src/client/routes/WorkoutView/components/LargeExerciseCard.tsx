@@ -37,7 +37,7 @@ export const LargeExerciseCard: React.FC<LargeExerciseCardProps> = ({
     const imageUrl = definition?.imageUrl || '/placeholder-image.jpg';
     const setsCompleted = progress?.setsCompleted || 0;
     const isExerciseComplete = setsCompleted >= targetSets;
-    const accentColor = isExerciseComplete ? theme.palette.success.main : theme.palette.primary.main;
+    const accentColor = isExerciseComplete ? '#30d219' : theme.palette.primary.main;
 
     const handleIncrement = () => {
         if (setsCompleted < targetSets) {
