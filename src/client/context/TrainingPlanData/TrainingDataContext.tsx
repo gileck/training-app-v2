@@ -37,7 +37,7 @@ interface TrainingDataContextType {
 
     // Action functions that use updateState internally
     loadTrainingPlans: () => Promise<void>;
-    createTrainingPlan: (plan: CreateTrainingPlanRequest) => Promise<void>;
+    createTrainingPlan: (plan: CreateTrainingPlanRequest) => Promise<TrainingPlan>;
     updateTrainingPlan: (planId: string, updates: UpdateTrainingPlanRequest) => Promise<void>;
     deleteTrainingPlan: (planId: string) => Promise<void>;
     duplicateTrainingPlan: (planId: string) => Promise<void>;

@@ -69,13 +69,16 @@ export const useTrainingPlanHooks = (
                 updateStateAndSave({
                     trainingPlans: [...state.trainingPlans, response.data]
                 });
+                return response.data;
             } else {
                 updateState({ error: 'Failed to create training plan' });
+                throw new Error('Failed to create training plan');
             }
         } catch (error) {
             updateState({
                 error: error instanceof Error ? error.message : 'Failed to create training plan'
             });
+            throw error instanceof Error ? error : new Error('Failed to create training plan');
         }
     }, [updateState, updateStateAndSave, state.trainingPlans]);
 

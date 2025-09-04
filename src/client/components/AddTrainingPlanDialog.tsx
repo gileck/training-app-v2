@@ -14,6 +14,7 @@ import {
     MenuItem
 } from '@mui/material';
 import { useTrainingPlans } from '@/client/hooks/useTrainingData';
+import { useRouter } from '@/client/router';
 
 interface AddTrainingPlanDialogProps {
     open: boolean;
@@ -28,6 +29,7 @@ const AddTrainingPlanDialog: React.FC<AddTrainingPlanDialogProps> = ({ open, onC
     const [error, setError] = useState<string | null>(null);
 
     const { createTrainingPlan } = useTrainingPlans();
+    const { navigate } = useRouter();
 
     const handleClose = () => {
         if (isSubmitting) return; // Prevent closing while submitting
@@ -54,8 +56,9 @@ const AddTrainingPlanDialog: React.FC<AddTrainingPlanDialogProps> = ({ open, onC
 
         setIsSubmitting(true);
         try {
-            await createTrainingPlan({ name: planName.trim(), durationWeeks: durationNum });
-            handleClose(); // Close the dialog - context will automatically update
+            const createdPlan = await createTrainingPlan({ name: planName.trim(), durationWeeks: durationNum });
+            navigate(`/training-plans/${createdPlan._id}/exercises`);
+            handleClose();
         } catch (err: unknown) {
             console.error("Create plan error:", err);
             setError(err instanceof Error ? err.message : "An unknown error occurred.");
@@ -82,18 +85,6 @@ const AddTrainingPlanDialog: React.FC<AddTrainingPlanDialogProps> = ({ open, onC
                     onChange={(e) => setPlanName(e.target.value)}
                     disabled={isSubmitting}
                     inputProps={{ 'data-testid': 'plan-name-input' }}
-                />
-                <TextField
-                    margin="dense"
-                    id="planDescription"
-                    label="Description (optional)"
-                    type="text"
-                    fullWidth
-                    variant="standard"
-                    value={planDescription}
-                    onChange={(e) => setPlanDescription(e.target.value)}
-                    disabled={isSubmitting}
-                    inputProps={{ 'data-testid': 'plan-description-input' }}
                 />
                 <FormControl fullWidth variant="standard" margin="dense" required>
                     <InputLabel id="duration-weeks-label">Duration (Weeks)</InputLabel>

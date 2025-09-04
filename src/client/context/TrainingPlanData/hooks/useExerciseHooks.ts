@@ -71,18 +71,24 @@ export const useExerciseHooks = (
             const response = await apiAddExercise(exercise);
 
             if (response.data) {
-                const currentPlanData = state.planData[planId];
-                if (currentPlanData) {
-                    updateStateAndSave({
-                        planData: {
-                            ...state.planData,
-                            [planId]: {
-                                ...currentPlanData,
-                                exercises: [...currentPlanData.exercises, response.data]
-                            }
+                const currentPlanData = state.planData[planId] || {
+                    exercises: [],
+                    weeklyProgress: {},
+                    savedWorkouts: [],
+                    isLoaded: false,
+                    isLoading: false
+                };
+                const safeExercises = Array.isArray(currentPlanData.exercises) ? currentPlanData.exercises : [];
+
+                updateStateAndSave({
+                    planData: {
+                        ...state.planData,
+                        [planId]: {
+                            ...currentPlanData,
+                            exercises: [...safeExercises, response.data]
                         }
-                    });
-                }
+                    }
+                });
             } else {
                 updateState({ error: 'Failed to create exercise' });
             }

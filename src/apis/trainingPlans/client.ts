@@ -34,7 +34,8 @@ import type {
 export const getAllTrainingPlans = async (params: GetAllTrainingPlansRequest = {}): Promise<CacheResult<GetAllTrainingPlansResponse>> => {
     return apiClient.call<GetAllTrainingPlansResponse, GetAllTrainingPlansRequest>(
         getAllApiName,
-        params
+        params,
+        { bypassCache: true } // Ensure fresh list to avoid stale cached plans after mutations
     );
 };
 
@@ -108,6 +109,7 @@ export const getActiveTrainingPlan = async (): Promise<CacheResult<GetActiveTrai
     // No params needed for the request body
     return apiClient.call<GetActiveTrainingPlanResponse, Record<string, never>>(
         getActiveApiName,
-        {}
+        {},
+        { bypassCache: true } // Ensure active plan reflects latest server state
     );
 }; 
