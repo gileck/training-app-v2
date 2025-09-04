@@ -35,6 +35,8 @@ Follow the app API/component patterns (see `src/apis/apis.ts`, `src/client/compo
     - A reusable MUI dialog to display the action summary and ask for confirmation.
   - New: `src/client/routes/ManageTrainingPlanPage/hooks/useAiAssistant.ts`
     - Encapsulate chat messages, API calls, action proposals, and execution wiring to existing hooks.
+  - New: `src/client/routes/ManageTrainingPlanPage/hooks/useAiAssistantActions.ts`
+    - Dedicated, direct actions for AI flow (no UI dialogs). Methods: `addExerciseToPlan`, `removeExerciseFromPlan`, `updateExerciseInPlan`, `createWorkout`, `deleteWorkout`, `renameWorkout`, etc. Internally call the same APIs as `ExercisesTab.tsx`/`WorkoutsTab.tsx` but without user dialogs.
   - New API module: `src/apis/trainingPlanAiAssistant/`
     - `index.ts`: export names and wire into `src/apis/apis.ts`.
     - `types.ts`: shared types for assistant requests and structured ProposedActions.
@@ -150,8 +152,7 @@ export async function suggestActionsForTrainingPlan(req: SuggestActionsRequest):
 import React from 'react';
 import { Box, Stack, TextField, Button } from '@mui/material';
 import { suggestActionsForTrainingPlan } from '@/apis/trainingPlanAiAssistant/client';
-import { useExerciseHooks } from '../hooks/useExerciseHooks';
-import { useTrainingPlanHooks } from '../hooks/useTrainingPlanHooks';
+import { useAiAssistantActions } from '../hooks/useAiAssistantActions';
 
 export const AIChatTab: React.FC<{ planId: string }> = ({ planId }) => {
   const [messages, setMessages] = React.useState([]);
@@ -159,8 +160,7 @@ export const AIChatTab: React.FC<{ planId: string }> = ({ planId }) => {
   const [input, setInput] = React.useState('');
   const [modelId] = React.useState('default-model'); // later allow user selection via models.ts
 
-  const exerciseHooks = useExerciseHooks({ planId });
-  const trainingHooks = useTrainingPlanHooks({ planId });
+  const aiActions = useAiAssistantActions({ planId });
 
   async function onSend() {
     const userMessage = { role: 'user', content: input };
@@ -172,15 +172,20 @@ export const AIChatTab: React.FC<{ planId: string }> = ({ planId }) => {
     setInput('');
   }
 
+  const actionHandlers = {
+    addExerciseToPlan: (payload) => aiActions.addExerciseToPlan(payload),
+    removeExerciseFromPlan: (payload) => aiActions.removeExerciseFromPlan(payload),
+    editExerciseInPlan: (payload) => aiActions.updateExerciseInPlan(payload),
+    addWorkoutToPlan: (payload) => aiActions.createWorkout(payload),
+    removeWorkoutFromPlan: (payload) => aiActions.deleteWorkout(payload),
+    renameWorkout: (payload) => aiActions.renameWorkout(payload),
+  } as const;
+
   async function onConfirm(action) {
-    // Map proposals to existing hooks/APIs; examples:
-    if (action.type === 'addExerciseToPlan') {
-      await exerciseHooks.handleAddExerciseByDefinitionId(action.payload.exerciseDefinitionId);
+    const handler = actionHandlers[action.type];
+    if (handler) {
+      await handler(action.payload);
     }
-    if (action.type === 'addWorkoutToPlan') {
-      await trainingHooks.savedWorkout_createWorkout(action.payload.name);
-    }
-    // Refresh state is already handled in hooks; optionally reload proposals/messages.
   }
 
   return (
@@ -222,13 +227,13 @@ export const AIActionConfirmDialog: React.FC<{ open: boolean; summary: string; o
   - Add the new API to `src/apis/apis.ts` with a handler name exported only in the module `index.ts` and re-exported server-side. Ensure the client imports names from `index.ts` only and returns `CacheResult<ResponseType>`.
 
 - Execution mapping (client-side)
-  - Implement a mapping function from `ProposedAction` to concrete existing hook calls:
-    - `addExerciseToPlan` → `exerciseHooks.handleAddExerciseByDefinitionId(defId)` or equivalent.
-    - `removeExerciseFromPlan` → `exerciseHooks.handleRequestDeleteExercise(exerciseId)`.
-    - `editExerciseInPlan` → `exerciseHooks.handleOpenEditForm(exerciseId)` prefilled, or a direct update method if available.
-    - `addWorkoutToPlan` → `savedWorkout_createWorkout(name?)`.
-    - `removeWorkoutFromPlan` → `savedWorkout_openDeleteDialog(workoutId)` or a direct removal method.
-    - `renameWorkout` → `savedWorkout_openRenameDialog(workoutId)` with `newName` where supported.
+  - Implement a mapping function from `ProposedAction` to dedicated AI action hooks in `useAiAssistantActions` (no user dialogs):
+    - `addExerciseToPlan` → `aiActions.addExerciseToPlan({ exerciseDefinitionId, defaults })`.
+    - `removeExerciseFromPlan` → `aiActions.removeExerciseFromPlan({ exerciseId })`.
+    - `editExerciseInPlan` → `aiActions.updateExerciseInPlan({ exerciseId, updates })`.
+    - `addWorkoutToPlan` → `aiActions.createWorkout({ name })`.
+    - `removeWorkoutFromPlan` → `aiActions.deleteWorkout({ workoutId })`.
+    - `renameWorkout` → `aiActions.renameWorkout({ workoutId, newName })`.
 
 ## 3. Implementation Phases
 
