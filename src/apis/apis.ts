@@ -21,6 +21,7 @@ import {
   renameApiName as savedWorkoutsRenameApiName
 } from './savedWorkouts/index';
 import * as savedWorkoutsServer from './savedWorkouts/server';
+import { processSuggestActions as trainingPlanAiSuggest, suggestActionsApiName as trainingPlanAiSuggestName } from './trainingPlanAiAssistant/server';
 
 export const apiHandlers: ApiHandlers = {
   [chat.name]: { process: chat.process as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
@@ -64,4 +65,5 @@ export const apiHandlers: ApiHandlers = {
   [savedWorkoutsAddExerciseApiName]: { process: savedWorkoutsServer.addExerciseToSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [savedWorkoutsRemoveExerciseApiName]: { process: savedWorkoutsServer.removeExerciseFromSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [savedWorkoutsRenameApiName]: { process: savedWorkoutsServer.renameSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> }
+  , [trainingPlanAiSuggestName]: { process: trainingPlanAiSuggest as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> }
 };

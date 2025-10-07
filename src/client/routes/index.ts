@@ -14,6 +14,7 @@ export const routes = createRoutes({
   '/training-plans': TrainingPlans,
   '/training-plans/:planId/exercises': ManageTrainingPlanPage,
   '/training-plans/:planId/workouts': ManageTrainingPlanPage,
+  '/training-plans/:planId/ai': ManageTrainingPlanPage,
   '/workout/:planId/:weekNumber': WorkoutView,
   '/saved-workouts': SavedWorkouts,
   '/settings': Settings,
