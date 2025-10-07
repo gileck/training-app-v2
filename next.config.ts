@@ -96,12 +96,18 @@ const nextConfig: NextConfig = withPWA({
     return config;
   },
   async rewrites() {
-    return [
-      {
-        source: '/:path*',
-        destination: '/',
-      },
-    ];
+    // Use fallback rewrites so real routes (like /api/process) are handled first.
+    // This prevents POSTs to /api/* from being rewritten to '/' which caused 405s.
+    return {
+      beforeFiles: [],
+      afterFiles: [],
+      fallback: [
+        {
+          source: '/:path*',
+          destination: '/',
+        },
+      ],
+    };
   },
 });
 

@@ -2,15 +2,13 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { parse, serialize } from 'cookie';
 import jwt from 'jsonwebtoken';
 import { AuthTokenPayload } from "./auth/types";
+import { JWT_SECRET as AUTH_JWT_SECRET, COOKIE_NAME as AUTH_COOKIE_NAME } from '@/apis/auth/server';
 
 // Create server-side cache instance
 
-// Constants
-const JWT_SECRET = process.env.JWT_SECRET || 'xxxxx';
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is not set")
-}
-const COOKIE_NAME = 'auth_token';
+// Constants - use the same values as the auth API to avoid mismatches
+const JWT_SECRET = AUTH_JWT_SECRET;
+const COOKIE_NAME = AUTH_COOKIE_NAME;
 
 
 export function getUserContext(req: NextApiRequest, res: NextApiResponse) {

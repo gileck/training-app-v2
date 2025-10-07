@@ -24,6 +24,8 @@ export const apiClient = {
         headers: {
           'Content-Type': 'application/json',
         },
+        // Send credentials so the server can read auth cookie
+        credentials: 'include',
         body: JSON.stringify({
           name,
           params,
@@ -34,9 +36,28 @@ export const apiClient = {
         }),
       });
 
-      // Only cache responses with status 200
+      // Provide richer errors with response text/json if available
       if (response.status !== 200) {
-        throw new Error(`Failed to call ${name}: HTTP ${response.status} ${response.statusText}`);
+        let extra = '';
+        try {
+          const text = await response.text();
+          // Try to parse JSON from text to extract known fields
+          try {
+            const json = JSON.parse(text);
+            if (json && typeof json === 'object') {
+              if (json.error) extra = ` - ${json.error}`;
+              else if (json.message) extra = ` - ${json.message}`;
+              else extra = text ? ` - ${text}` : '';
+            } else {
+              extra = text ? ` - ${text}` : '';
+            }
+          } catch {
+            extra = text ? ` - ${text}` : '';
+          }
+        } catch {
+          // ignore
+        }
+        throw new Error(`Failed to call ${name}: HTTP ${response.status} ${response.statusText}${extra}`);
       }
 
       const result = await response.json();
