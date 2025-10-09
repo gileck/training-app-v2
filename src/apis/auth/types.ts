@@ -5,7 +5,6 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
     username: string;
-    email?: string;
     password: string;
 }
 
@@ -37,18 +36,13 @@ export interface UpdateProfileResponse {
 export interface UserResponse {
     id: string;
     username: string;
-    email?: string;
     createdAt: string;
     profilePicture?: string;
-}
-
-export interface AuthTokenPayload {
-    userId: string;
 }
 
 export interface ApiHandlerContext {
     userId?: string;
     getCookieValue: (name: string) => string | undefined;
-    setCookie: (name: string, value: string, options: Record<string, unknown>) => void;
-    clearCookie: (name: string, options: Record<string, unknown>) => void;
+    setCookie: (name: string, value: string, options?: Record<string, unknown>) => void;
+    clearCookie: (name: string, options?: Record<string, unknown>) => void;
 } 

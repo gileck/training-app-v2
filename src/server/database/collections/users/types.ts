@@ -7,8 +7,7 @@ import { ObjectId } from 'mongodb';
 export interface User {
   _id: ObjectId;
   username: string;     // Indexed, Unique
-  email?: string;       // Indexed, Unique (when provided)
-  password_hash: string;
+  password: string;
   createdAt: Date;
   updatedAt: Date;
   profilePicture?: string;
@@ -34,5 +33,4 @@ export type UserUpdate = Partial<Omit<User, '_id' | 'createdAt'>> & {
 export interface UserFilter {
   _id?: ObjectId;
   username?: string | RegExp;
-  email?: string | RegExp;
 } 

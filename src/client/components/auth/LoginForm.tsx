@@ -16,7 +16,6 @@ export const LoginForm = () => {
     const [isRegistering, setIsRegistering] = useState(false);
     const [formData, setFormData] = useState<LoginFormState>({
         username: '',
-        email: '',
         password: '',
         confirmPassword: ''
     });
@@ -37,8 +36,7 @@ export const LoginForm = () => {
         if (isRegistering) {
             const registerData = {
                 username: formData.username,
-                password: formData.password,
-                ...(formData.email.trim() && { email: formData.email })
+                password: formData.password
             };
             await register(registerData);
         } else {
@@ -76,22 +74,6 @@ export const LoginForm = () => {
                 helperText={formErrors.username}
                 disabled={isLoading}
             />
-
-            {isRegistering && (
-                <TextField
-                    margin="normal"
-                    fullWidth
-                    id="email"
-                    label="Email Address (Optional)"
-                    name="email"
-                    autoComplete="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    error={!!formErrors.email}
-                    helperText={formErrors.email}
-                    disabled={isLoading}
-                />
-            )}
 
             <TextField
                 margin="normal"

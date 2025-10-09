@@ -1,5 +1,3 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { login } from '../index';
 import {
     ApiHandlerContext,
@@ -7,7 +5,7 @@ import {
     LoginResponse,
 } from '../types';
 import * as users from '@/server/database/collections/users/users';
-import { JWT_SECRET, JWT_EXPIRES_IN, COOKIE_NAME, COOKIE_OPTIONS, sanitizeUser } from '../server';
+import { COOKIE_NAME, sanitizeUser } from '../server';
 
 // Login endpoint
 export const loginUser = async (
@@ -26,21 +24,13 @@ export const loginUser = async (
             return { error: "Invalid username or password" };
         }
 
-        // Verify password
-        const isPasswordValid = await bcrypt.compare(request.password, user.password_hash);
-        if (!isPasswordValid) {
+        // Verify password directly (simplest possible auth per requirements)
+        if (user.password !== request.password) {
             return { error: "Invalid username or password" };
         }
 
-        // Generate JWT token
-        const token = jwt.sign(
-            { userId: user._id.toHexString() },
-            JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
-        );
-
-        // Set auth cookie
-        context.setCookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+        // Set auth cookie to user id
+        context.setCookie(COOKIE_NAME, user._id.toHexString());
 
         return { user: sanitizeUser(user) };
     } catch (error: unknown) {

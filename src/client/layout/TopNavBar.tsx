@@ -116,7 +116,7 @@ export const TopNavBar = ({ navItems, isStandalone, onDrawerToggle }: TopNavBarP
                             onClose={handleClose}
                         >
                             <MenuItem disabled>
-                                {user?.email}
+                                {user?.username}
                             </MenuItem>
                             <MenuItem onClick={handleLogout}>Logout</MenuItem>
                         </Menu>

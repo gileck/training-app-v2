@@ -17,12 +17,10 @@ export const updateUserProfile = async (
             return { success: false, error: "Not authenticated" };
         }
 
-        // Validate update data
         if (!request.username && !request.profilePicture) {
             return { success: false, error: "No update data provided" };
         }
 
-        // Prepare update object
         const updateData: {
             updatedAt: Date;
             username?: string;
@@ -35,11 +33,10 @@ export const updateUserProfile = async (
             updateData.username = request.username;
         }
 
-        if (request.profilePicture) {
+        if (request.profilePicture !== undefined) {
             updateData.profilePicture = request.profilePicture;
         }
 
-        // Update user in database
         const updatedUser = await users.updateUser(context.userId, updateData);
         if (!updatedUser) {
             return { success: false, error: "User not found" };
@@ -59,4 +56,5 @@ export const updateUserProfile = async (
 };
 
 // Export API endpoint name
-export { updateProfile }; 
+export { updateProfile };
+

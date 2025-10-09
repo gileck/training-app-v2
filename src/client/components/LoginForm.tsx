@@ -5,7 +5,6 @@ import { Box, TextField, Button, Typography, Link, CircularProgress, Alert } fro
 const LoginForm: React.FC = () => {
     const { login, register, isLoading, error } = useAuth();
     const [isRegistering, setIsRegistering] = useState(false);
-    // Email is optional for registration; omitted to keep form minimal
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState(''); // Only for registration
 

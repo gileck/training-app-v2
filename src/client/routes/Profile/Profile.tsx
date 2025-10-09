@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, ChangeEvent } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
     Box,
     Typography,
@@ -14,18 +14,13 @@ import {
     Button,
     IconButton,
     Snackbar,
-    Alert,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions
+    Alert
 } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from '../../router';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
-import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import { apiUpdateProfile, apiFetchCurrentUser } from '@/apis/auth/client';
 import { UpdateProfileRequest, UserResponse } from '@/apis/auth/types';
 
@@ -34,15 +29,12 @@ export const Profile = () => {
     const { navigate } = useRouter();
     const [editing, setEditing] = useState(false);
     const [username, setUsername] = useState('');
-    const [previewImage, setPreviewImage] = useState<string | undefined>(undefined);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-    const [openImageDialog, setOpenImageDialog] = useState(false);
     const [savingProfile, setSavingProfile] = useState(false);
     const [localUser, setLocalUser] = useState<UserResponse | null>(null);
     const [loadingUserData, setLoadingUserData] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const initialUsernameRef = useRef<string>('');
 
-    // Fetch fresh user data from the server
     const fetchUserData = async () => {
         try {
             setLoadingUserData(true);
@@ -50,7 +42,7 @@ export const Profile = () => {
             if (response.data?.user) {
                 setLocalUser(response.data.user);
                 setUsername(response.data.user.username);
-                setPreviewImage(response.data.user.profilePicture);
+                initialUsernameRef.current = response.data.user.username;
             }
         } catch (error) {
             console.error("Failed to fetch user data:", error);
@@ -69,7 +61,7 @@ export const Profile = () => {
         if (user) {
             setLocalUser(user);
             setUsername(user.username);
-            setPreviewImage(user.profilePicture);
+            initialUsernameRef.current = user.username;
         }
     }, [user]);
 
@@ -82,17 +74,12 @@ export const Profile = () => {
     }
 
     const handleEditClick = () => {
-        // Fetch fresh user data before editing
         setEditing(true);
     };
 
     const handleCancelEdit = () => {
         setEditing(false);
-        // Reset to original values
-        if (localUser) {
-            setUsername(localUser.username);
-            setPreviewImage(localUser.profilePicture);
-        }
+        setUsername(initialUsernameRef.current);
     };
 
     const handleSaveProfile = async () => {
@@ -105,19 +92,23 @@ export const Profile = () => {
             return;
         }
 
+        if (username === initialUsernameRef.current) {
+            setEditing(false);
+            return;
+        }
+
         setSavingProfile(true);
 
         try {
             const updateData: UpdateProfileRequest = {
-                username,
-                profilePicture: previewImage !== localUser?.profilePicture ? previewImage : undefined
+                username
             };
 
-            // Use bypassCache to ensure we're not using cached data
             const response = await apiUpdateProfile(updateData, { bypassCache: true });
 
             if (response.data?.success && response.data.user) {
                 setLocalUser(response.data.user);
+                initialUsernameRef.current = response.data.user.username;
                 setEditing(false);
                 setSnackbar({
                     open: true,
@@ -125,7 +116,6 @@ export const Profile = () => {
                     severity: 'success'
                 });
             } else {
-                // If the update failed, try to fetch fresh user data
                 await fetchUserData();
                 setSnackbar({
                     open: true,
@@ -134,7 +124,6 @@ export const Profile = () => {
                 });
             }
         } catch (err) {
-            // If an error occurred, try to fetch fresh user data
             await fetchUserData();
             const errorMessage = err instanceof Error ? err.message : 'Profile update error';
             setSnackbar({
@@ -147,69 +136,10 @@ export const Profile = () => {
         }
     };
 
-    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const result = reader.result as string;
-                setPreviewImage(result);
-                setOpenImageDialog(false);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handlePaste = async () => {
-        try {
-            const clipboardItems = await navigator.clipboard.read();
-            for (const clipboardItem of clipboardItems) {
-                for (const type of clipboardItem.types) {
-                    if (type.startsWith('image/')) {
-                        const blob = await clipboardItem.getType(type);
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                            const result = reader.result as string;
-                            setPreviewImage(result);
-                            setOpenImageDialog(false);
-                        };
-                        reader.readAsDataURL(blob);
-                        return;
-                    }
-                }
-            }
-            setSnackbar({
-                open: true,
-                message: 'No image found in clipboard',
-                severity: 'error'
-            });
-        } catch (error) {
-            console.error('Error accessing clipboard:', error);
-            setSnackbar({
-                open: true,
-                message: 'Failed to paste image from clipboard',
-                severity: 'error'
-            });
-        }
-    };
-
-    const handleUploadClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleOpenImageDialog = () => {
-        setOpenImageDialog(true);
-    };
-
-    const handleCloseImageDialog = () => {
-        setOpenImageDialog(false);
-    };
-
     const handleCloseSnackbar = () => {
         setSnackbar(prev => ({ ...prev, open: false }));
     };
 
-    // Use localUser for display to prevent the entire app from re-rendering
     const displayUser = localUser || user;
 
     return (
@@ -227,36 +157,17 @@ export const Profile = () => {
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
                     <Box sx={{ width: { xs: '100%', md: '30%' } }}>
                         <Paper elevation={2} sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <Box sx={{ position: 'relative' }}>
-                                <Avatar
-                                    src={previewImage}
-                                    sx={{
-                                        width: 120,
-                                        height: 120,
-                                        fontSize: '3rem',
-                                        mb: 2,
-                                        bgcolor: 'primary.main'
-                                    }}
-                                >
-                                    {username.charAt(0).toUpperCase()}
-                                </Avatar>
-                                {editing && (
-                                    <IconButton
-                                        color="primary"
-                                        sx={{
-                                            position: 'absolute',
-                                            right: -10,
-                                            bottom: 10,
-                                            backgroundColor: 'background.paper',
-                                            boxShadow: 1
-                                        }}
-                                        onClick={handleOpenImageDialog}
-                                        disabled={savingProfile}
-                                    >
-                                        <PhotoCameraIcon />
-                                    </IconButton>
-                                )}
-                            </Box>
+                            <Avatar
+                                sx={{
+                                    width: 120,
+                                    height: 120,
+                                    fontSize: '3rem',
+                                    mb: 2,
+                                    bgcolor: 'primary.main'
+                                }}
+                            >
+                                {username.charAt(0).toUpperCase()}
+                            </Avatar>
                             {editing ? (
                                 <TextField
                                     label="Username"
@@ -269,12 +180,7 @@ export const Profile = () => {
                                     disabled={savingProfile}
                                 />
                             ) : (
-                                <>
-                                    <Typography variant="h5">{username}</Typography>
-                                    {displayUser.email && (
-                                        <Typography variant="body2" color="text.secondary">{displayUser.email}</Typography>
-                                    )}
-                                </>
+                                <Typography variant="h5">{username}</Typography>
                             )}
 
                             {editing && (
@@ -315,15 +221,6 @@ export const Profile = () => {
                                     />
                                 </ListItem>
                                 <Divider component="li" />
-
-                                <ListItem>
-                                    <ListItemText
-                                        primary="Email"
-                                        secondary={displayUser.email || 'Not provided'}
-                                    />
-                                </ListItem>
-                                <Divider component="li" />
-
                                 <ListItem>
                                     <ListItemText
                                         primary="Member Since"
@@ -336,42 +233,6 @@ export const Profile = () => {
                 </Stack>
             )}
 
-            {/* Hidden file input for image upload */}
-            <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
-            />
-
-            {/* Image upload dialog */}
-            <Dialog open={openImageDialog} onClose={handleCloseImageDialog}>
-                <DialogTitle>Change Profile Picture</DialogTitle>
-                <DialogContent>
-                    <Stack spacing={2} sx={{ mt: 1 }}>
-                        <Button
-                            variant="contained"
-                            onClick={handlePaste}
-                        >
-                            Paste from Clipboard
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            onClick={handleUploadClick}
-                        >
-                            Upload Image
-                        </Button>
-                    </Stack>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseImageDialog} color="primary">
-                        Cancel
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Snackbar for notifications */}
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={6000}

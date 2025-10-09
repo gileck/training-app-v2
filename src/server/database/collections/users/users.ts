@@ -37,22 +37,10 @@ export const findUserByUsername = async (
 };
 
 /**
- * Find a user by email
- * @param email - The email to search for
- * @returns The user document or null if not found
- */
-export const findUserByEmail = async (
-  email: string
-): Promise<User | null> => {
-  const collection = await getUsersCollection();
-  return collection.findOne({ email });
-};
-
-/**
  * Insert a new user
  * @param user - The user data to insert
  * @returns The inserted user with _id
- * @throws Error if a user with the same username or email already exists
+ * @throws Error if a user with the same username already exists
  */
 export const insertUser = async (user: UserCreate): Promise<User> => {
   const collection = await getUsersCollection();
@@ -61,14 +49,6 @@ export const insertUser = async (user: UserCreate): Promise<User> => {
   const existingUsername = await collection.findOne({ username: user.username });
   if (existingUsername) {
     throw new Error(`User with username "${user.username}" already exists`);
-  }
-
-  // Check if email already exists (only if email is provided)
-  if (user.email) {
-    const existingEmail = await collection.findOne({ email: user.email });
-    if (existingEmail) {
-      throw new Error(`User with email "${user.email}" already exists`);
-    }
   }
 
   const result = await collection.insertOne(user as User);
@@ -85,7 +65,7 @@ export const insertUser = async (user: UserCreate): Promise<User> => {
  * @param userId - The ID of the user to update
  * @param update - The update data
  * @returns The updated user or null if not found
- * @throws Error if attempting to update username/email to one that already exists
+ * @throws Error if attempting to update username to one that already exists
  */
 export const updateUser = async (
   userId: ObjectId | string,
@@ -103,18 +83,6 @@ export const updateUser = async (
 
     if (existingUsername) {
       throw new Error(`User with username "${update.username}" already exists`);
-    }
-  }
-
-  // If email is being updated, check if it already exists
-  if (update.email) {
-    const existingEmail = await collection.findOne({
-      email: update.email,
-      _id: { $ne: idObj }
-    });
-
-    if (existingEmail) {
-      throw new Error(`User with email "${update.email}" already exists`);
     }
   }
 

@@ -1,5 +1,3 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { register } from '../index';
 import {
     ApiHandlerContext,
@@ -7,8 +5,7 @@ import {
     RegisterResponse,
 } from '../types';
 import * as users from '@/server/database/collections/users/users';
-import { UserCreate } from '@/server/database/collections/users/types';
-import { JWT_SECRET, JWT_EXPIRES_IN, COOKIE_NAME, COOKIE_OPTIONS, SALT_ROUNDS, sanitizeUser } from '../server'; // Assuming constants and sanitizeUser will be exported from server.ts
+import { COOKIE_NAME, sanitizeUser } from '../server';
 
 // Register endpoint
 export const registerUser = async (
@@ -21,35 +18,15 @@ export const registerUser = async (
             return { error: "Username and password are required" };
         }
 
-        // Check for existing email if provided
-        if (request.email) {
-            const existingUser = await users.findUserByEmail(request.email);
-            if (existingUser) {
-                return { error: "Email already exists" };
-            }
-        }
-
-        // Hash password and create user
-        const passwordHash = await bcrypt.hash(request.password, SALT_ROUNDS);
-        const userData: UserCreate = {
+        const newUser = await users.insertUser({
             username: request.username,
-            password_hash: passwordHash,
+            password: request.password,
             createdAt: new Date(),
-            updatedAt: new Date(),
-            ...(request.email && { email: request.email })
-        };
+            updatedAt: new Date()
+        });
 
-        const newUser = await users.insertUser(userData);
-
-        // Generate JWT token
-        const token = jwt.sign(
-            { userId: newUser._id.toHexString() },
-            JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
-        );
-
-        // Set auth cookie
-        context.setCookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+        // Set cookie with user id for simple auth
+        context.setCookie(COOKIE_NAME, newUser._id.toHexString());
 
         return { user: sanitizeUser(newUser) };
     } catch (error: unknown) {

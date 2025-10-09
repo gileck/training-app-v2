@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { LoginFormState, LoginFormErrors } from './types'; // Assuming types will be defined here or moved from LoginForm
+import { LoginFormState, LoginFormErrors } from './types';
 
 export const useLoginFormValidator = (isRegistering: boolean, formData: LoginFormState) => {
     const [formErrors, setFormErrors] = useState<LoginFormErrors>({
         username: '',
-        email: '',
         password: '',
         confirmPassword: ''
     });
@@ -13,7 +12,6 @@ export const useLoginFormValidator = (isRegistering: boolean, formData: LoginFor
         let isValid = true;
         const errors: LoginFormErrors = {
             username: '',
-            email: '',
             password: '',
             confirmPassword: ''
         };
@@ -21,13 +19,6 @@ export const useLoginFormValidator = (isRegistering: boolean, formData: LoginFor
         if (!formData.username.trim()) {
             errors.username = 'Username is required';
             isValid = false;
-        }
-
-        if (isRegistering && formData.email.trim()) {
-            if (!/\S+@\S+\.\S+/.test(formData.email)) {
-                errors.email = 'Email is invalid';
-                isValid = false;
-            }
         }
 
         if (!formData.password) {
@@ -53,7 +44,6 @@ export const useLoginFormValidator = (isRegistering: boolean, formData: LoginFor
     const resetFormErrors = () => {
         setFormErrors({
             username: '',
-            email: '',
             password: '',
             confirmPassword: ''
         });

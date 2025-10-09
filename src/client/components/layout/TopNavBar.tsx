@@ -121,7 +121,6 @@ export const TopNavBar = ({ navItems, isStandalone, onDrawerToggle }: TopNavBarP
                 aria-haspopup="true"
               >
                 <Avatar
-                  src={user?.profilePicture}
                   alt={user?.username}
                   sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}
                 >
@@ -145,7 +144,6 @@ export const TopNavBar = ({ navItems, isStandalone, onDrawerToggle }: TopNavBarP
               >
                 <MenuItem onClick={handleMenuClose} disabled sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
                   <Avatar
-                    src={user?.profilePicture}
                     alt={user?.username}
                     sx={{ width: 60, height: 60, mb: 1 }}
                   >
@@ -155,7 +153,7 @@ export const TopNavBar = ({ navItems, isStandalone, onDrawerToggle }: TopNavBarP
                     {user?.username}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {user?.email}
+                    {user?.username}
                   </Typography>
                 </MenuItem>
                 <Divider />
