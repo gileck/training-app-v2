@@ -288,7 +288,7 @@ export const getActiveTrainingPlan = async (
     context: ApiHandlerContext
 ): Promise<GetActiveTrainingPlanResponse> => {
     if (!context.userId) {
-        return { error: "Unauthorized", plan: null };
+        throw new Error("Unauthorized");
     }
 
     try {
@@ -296,12 +296,13 @@ export const getActiveTrainingPlan = async (
         const activePlan = await trainingPlans.findActiveTrainingPlan(context.userId);
 
         if (!activePlan) {
-            return { error: "No active training plan found", plan: null };
+            // No active plan is a normal state, not an error
+            return null;
         }
 
         return mapToApiTrainingPlan(activePlan);
     } catch (error) {
         console.error("Error fetching active training plan:", error);
-        return { error: "Failed to retrieve active training plan", plan: null };
+        throw new Error("Failed to retrieve active training plan");
     }
 }; 

@@ -62,16 +62,12 @@ export const apiClient = {
 
       const result = await response.json();
 
-      // Don't cache if result data is null
-      if (result.data === null) {
-        throw new Error(`Failed to call ${name}: No data returned`);
-      }
-
       // Don't cache responses with error fields
       if (result.data && typeof result.data === 'object' && 'error' in result.data && result.data.error !== undefined && result.data.error !== null) {
         throw new Error(`Failed to call ${name}: ${result.data.error}`);
       }
 
+      // Note: null is a valid response for some APIs (e.g., getActiveTrainingPlan when no plan exists)
       return result.data;
     };
 

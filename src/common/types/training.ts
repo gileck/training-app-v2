@@ -203,7 +203,7 @@ export type DeleteTrainingPlanResponse = { success: boolean; message?: string };
 export type DuplicateTrainingPlanResponse = TrainingPlan;
 export type SetActiveTrainingPlanResponse = { success: boolean; message?: string };
 export type GetActiveTrainingPlanRequest = Record<string, never>;
-export type GetActiveTrainingPlanResponse = TrainingPlan | { error?: string; plan?: null };
+export type GetActiveTrainingPlanResponse = TrainingPlan | null;
 
 export type GetExercisesResponse = ExerciseBase[];
 export type AddExerciseResponse = ExerciseBase;
