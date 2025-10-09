@@ -13,12 +13,12 @@ export const getCurrentUser = async (
 ): Promise<CurrentUserResponse> => {
     try {
         if (!context.userId) {
-            return { error: "Not authenticated" };
+            return {};
         }
 
         const user = await users.findUserById(context.userId);
         if (!user) {
-            return { error: "User not found" };
+            return {};
         }
 
         return { user: sanitizeUser(user) };
