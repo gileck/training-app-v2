@@ -4,7 +4,6 @@ import { Box, Tabs, Tab, useTheme, useMediaQuery } from '@mui/material';
 import { useManageTrainingPlanPage } from './hooks/useManageTrainingPlanPage';
 import { ExercisesTab } from './components/ExercisesTab';
 import { WorkoutsTab } from './components/WorkoutsTab';
-import { AIChatTab } from './components/AIChatTab';
 import { DialogsSection } from './components/DialogsSection';
 import { ErrorView } from './components/ErrorView';
 import { PageHeader } from './components/PageHeader';
@@ -72,7 +71,6 @@ export const ManageTrainingPlanPage: React.FC = () => {
                 <Tabs value={currentTab} onChange={handleTabChange} aria-label="Plan management tabs">
                     <Tab label="Exercises" />
                     <Tab label="Workouts" />
-                    <Tab label="AI Assistant" />
                 </Tabs>
             </Box>
 
@@ -96,10 +94,6 @@ export const ManageTrainingPlanPage: React.FC = () => {
                     planDetails={planDetails}
                     workoutHooks={workoutHooks}
                 />
-            )}
-
-            {currentTab === 2 && (
-                <AIChatTab planId={planId} />
             )}
 
             {/* Dialogs */}

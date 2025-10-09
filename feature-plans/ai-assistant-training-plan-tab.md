@@ -266,13 +266,12 @@ export const AIActionConfirmDialog: React.FC<{ open: boolean; summary: string; o
 
 Mark tasks as [✅] when completed. Update this list as progress is made.
 
-- [✅] Task 1: Scaffold `trainingPlanAiAssistant` API (index/types/server/client)
-- [✅] Task 2: Register API in `src/apis/apis.ts` per guidelines
-- [✅] Task 3: Create `AIChatTab.tsx` and wire to hooks
-- [✅] Task 4: Add "AI Assistant" tab to Manage Training Plan page
+- [ ] Task 1: Scaffold `trainingPlanAiAssistant` API (index/types/server/client)
+- [ ] Task 2: Register API in `src/apis/apis.ts` per guidelines
+- [ ] Task 3: Create `AIChatTab.tsx` and wire to hooks
+- [ ] Task 4: Add "AI Assistant" tab to Manage Training Plan page
 - [ ] Task 5: Implement intent parsing, thresholds, and disambiguation on the server
-- [ ] Task 6a: Implement action mapping and "Confirm All"
-- [ ] Task 6b: Add confirmation dialog UI and wire confirmations
+- [ ] Task 6: Implement confirmation dialog, "Confirm All", and action mapping
 - [ ] Task 7: Prompt for workout name when missing before confirm
 - [ ] Task 8: Add error/loading states and UX polish
 - [ ] Task 9: Write e2e tests (propose + disambiguate + confirm + apply)

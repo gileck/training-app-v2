@@ -24,9 +24,6 @@ export const usePageHooks = (planId: string | undefined, router: Router) => {
         if (currentPath.endsWith('/workouts')) {
             return 1; // Workouts tab
         }
-        if (currentPath.endsWith('/ai')) {
-            return 2; // AI tab
-        }
         return 0; // Exercises tab (default)
     }, [currentPath]);
 
@@ -42,7 +39,7 @@ export const usePageHooks = (planId: string | undefined, router: Router) => {
 
     const handleTabChange = useCallback((event: React.SyntheticEvent, newValue: number) => {
         if (!planId) return;
-        const newSubPath = newValue === 0 ? 'exercises' : newValue === 1 ? 'workouts' : 'ai';
+        const newSubPath = newValue === 0 ? 'exercises' : 'workouts';
         navigate(`/training-plans/${planId}/${newSubPath}`);
     }, [planId, navigate]);
 
