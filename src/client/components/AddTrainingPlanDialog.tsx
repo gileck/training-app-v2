@@ -23,7 +23,6 @@ interface AddTrainingPlanDialogProps {
 
 const AddTrainingPlanDialog: React.FC<AddTrainingPlanDialogProps> = ({ open, onClose }) => {
     const [planName, setPlanName] = useState('');
-    const [planDescription, setPlanDescription] = useState('');
     const [durationWeeks, setDurationWeeks] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -34,7 +33,6 @@ const AddTrainingPlanDialog: React.FC<AddTrainingPlanDialogProps> = ({ open, onC
     const handleClose = () => {
         if (isSubmitting) return; // Prevent closing while submitting
         setPlanName('');
-        setPlanDescription('');
         setDurationWeeks('');
         setError(null);
         onClose();
