@@ -34,60 +34,57 @@ async function migrateUserId() {
         console.log(`✓ Verified new user exists: ${newUser.username || newUser.email}`);
         console.log('');
 
-        // Collections to update
-        const collectionsToUpdate = [
-            'trainingPlans',
-            'exercises',
-            'savedWorkouts',
-            'weeklyProgress',
-            'exerciseActivityLog'
-        ];
-
+        // Dynamically discover collections and migrate any that contain a userId field
+        const collections = await db.listCollections().toArray();
         const results = {};
 
-        for (const collectionName of collectionsToUpdate) {
-            console.log(`Processing collection: ${collectionName}`);
-            
-            const collection = db.collection(collectionName);
-            
-            // Count documents with old user ID
-            const oldCount = await collection.countDocuments({ 
-                userId: new ObjectId(OLD_USER_ID) 
-            });
-            
-            console.log(`  Found ${oldCount} documents with old user ID`);
+        for (const { name: collectionName } of collections) {
+            if (collectionName === 'users') {
+                // Never update users._id here
+                continue;
+            }
 
-            if (oldCount > 0) {
-                // Update all documents
-                const updateResult = await collection.updateMany(
+            const collection = db.collection(collectionName);
+            console.log(`Processing collection: ${collectionName}`);
+
+            // Count by ObjectId and by string to cover both schemas
+            const oldIdAsObjectId = await collection.countDocuments({ userId: new ObjectId(OLD_USER_ID) }).catch(() => 0);
+            const oldIdAsString = await collection.countDocuments({ userId: OLD_USER_ID }).catch(() => 0);
+
+            const totalOld = oldIdAsObjectId + oldIdAsString;
+            console.log(`  Found ${totalOld} documents with old user ID (ObjectId: ${oldIdAsObjectId}, String: ${oldIdAsString})`);
+
+            let modified = 0;
+            if (oldIdAsObjectId > 0) {
+                const res = await collection.updateMany(
                     { userId: new ObjectId(OLD_USER_ID) },
                     { $set: { userId: new ObjectId(NEW_USER_ID) } }
                 );
-
-                console.log(`  ✓ Updated ${updateResult.modifiedCount} documents`);
-                results[collectionName] = {
-                    found: oldCount,
-                    modified: updateResult.modifiedCount
-                };
-            } else {
-                console.log(`  No documents to update`);
-                results[collectionName] = {
-                    found: 0,
-                    modified: 0
-                };
+                modified += res.modifiedCount || 0;
             }
-            
-            // Verify update
-            const remainingOld = await collection.countDocuments({ 
-                userId: new ObjectId(OLD_USER_ID) 
-            });
-            
-            const newCount = await collection.countDocuments({ 
-                userId: new ObjectId(NEW_USER_ID) 
-            });
-            
-            console.log(`  Documents with old user ID remaining: ${remainingOld}`);
-            console.log(`  Documents with new user ID: ${newCount}`);
+            if (oldIdAsString > 0) {
+                const res = await collection.updateMany(
+                    { userId: OLD_USER_ID },
+                    { $set: { userId: NEW_USER_ID } }
+                );
+                modified += res.modifiedCount || 0;
+            }
+
+            results[collectionName] = { found: totalOld, modified };
+            if (totalOld > 0) {
+                console.log(`  ✓ Updated ${modified} documents`);
+            } else {
+                console.log('  No documents to update');
+            }
+
+            // Verify update (check both types)
+            const remainingOldObj = await collection.countDocuments({ userId: new ObjectId(OLD_USER_ID) }).catch(() => 0);
+            const remainingOldStr = await collection.countDocuments({ userId: OLD_USER_ID }).catch(() => 0);
+            const newCountObj = await collection.countDocuments({ userId: new ObjectId(NEW_USER_ID) }).catch(() => 0);
+            const newCountStr = await collection.countDocuments({ userId: NEW_USER_ID }).catch(() => 0);
+
+            console.log(`  Old remaining → ObjectId: ${remainingOldObj}, String: ${remainingOldStr}`);
+            console.log(`  New totals → ObjectId: ${newCountObj}, String: ${newCountStr}`);
             console.log('');
         }
 
