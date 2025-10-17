@@ -5,7 +5,7 @@ import {
     RegisterResponse,
 } from '../types';
 import * as users from '@/server/database/collections/users/users';
-import { COOKIE_NAME, sanitizeUser } from '../server';
+import { COOKIE_NAME, COOKIE_OPTIONS, sanitizeUser } from '../server';
 
 // Register endpoint
 export const registerUser = async (
@@ -25,8 +25,8 @@ export const registerUser = async (
             updatedAt: new Date()
         });
 
-        // Set cookie with user id for simple auth
-        context.setCookie(COOKIE_NAME, newUser._id.toHexString());
+        // Set persistent auth cookie
+        context.setCookie(COOKIE_NAME, newUser._id.toHexString(), COOKIE_OPTIONS);
 
         return { user: sanitizeUser(newUser) };
     } catch (error: unknown) {

@@ -4,7 +4,14 @@ import { User } from '@/server/database/collections/users/types';
 export const COOKIE_NAME = 'auth_user';
 export const COOKIE_OPTIONS = {
     path: '/',
-    maxAge: 7 * 24 * 60 * 60
+    // 7 days persistence
+    maxAge: 7 * 24 * 60 * 60,
+    // Ensure cookie is not accessible via JS in the browser
+    httpOnly: true,
+    // Required by Safari for cross-site or some redirect flows; set lax for typical app
+    sameSite: 'lax' as const,
+    // Only send cookie over HTTPS in production
+    secure: process.env.NODE_ENV === 'production'
 };
 
 export const sanitizeUser = (user: User): UserResponse => {

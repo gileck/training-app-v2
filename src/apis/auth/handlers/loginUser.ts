@@ -5,7 +5,7 @@ import {
     LoginResponse,
 } from '../types';
 import * as users from '@/server/database/collections/users/users';
-import { COOKIE_NAME, sanitizeUser } from '../server';
+import { COOKIE_NAME, COOKIE_OPTIONS, sanitizeUser } from '../server';
 
 // Login endpoint
 export const loginUser = async (
@@ -29,8 +29,8 @@ export const loginUser = async (
             return { error: "Invalid username or password" };
         }
 
-        // Set auth cookie to user id
-        context.setCookie(COOKIE_NAME, user._id.toHexString());
+        // Set persistent auth cookie
+        context.setCookie(COOKIE_NAME, user._id.toHexString(), COOKIE_OPTIONS);
 
         return { user: sanitizeUser(user) };
     } catch (error: unknown) {
