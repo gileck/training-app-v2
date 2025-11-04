@@ -55,7 +55,18 @@ export const usePlanExercises = (initialPlanId?: string, initialWeekNumber?: num
             const activePlanId = activeTrainingPlan._id;
             setPlanIdState(activePlanId);
             if (!routeParams.planId) {
-                navigate(`/workout/${activePlanId}/${weekNumber}`, { replace: true });
+                // Try to restore last selected week for this plan from localStorage
+                let targetWeek = weekNumber;
+                try {
+                    const stored = localStorage.getItem(`workout:lastWeek:${activePlanId}`);
+                    const parsed = stored ? parseInt(stored, 10) : NaN;
+                    if (Number.isFinite(parsed) && parsed >= 1) {
+                        targetWeek = parsed;
+                    }
+                } catch {
+                    // ignore storage errors
+                }
+                navigate(`/workout/${activePlanId}/${targetWeek}`, { replace: true });
             }
         }
     }, [planId, activeTrainingPlan, routeParams.planId, weekNumber, navigate]);
@@ -66,7 +77,15 @@ export const usePlanExercises = (initialPlanId?: string, initialWeekNumber?: num
         if (newWeekNumber !== weekNumber) {
             setWeekNumberState(newWeekNumber);
         }
-    }, [routeParams.weekNumber, weekNumber]);
+        // Persist current week selection per plan in localStorage
+        if (planId && Number.isFinite(newWeekNumber) && newWeekNumber >= 1) {
+            try {
+                localStorage.setItem(`workout:lastWeek:${planId}`, String(newWeekNumber));
+            } catch {
+                // ignore storage errors
+            }
+        }
+    }, [routeParams.weekNumber, weekNumber, planId]);
 
     // Load exercise definitions
     useEffect(() => {
