@@ -64,6 +64,46 @@ export const useWeeklyProgressHooks = (
         }
     }, [state, updateState, saveToLocalStorage]);
 
+    /**
+     * Updates set completion for an exercise using optimistic updates.
+     * 
+     * ## Race Condition Prevention Strategy
+     * 
+     * This function uses a "trust the optimistic update" approach to prevent race conditions:
+     * 
+     * 1. **Optimistic Update (Immediate)**: Calculate the new state and apply it immediately
+     *    - This becomes our source of truth
+     *    - Save to localStorage for persistence
+     *    - User sees instant feedback
+     * 
+     * 2. **Server Sync (Background)**: Send the update to the server
+     *    - On SUCCESS: Do nothing (our optimistic update is already correct)
+     *    - On ERROR: Rollback to the original state and notify the user
+     * 
+     * ## Why This Prevents Race Conditions
+     * 
+     * Traditional approach (problematic):
+     * - User clicks + (0→1): Optimistic to 1, API call #1 sent
+     * - User clicks + (1→2): Optimistic to 2, API call #2 sent
+     * - API call #1 responds (setsCompleted=1): ❌ Overwrites state back to 1
+     * - API call #2 responds (setsCompleted=2): Updates to 2
+     * - Result: Flickering UI, temporary incorrect state
+     * 
+     * Our approach (correct):
+     * - User clicks + (0→1): Optimistic to 1, saved to localStorage, API call #1 sent
+     * - User clicks + (1→2): Optimistic to 2, saved to localStorage, API call #2 sent
+     * - API call #1 responds: ✅ Success, do nothing (state is already 2)
+     * - API call #2 responds: ✅ Success, do nothing (state is already 2)
+     * - Result: Smooth UI, always correct state
+     * 
+     * @param planId - The training plan ID
+     * @param weekNumber - The week number (1-indexed)
+     * @param exerciseId - The exercise ID
+     * @param setsIncrement - How many sets to increment/decrement (+1 or -1)
+     * @param totalSetsForExercise - Total sets for validation
+     * @param completeAll - If true, complete all remaining sets at once
+     * @returns The optimistic progress object
+     */
     const updateSetCompletion = useCallback(async (
         planId: string,
         weekNumber: number,
@@ -79,8 +119,10 @@ export const useWeeklyProgressHooks = (
             const currentWeekProgress = currentPlanData?.weeklyProgress[weekNumber] || [];
             const currentProgress = currentWeekProgress.find(p => p.exerciseId === exerciseId);
 
+            // Store original state for potential rollback
             const originalWeekProgress = [...currentWeekProgress];
 
+            // Calculate new sets completed
             const currentSets = currentProgress?.setsCompleted || 0;
             let newSetsCompleted: number;
 
@@ -92,6 +134,7 @@ export const useWeeklyProgressHooks = (
 
             const isExerciseDone = newSetsCompleted >= totalSetsForExercise;
 
+            // Create optimistic progress object
             const optimisticProgress: WeeklyProgressBase = {
                 _id: currentProgress?._id || `temp-${exerciseId}-${weekNumber}`,
                 userId: currentProgress?.userId || 'temp-user',
@@ -105,7 +148,7 @@ export const useWeeklyProgressHooks = (
                 weeklyNotes: currentProgress?.weeklyNotes || []
             };
 
-            // Optimistic update - this is our source of truth
+            // STEP 1: Apply optimistic update - this is our source of truth
             const newStateAfterOptimistic = {
                 ...state,
                 planData: {
@@ -128,10 +171,11 @@ export const useWeeklyProgressHooks = (
                 planData: newStateAfterOptimistic.planData
             });
 
-            // Save optimistic state to localStorage immediately
+            // STEP 2: Save optimistic state to localStorage immediately for persistence
             saveToLocalStorage(newStateAfterOptimistic);
 
-            // Background API call - we only care if it fails (for rollback)
+            // STEP 3: Background API call to sync with server
+            // We ONLY use the response for error handling (rollback), never for updating state on success
             apiUpdateSetCompletion({
                 planId,
                 exerciseId,
@@ -141,7 +185,7 @@ export const useWeeklyProgressHooks = (
                 completeAll
             }).then(response => {
                 if (!response.data?.success) {
-                    // Rollback on server error
+                    // Server rejected the update - rollback to original state
                     setState(currentState => {
                         const rolledBackState = {
                             ...currentState,
@@ -162,8 +206,9 @@ export const useWeeklyProgressHooks = (
                     showNotification(`Could not save progress: ${response.data?.message || 'Server error'}`, 'error');
                 }
                 // On success: Do nothing! Our optimistic update is already correct.
+                // This is the key to preventing race conditions - we never overwrite with server data.
             }).catch(error => {
-                // Rollback on network error
+                // Network error - rollback to original state
                 setState(currentState => {
                     const rolledBackState = {
                         ...currentState,
