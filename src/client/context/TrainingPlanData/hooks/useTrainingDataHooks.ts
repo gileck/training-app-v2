@@ -52,12 +52,24 @@ export const useTrainingDataHooks = () => {
     const loadTrainingPlans = useCallback(async () => {
         updateState({ error: null });
 
-        // Load from cache first for instant UI
+        // Load from cache first for instant UI, but mark as not loaded to force refresh
         const cachedData = loadFromLocalStorage();
         if (cachedData) {
+            // Mark all planData as not loaded to ensure fresh fetch from server
+            const stalePlanData = Object.keys(cachedData.planData || {}).reduce((acc, planId) => {
+                acc[planId] = {
+                    ...cachedData.planData[planId],
+                    isLoaded: false, // Mark as stale to force refresh
+                    isLoading: false
+                };
+                return acc;
+            }, {} as TrainingDataState['planData']);
+
             setState(prev => ({
                 ...prev,
-                ...cachedData,
+                trainingPlans: cachedData.trainingPlans,
+                activePlanId: cachedData.activePlanId,
+                planData: stalePlanData,
                 isInitialLoading: false
             }));
             setIsLoadingFromServer(true);
