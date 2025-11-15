@@ -149,7 +149,7 @@ export const useWorkoutHooks = (planId: string | undefined, generalDefinitions: 
             trainingPlanId: workout.trainingPlanId,
             createdAt: formatDate(workout.createdAt),
             updatedAt: formatDate(workout.updatedAt),
-            exercises: workout.exercises.map(ex => exercises.find(e => e._id === ex.exerciseId)).filter(Boolean) as ExerciseBase[],
+            exercises: exercises ? workout.exercises.map(ex => exercises.find(e => e._id === ex.exerciseId)).filter(Boolean) as ExerciseBase[] : [],
             isExercisesLoading: false,
             exercisesError: null,
         }));
