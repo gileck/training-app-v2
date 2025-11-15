@@ -2,6 +2,7 @@
 export interface Settings {
     aiModel: string;
     theme: 'light' | 'dark';
+    exerciseViewMode: 'detailed' | 'compact';
 }
 
 // Define the settings context type
@@ -15,4 +16,5 @@ export interface SettingsContextType {
 export const defaultSettings: Settings = {
     aiModel: '',
     theme: 'light',
+    exerciseViewMode: 'detailed',
 }; 

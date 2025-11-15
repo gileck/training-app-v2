@@ -2,15 +2,21 @@ import React from 'react';
 import {
     Box,
     Button,
-    alpha
+    alpha,
+    IconButton,
+    Tooltip
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import ViewCompactIcon from '@mui/icons-material/ViewCompact';
 
 import { ExerciseTabContentProps } from './types';
 import { WorkoutExerciseItem } from './WorkoutExerciseItem';
+import { CompactWorkoutExerciseItem } from './CompactWorkoutExerciseItem';
 import { WorkoutExerciseItemSkeleton } from './WorkoutExerciseItemSkeleton';
+import { useSettings } from '@/client/settings/SettingsContext';
 // const NEON_BLUE = '#3D5AFE'; // Removed as it's unused
 // const NEON_PINK = '#D500F9'; // Removed as it's unused
 
@@ -28,6 +34,14 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
     toggleShowCompleted
 }) => {
     const theme = useTheme();
+    const { settings, updateSettings } = useSettings();
+    const viewMode = settings.exerciseViewMode;
+
+    const toggleViewMode = () => {
+        updateSettings({
+            exerciseViewMode: viewMode === 'detailed' ? 'compact' : 'detailed'
+        });
+    };
 
     if (isLoading) {
         return (
@@ -39,44 +53,27 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
         );
     }
 
+    const ExerciseComponent = viewMode === 'compact' ? CompactWorkoutExerciseItem : WorkoutExerciseItem;
+
 
     return (
         <Box>
             {/* Actions */}
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {/* <Typography
-                    variant="h6"
-                    sx={{
-                        fontSize: { xs: '1.1rem', sm: '1.25rem' },
-                        fontWeight: 'bold',
-                        color: '#333'
-                    }}
-                >
-                    Exercises
-                </Typography> */}
-
-                {/* {selectedExercises.length > 0 && (
-                    <Chip
-                        label={`${selectedExercises.length} Selected`}
-                        onDelete={() => {
-                            // Clear all selections by calling handleExerciseSelect for each
-                            // This assumes handleExerciseSelect toggles selection.
-                            selectedExercises.forEach(id => handleExerciseSelect(id));
-                        }}
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <Tooltip title={viewMode === 'detailed' ? 'Switch to Compact View' : 'Switch to Detailed View'}>
+                    <IconButton
+                        onClick={toggleViewMode}
                         sx={{
-                            bgcolor: alpha(NEON_PINK, 0.1),
-                            color: NEON_PINK,
-                            fontWeight: 'bold',
-                            border: `1px solid ${alpha(NEON_PINK, 0.2)}`,
-                            '& .MuiChip-deleteIcon': {
-                                color: alpha(NEON_PINK, 0.7),
-                                '&:hover': {
-                                    color: NEON_PINK
-                                }
+                            color: theme.palette.primary.main,
+                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            '&:hover': {
+                                bgcolor: alpha(theme.palette.primary.main, 0.15)
                             }
                         }}
-                    />
-                )} */}
+                    >
+                        {viewMode === 'detailed' ? <ViewCompactIcon /> : <ViewListIcon />}
+                    </IconButton>
+                </Tooltip>
             </Box>
 
             {/* Exercises list */}
@@ -87,7 +84,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
                     {/* Active Exercises */}
                     <Box sx={{ mb: 4 }}>
                         {activeExercises.map((exercise) => (
-                            <WorkoutExerciseItem
+                            <ExerciseComponent
                                 key={exercise._id.toString()}
                                 exercise={exercise}
                                 planId={planId}
@@ -130,7 +127,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
 
                             {/* Use a conditional rendering that doesn't rely on display:none for better accessibility and performance if lists are long */}
                             {showCompleted && completedExercises.map((exercise) => (
-                                <WorkoutExerciseItem
+                                <ExerciseComponent
                                     key={exercise._id.toString()}
                                     exercise={exercise}
                                     planId={planId}
