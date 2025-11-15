@@ -105,8 +105,9 @@ export const useWeeklyProgressHooks = (
                 weeklyNotes: currentProgress?.weeklyNotes || []
             };
 
-            // Optimistic update
-            updateState({
+            // Optimistic update - this is our source of truth
+            const newStateAfterOptimistic = {
+                ...state,
                 planData: {
                     ...state.planData,
                     [planId]: {
@@ -121,9 +122,16 @@ export const useWeeklyProgressHooks = (
                         }
                     }
                 }
+            };
+
+            updateState({
+                planData: newStateAfterOptimistic.planData
             });
 
-            // Background API call
+            // Save optimistic state to localStorage immediately
+            saveToLocalStorage(newStateAfterOptimistic);
+
+            // Background API call - we only care if it fails (for rollback)
             apiUpdateSetCompletion({
                 planId,
                 exerciseId,
@@ -132,36 +140,32 @@ export const useWeeklyProgressHooks = (
                 totalSetsForExercise,
                 completeAll
             }).then(response => {
-                if (response.data?.success && response.data.updatedProgress) {
+                if (!response.data?.success) {
+                    // Rollback on server error
                     setState(currentState => {
-                        const currentPlanData = currentState.planData[planId];
-                        if (!currentPlanData) return currentState;
-
-                        const currentWeekProgress = currentPlanData.weeklyProgress[weekNumber] || [];
-                        const updatedWeekProgress = currentWeekProgress.map(p =>
-                            p.exerciseId === exerciseId ? response.data!.updatedProgress! : p
-                        );
-
-                        const newState = {
+                        const rolledBackState = {
                             ...currentState,
                             planData: {
                                 ...currentState.planData,
                                 [planId]: {
-                                    ...currentPlanData,
+                                    ...currentState.planData[planId],
                                     weeklyProgress: {
-                                        ...currentPlanData.weeklyProgress,
-                                        [weekNumber]: updatedWeekProgress
+                                        ...currentState.planData[planId]?.weeklyProgress,
+                                        [weekNumber]: originalWeekProgress
                                     }
                                 }
                             }
                         };
-
-                        saveToLocalStorage(newState);
-                        return newState;
+                        saveToLocalStorage(rolledBackState);
+                        return rolledBackState;
                     });
-                } else {
-                    // Rollback on error
-                    setState(currentState => ({
+                    showNotification(`Could not save progress: ${response.data?.message || 'Server error'}`, 'error');
+                }
+                // On success: Do nothing! Our optimistic update is already correct.
+            }).catch(error => {
+                // Rollback on network error
+                setState(currentState => {
+                    const rolledBackState = {
                         ...currentState,
                         planData: {
                             ...currentState.planData,
@@ -173,24 +177,10 @@ export const useWeeklyProgressHooks = (
                                 }
                             }
                         }
-                    }));
-                    showNotification(`Could not save progress: ${response.data?.message || 'Server error'}`, 'error');
-                }
-            }).catch(error => {
-                // Rollback on error
-                setState(currentState => ({
-                    ...currentState,
-                    planData: {
-                        ...currentState.planData,
-                        [planId]: {
-                            ...currentState.planData[planId],
-                            weeklyProgress: {
-                                ...currentState.planData[planId]?.weeklyProgress,
-                                [weekNumber]: originalWeekProgress
-                            }
-                        }
-                    }
-                }));
+                    };
+                    saveToLocalStorage(rolledBackState);
+                    return rolledBackState;
+                });
                 showNotification(`Could not save progress: ${error instanceof Error ? error.message : 'Network error'}`, 'error');
             });
 
@@ -201,7 +191,7 @@ export const useWeeklyProgressHooks = (
             });
             throw error;
         }
-    }, [state, updateState, saveToLocalStorage, showNotification]);
+    }, [state, updateState, saveToLocalStorage, showNotification, setState]);
 
     return {
         loadWeeklyProgress,
