@@ -10,7 +10,6 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import InfoIcon from '@mui/icons-material/Info';
 import Image from 'next/image';
 import { useTheme } from '@mui/material/styles';
 
@@ -89,8 +88,9 @@ export const CompactWorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                 }}
             >
                 <Box sx={{ display: 'flex', p: 1.25, gap: 1.5, alignItems: 'center' }}>
-                    {/* Compact Image */}
+                    {/* Compact Image - Clickable to open details */}
                     <Box
+                        onClick={(e) => { e.stopPropagation(); handleOpenDetailModal(); }}
                         sx={{
                             width: 50,
                             height: 50,
@@ -99,7 +99,13 @@ export const CompactWorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                             overflow: 'hidden',
                             bgcolor: alpha(theme.palette.text.primary, 0.03),
                             border: `1px solid ${alpha(accentColor, 0.1)}`,
-                            flexShrink: 0
+                            flexShrink: 0,
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s, border-color 0.2s',
+                            '&:hover': {
+                                transform: 'scale(1.05)',
+                                borderColor: theme.palette.primary.main
+                            }
                         }}
                     >
                         {exercise.definition?.imageUrl ? (
@@ -126,32 +132,23 @@ export const CompactWorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
 
                     {/* Main content area - flex grow */}
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                        {/* Exercise name and info button */}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                            <Typography
-                                variant="subtitle2"
-                                sx={{
-                                    fontWeight: 'bold',
-                                    color: theme.palette.text.primary,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    flex: 1,
-                                    textShadow: isSelected
-                                        ? `0 0 1px ${alpha(theme.palette.primary.main, 0.3)}`
-                                        : `0 0 1px ${alpha(accentColor, 0.3)}`
-                                }}
-                            >
-                                {exercise.name || `Exercise: ${exercise._id}`}
-                            </Typography>
-                            <IconButton
-                                onClick={(e) => { e.stopPropagation(); handleOpenDetailModal(); }}
-                                size="small"
-                                sx={{ color: theme.palette.primary.main, p: 0.5, ml: 0.5 }}
-                            >
-                                <InfoIcon sx={{ fontSize: '1rem' }} />
-                            </IconButton>
-                        </Box>
+                        {/* Exercise name */}
+                        <Typography
+                            variant="subtitle2"
+                            sx={{
+                                fontWeight: 'bold',
+                                color: theme.palette.text.primary,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                mb: 0.5,
+                                textShadow: isSelected
+                                    ? `0 0 1px ${alpha(theme.palette.primary.main, 0.3)}`
+                                    : `0 0 1px ${alpha(accentColor, 0.3)}`
+                            }}
+                        >
+                            {exercise.name || `Exercise: ${exercise._id}`}
+                        </Typography>
 
                         {/* Sets and completion indicator */}
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
@@ -210,7 +207,7 @@ export const CompactWorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                         </IconButton>
                         <IconButton
                             data-testid="increment-sets-button"
-                            onClick={(e) => { e.stopPropagation(); handleSetCheckboxClick(exerciseId, setsDone + 1, setsDone, totalSets); }}
+                            onClick={(e) => { e.stopPropagation(); handleSetCheckboxClick(exerciseId, setsDone, setsDone, totalSets); }}
                             size="small"
                             disabled={isUpdating || setsDone >= totalSets}
                             sx={{
