@@ -42,14 +42,40 @@ export const useSavedWorkoutHooks = (
         }
     }, [state.planData, updateState, updateStateAndSave]);
 
+    /**
+     * Create a new saved workout and persist it to the server and localStorage.
+     * 
+     * FLOW:
+     * 1. Call server API to create workout in MongoDB
+     * 2. Receive created workout with _id from server
+     * 3. Optimistically update local state with new workout
+     * 4. Save updated state to localStorage for persistence
+     * 
+     * EDGE CASE HANDLING:
+     * - If planData doesn't exist yet (new plan or cleared cache):
+     *   * Initialize planData with empty exercises/progress
+     *   * Set isLoaded: true (will be marked stale on next page load)
+     *   * Add the new workout to savedWorkouts array
+     * 
+     * WHY updateStateAndSave:
+     * - Saves to both React state (immediate UI update) and localStorage (persistence)
+     * - User sees workout immediately without loading spinner
+     * - Workout persists across page refreshes
+     * - Will be validated with server on next page load (marked as stale)
+     * 
+     * See: docs/data-caching-and-persistence.md for complete flow
+     */
     const createSavedWorkout = useCallback(async (planId: string, workout: CreateSavedWorkoutRequest) => {
         try {
             updateState({ error: null });
+            
+            // Call server API to create workout (bypasses cache for fresh data)
             const response = await apiCreateSavedWorkout(workout);
 
             if (response.data) {
                 const currentPlanData = state.planData[planId];
                 if (currentPlanData) {
+                    // Normal case: planData exists, just add new workout to the list
                     updateStateAndSave({
                         planData: {
                             ...state.planData,
@@ -60,7 +86,9 @@ export const useSavedWorkoutHooks = (
                         }
                     });
                 } else {
-                    // If planData doesn't exist, initialize it with the new workout
+                    // Edge case: planData doesn't exist (new plan or cleared cache)
+                    // Initialize planData with the new workout
+                    // Note: isLoaded: true will be marked as false on next page load (see useTrainingDataHooks.ts line 81-87)
                     updateStateAndSave({
                         planData: {
                             ...state.planData,
@@ -68,7 +96,7 @@ export const useSavedWorkoutHooks = (
                                 exercises: [],
                                 weeklyProgress: {},
                                 savedWorkouts: [response.data],
-                                isLoaded: true,
+                                isLoaded: true,  // Will be marked stale on next page load
                                 isLoading: false
                             }
                         }

@@ -48,14 +48,36 @@ export const useTrainingDataHooks = () => {
     const weeklyProgressHooks = useWeeklyProgressHooks(state, updateState, saveToLocalStorage, showNotification, setState);
     const savedWorkoutHooks = useSavedWorkoutHooks(state, updateState, updateStateAndSave);
 
-    // Main data loading function that orchestrates all data loading
+    /**
+     * Main data loading function that orchestrates all data loading on app initialization.
+     * 
+     * CACHING STRATEGY:
+     * 1. Load from localStorage first for instant UI (show stale data immediately)
+     * 2. Mark cached planData as "stale" (isLoaded: false) to force server validation
+     * 3. Fetch fresh data from server in the background
+     * 4. Update UI and localStorage with fresh data
+     * 
+     * WHY MARK CACHE AS STALE:
+     * - Cached data might have isLoaded: true from previous session
+     * - If we don't mark as stale, hooks will skip server fetch (see line 198-201)
+     * - This caused the "workouts disappear after refresh" bug
+     * - Now we get instant UI (cached) + fresh data (server) - best of both worlds
+     * 
+     * FLOW:
+     * - User sees cached data instantly (good UX)
+     * - Server data loads in background (stays fresh)
+     * - UI updates seamlessly when server responds
+     * 
+     * See: docs/data-caching-and-persistence.md for complete flow diagram
+     */
     const loadTrainingPlans = useCallback(async () => {
         updateState({ error: null });
 
-        // Load from cache first for instant UI, but mark as not loaded to force refresh
+        // STEP 1: Load cached data for instant UI
         const cachedData = loadFromLocalStorage();
         if (cachedData) {
-            // Mark all planData as not loaded to ensure fresh fetch from server
+            // CRITICAL: Mark all planData as not loaded to ensure fresh fetch from server
+            // This prevents hooks from skipping the server request (they check isLoaded flag)
             const stalePlanData = Object.keys(cachedData.planData || {}).reduce((acc, planId) => {
                 acc[planId] = {
                     ...cachedData.planData[planId],
@@ -65,11 +87,12 @@ export const useTrainingDataHooks = () => {
                 return acc;
             }, {} as TrainingDataState['planData']);
 
+            // Show cached data immediately for instant UI
             setState(prev => ({
                 ...prev,
                 trainingPlans: cachedData.trainingPlans,
                 activePlanId: cachedData.activePlanId,
-                planData: stalePlanData,
+                planData: stalePlanData, // Use stale data marked for refresh
                 isInitialLoading: false
             }));
             setIsLoadingFromServer(true);
@@ -78,7 +101,7 @@ export const useTrainingDataHooks = () => {
         }
 
         try {
-            // Load training plans and active plan
+            // STEP 2: Fetch fresh data from server for all plans
             const trainingData = await trainingPlanHooks.loadTrainingPlans();
             if (!trainingData) {
                 updateState({ isInitialLoading: false });
@@ -86,7 +109,7 @@ export const useTrainingDataHooks = () => {
                 return;
             }
 
-            // Load ALL plan data for ALL plans
+            // Load ALL plan data for ALL plans in parallel for better performance
             const planDataPromises = trainingData.trainingPlans.map(async (plan) => {
                 try {
                     const [exercisesResponse, savedWorkoutsResponse] = await Promise.all([
@@ -177,8 +200,10 @@ export const useTrainingDataHooks = () => {
                 error: null
             };
 
+            // STEP 3: Update state with fresh server data and save to localStorage
+            // This overwrites the stale cached data with fresh data from server
             setState(freshData);
-            saveToLocalStorage(freshData);
+            saveToLocalStorage(freshData); // Cache for next page load
             setIsLoadingFromServer(false);
 
         } catch (error) {
@@ -190,17 +215,40 @@ export const useTrainingDataHooks = () => {
         }
     }, [updateState, loadFromLocalStorage, trainingPlanHooks, saveToLocalStorage]);
 
-    // Plan data loading
+    /**
+     * Load data for a specific plan (exercises, workouts, progress).
+     * 
+     * DEDUPLICATION STRATEGY:
+     * - Uses atomic setState with function to check and set loading flag
+     * - Prevents race conditions where multiple components trigger same fetch
+     * - Returns early if data is already loaded or currently loading
+     * 
+     * WHEN CALLED:
+     * - By useExercises() hook when component needs exercise data
+     * - By useSavedWorkouts() hook when component needs workout data
+     * - By useWeeklyProgress() hook when component needs progress data
+     * 
+     * WHY IT WORKS AFTER CACHE FIX:
+     * - loadTrainingPlans() marks cached data as isLoaded: false
+     * - This function sees isLoaded: false and proceeds to fetch
+     * - Without marking as stale, it would see isLoaded: true and skip fetch
+     * - Result: Always get fresh data on page load, but avoid duplicate fetches
+     * 
+     * See: docs/data-caching-and-persistence.md for complete flow
+     */
     const loadPlanData = useCallback(async (planId: string) => {
-        // Use setState with function to check and set loading atomically
+        // Use setState with function to check and set loading atomically (prevents race conditions)
         let shouldLoad = false;
         setState(prev => {
             const existing = prev.planData[planId];
+            
+            // Skip if already loaded or currently loading (deduplication)
             if (existing?.isLoaded || existing?.isLoading) {
                 shouldLoad = false;
                 return prev;
             }
 
+            // Set loading flag to prevent duplicate requests from other components
             shouldLoad = true;
             return {
                 ...prev,
@@ -211,17 +259,18 @@ export const useTrainingDataHooks = () => {
                         weeklyProgress: {},
                         savedWorkouts: [],
                         isLoaded: false,
-                        isLoading: true
+                        isLoading: true // Prevents duplicate fetches
                     }
                 }
             };
         });
 
         if (!shouldLoad) {
-            return;
+            return; // Another request is already in progress or data already loaded
         }
 
         try {
+            // Fetch exercises and workouts in parallel for better performance
             const [exercisesResponse, savedWorkoutsResponse] = await Promise.all([
                 getExercises({ trainingPlanId: planId }),
                 getSavedWorkouts({ trainingPlanId: planId })
@@ -230,6 +279,7 @@ export const useTrainingDataHooks = () => {
             const exercises = exercisesResponse.data || [];
             const savedWorkouts = savedWorkoutsResponse.data || [];
 
+            // Update state with fresh data and save to localStorage
             setState(prev => {
                 const newState = {
                     ...prev,
@@ -239,12 +289,12 @@ export const useTrainingDataHooks = () => {
                             exercises,
                             savedWorkouts,
                             weeklyProgress: {},
-                            isLoaded: true,
+                            isLoaded: true,  // Mark as loaded to prevent re-fetching
                             isLoading: false
                         }
                     }
                 };
-                saveToLocalStorage(newState);
+                saveToLocalStorage(newState); // Cache for next page load
                 return newState;
             });
         } catch (error) {

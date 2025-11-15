@@ -90,13 +90,37 @@ export const useWeeklyProgress = (planId: string, weekNumber: number) => {
     }), [planData.weeklyProgress, weekNumber, isLoading, isLoaded, state.error, loadWeeklyProgress, updateSetCompletion, planId]);
 };
 
+/**
+ * Hook to access saved workouts for a specific training plan.
+ * 
+ * AUTO-LOADING BEHAVIOR:
+ * - Automatically triggers loadPlanData() if data isn't loaded
+ * - Checks both isLoaded and isLoading flags to prevent duplicate fetches
+ * - Works correctly after cache fix (cached data marked as stale)
+ * 
+ * WHY IT WORKS NOW:
+ * - On page load, cached data is marked as isLoaded: false (see useTrainingDataHooks.ts)
+ * - This hook sees isLoaded: false and triggers loadPlanData()
+ * - loadPlanData() fetches fresh data from server
+ * - Before the fix, cached data had isLoaded: true which prevented fetching
+ * 
+ * RETURN VALUE:
+ * - savedWorkouts: Array of workouts from state (cached or fresh)
+ * - isLoading: True during initial load or data fetch
+ * - isLoaded: True after data successfully loaded
+ * - error: Any error that occurred during loading
+ * - Helper functions: load, create, update, delete operations
+ * 
+ * See: docs/data-caching-and-persistence.md for complete flow
+ */
 export const useSavedWorkouts = (planId: string) => {
     const { state, loadPlanData, loadSavedWorkouts, createSavedWorkout, updateSavedWorkout, deleteSavedWorkout } = useTrainingData();
 
     // Auto-load plan data if not loaded
+    // This is where the cache fix is critical - cached data must be marked as isLoaded: false
     React.useEffect(() => {
         if (planId && !state.planData[planId]?.isLoaded && !state.planData[planId]?.isLoading) {
-            loadPlanData(planId);
+            loadPlanData(planId); // Triggers server fetch for fresh data
         }
     }, [planId, loadPlanData]);
 
@@ -108,6 +132,7 @@ export const useSavedWorkouts = (planId: string) => {
         isLoaded: planData.isLoaded,
         error: state.error,
         loadSavedWorkouts: () => loadSavedWorkouts(planId),
+        // Wrapper that adds trainingPlanId to the request before calling context function
         createSavedWorkout: (workout: { name: string; exerciseIds: string[] }) =>
             createSavedWorkout(planId, { ...workout, trainingPlanId: planId }),
         updateSavedWorkout: (workoutId: string, updates: Partial<SavedWorkout>) =>

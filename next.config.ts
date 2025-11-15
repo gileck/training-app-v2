@@ -6,6 +6,27 @@ const nextConfig: NextConfig = withPWA({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
+  /**
+   * Service Worker Caching Strategy
+   * 
+   * CRITICAL FOR DATA PERSISTENCE:
+   * This configuration determines what gets cached and how.
+   * Incorrect caching can cause stale data bugs.
+   * 
+   * STRATEGY GUIDE:
+   * - StaleWhileRevalidate: Show cached, fetch fresh in background (good for static files that update)
+   * - CacheFirst: Show cached, only fetch if not cached (good for files that never change)
+   * - NetworkFirst: Try network, fallback to cache (good for dynamic content that can be stale)
+   * - NetworkOnly: Always fetch from network, never cache (REQUIRED for API endpoints)
+   * 
+   * WHY NetworkOnly FOR APIs:
+   * - User data must always be fresh (workouts, exercises, etc.)
+   * - Multi-device sync requires fresh data from server
+   * - Caching API responses caused "workouts disappear after refresh" bug
+   * - localStorage handles caching for instant UI, service worker shouldn't cache APIs
+   * 
+   * See: docs/data-caching-and-persistence.md for complete caching architecture
+   */
   runtimeCaching: [
     // Google Fonts - can be cached aggressively as they rarely change
     {
@@ -82,6 +103,9 @@ const nextConfig: NextConfig = withPWA({
       },
     },
     // API endpoints - NEVER cache dynamic data
+    // CRITICAL: This prevents the "stale data" bug where workouts disappeared after refresh
+    // All API calls go directly to server, no caching by service worker
+    // LocalStorage handles caching for instant UI (see useTrainingDataHooks.ts)
     {
       urlPattern: /^https?:\/\/[^/]+\/api\/.*/i,
       handler: 'NetworkOnly',
