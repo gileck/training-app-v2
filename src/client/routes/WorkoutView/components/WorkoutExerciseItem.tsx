@@ -251,7 +251,7 @@ export const WorkoutExerciseItem: React.FC<WorkoutExerciseItemProps> = ({
                             </IconButton>
                             <IconButton
                                 data-testid="increment-sets-button"
-                                onClick={(e) => { e.stopPropagation(); handleSetCheckboxClick(exerciseId, setsDone + 1, setsDone, totalSets); }}
+                                onClick={(e) => { e.stopPropagation(); handleSetCheckboxClick(exerciseId, setsDone, setsDone, totalSets); }}
                                 size="medium"
                                 disabled={isUpdating || setsDone >= totalSets}
                                 sx={{
