@@ -35,7 +35,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
 }) => {
     const theme = useTheme();
     const { settings, updateSettings } = useSettings();
-    const viewMode = settings.exerciseViewMode;
+    const viewMode = settings.exerciseViewMode || 'detailed';
 
     const toggleViewMode = () => {
         updateSettings({
@@ -53,8 +53,23 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
         );
     }
 
-    const ExerciseComponent = viewMode === 'compact' ? CompactWorkoutExerciseItem : WorkoutExerciseItem;
+    const renderExercise = (exercise: typeof activeExercises[0]) => {
+        const exerciseProps = {
+            exercise,
+            planId,
+            weekNumber,
+            onSetComplete: handleSetCompletionUpdate,
+            selectedExercises,
+            handleExerciseSelect,
+            showSelectionMode
+        };
 
+        return viewMode === 'compact' ? (
+            <CompactWorkoutExerciseItem key={exercise._id.toString()} {...exerciseProps} />
+        ) : (
+            <WorkoutExerciseItem key={exercise._id.toString()} {...exerciseProps} />
+        );
+    };
 
     return (
         <Box>
@@ -83,18 +98,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
                 <Box>
                     {/* Active Exercises */}
                     <Box sx={{ mb: 4 }}>
-                        {activeExercises.map((exercise) => (
-                            <ExerciseComponent
-                                key={exercise._id.toString()}
-                                exercise={exercise}
-                                planId={planId}
-                                weekNumber={weekNumber}
-                                onSetComplete={handleSetCompletionUpdate}
-                                selectedExercises={selectedExercises}
-                                handleExerciseSelect={handleExerciseSelect}
-                                showSelectionMode={showSelectionMode}
-                            />
-                        ))}
+                        {activeExercises.map((exercise) => renderExercise(exercise))}
                     </Box>
 
                     {/* Completed Exercises */}
@@ -126,18 +130,7 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
                             </Button>
 
                             {/* Use a conditional rendering that doesn't rely on display:none for better accessibility and performance if lists are long */}
-                            {showCompleted && completedExercises.map((exercise) => (
-                                <ExerciseComponent
-                                    key={exercise._id.toString()}
-                                    exercise={exercise}
-                                    planId={planId}
-                                    weekNumber={weekNumber}
-                                    onSetComplete={handleSetCompletionUpdate}
-                                    selectedExercises={selectedExercises}
-                                    handleExerciseSelect={handleExerciseSelect}
-                                    showSelectionMode={showSelectionMode}
-                                />
-                            ))}
+                            {showCompleted && completedExercises.map((exercise) => renderExercise(exercise))}
                         </Box>
                     )}
                 </Box>
