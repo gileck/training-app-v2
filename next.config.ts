@@ -7,17 +7,15 @@ const nextConfig: NextConfig = withPWA({
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
   runtimeCaching: [
+    // Google Fonts - can be cached aggressively as they rarely change
     {
       urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-      handler: 'CacheFirst',
+      handler: 'StaleWhileRevalidate',
       options: {
-        cacheName: 'google-fonts-cache',
+        cacheName: 'google-fonts-stylesheets',
         expiration: {
           maxEntries: 10,
-          maxAgeSeconds: 60 * 60 * 24 * 365, // 365 days
-        },
-        cacheableResponse: {
-          statuses: [0, 200],
+          maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
         },
       },
     },
@@ -25,48 +23,91 @@ const nextConfig: NextConfig = withPWA({
       urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
       handler: 'CacheFirst',
       options: {
-        cacheName: 'gstatic-fonts-cache',
+        cacheName: 'google-fonts-webfonts',
         expiration: {
-          maxEntries: 10,
-          maxAgeSeconds: 60 * 60 * 24 * 365, // 365 days
+          maxEntries: 30,
+          maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
         },
         cacheableResponse: {
           statuses: [0, 200],
         },
       },
     },
+    // Static JavaScript files - use stale-while-revalidate for good UX
     {
-      urlPattern: /\.(?:js|css)$/i,
+      urlPattern: /\.(?:js)$/i,
       handler: 'StaleWhileRevalidate',
       options: {
-        cacheName: 'static-js-css-cache',
+        cacheName: 'static-js-assets',
         expiration: {
-          maxEntries: 60,
-          maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
         },
       },
     },
+    // Static CSS files - use stale-while-revalidate
     {
-      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
+      urlPattern: /\.(?:css|less)$/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'static-style-assets',
+        expiration: {
+          maxEntries: 30,
+          maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+        },
+      },
+    },
+    // Images - cache first as they don't change often
+    {
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
       handler: 'CacheFirst',
       options: {
-        cacheName: 'images-cache',
+        cacheName: 'static-image-assets',
         expiration: {
-          maxEntries: 60,
+          maxEntries: 100,
           maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
         },
       },
     },
+    // Font files - cache first
     {
-      urlPattern: /^https?.*/,
+      urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2)$/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'static-font-assets',
+        expiration: {
+          maxEntries: 20,
+          maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+        },
+      },
+    },
+    // API endpoints - NEVER cache dynamic data
+    {
+      urlPattern: /^https?:\/\/[^/]+\/api\/.*/i,
+      handler: 'NetworkOnly',
+    },
+    // Next.js data files - use network first to ensure fresh data
+    {
+      urlPattern: /\/_next\/data\/.+\/.+\.json$/i,
       handler: 'NetworkFirst',
       options: {
-        cacheName: 'offlineCache',
+        cacheName: 'next-data',
         expiration: {
-          maxEntries: 200,
-          maxAgeSeconds: 60 * 60 * 24, // 24 hours
+          maxEntries: 20,
+          maxAgeSeconds: 60 * 60, // 1 hour
         },
-        networkTimeoutSeconds: 3,
+      },
+    },
+    // HTML pages - use network first to ensure fresh content
+    {
+      urlPattern: /\.(?:html?)$/i,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'html-pages',
+        expiration: {
+          maxEntries: 20,
+          maxAgeSeconds: 60 * 60, // 1 hour
+        },
       },
     },
   ],

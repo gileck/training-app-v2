@@ -59,6 +59,20 @@ export const useSavedWorkoutHooks = (
                             }
                         }
                     });
+                } else {
+                    // If planData doesn't exist, initialize it with the new workout
+                    updateStateAndSave({
+                        planData: {
+                            ...state.planData,
+                            [planId]: {
+                                exercises: [],
+                                weeklyProgress: {},
+                                savedWorkouts: [response.data],
+                                isLoaded: true,
+                                isLoading: false
+                            }
+                        }
+                    });
                 }
             } else {
                 updateState({ error: 'Failed to create saved workout' });

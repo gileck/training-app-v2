@@ -53,7 +53,8 @@ export const createSavedWorkout = async (
 ): Promise<CacheResult<CreateSavedWorkoutResponse>> => {
     return apiClient.call<CreateSavedWorkoutResponse, CreateSavedWorkoutRequest>(
         createApiName,
-        params
+        params,
+        { bypassCache: true } // Bypass cache to ensure we get fresh data
     );
 };
 
