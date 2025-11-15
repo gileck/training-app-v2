@@ -20,6 +20,7 @@ import { WeeklyProgressBase } from '../../../../apis/weeklyProgress/types';
 import { WorkoutExercise } from '../../../types/workout';
 
 import { WorkoutExerciseItem } from './WorkoutExerciseItem';
+import { CompactWorkoutExerciseItem } from './CompactWorkoutExerciseItem';
 import { WorkoutItemSkeleton } from './WorkoutItemSkeleton';
 
 // --- Color constants ---
@@ -33,9 +34,10 @@ interface WorkoutItemProps {
     onSavedWorkoutExerciseSetComplete: (workoutId: string, exerciseId: string, updatedProgress: WeeklyProgressBase) => void;
     onToggleExpand: (workoutId: string) => void;
     startActiveWorkout: (exercises: WorkoutExercise[], name?: string) => void;
+    viewMode?: 'detailed' | 'compact';
 }
 
-const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, onSavedWorkoutExerciseSetComplete, onToggleExpand, startActiveWorkout }) => {
+const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, onSavedWorkoutExerciseSetComplete, onToggleExpand, startActiveWorkout, viewMode = 'detailed' }) => {
     const workoutId = typeof workout._id === 'string' ? workout._id : workout._id.toString();
     const exercises = workout.enhancedExercises || [];
     const totalSetsInWorkout = exercises.reduce((sum, ex) => sum + (ex.sets || 0), 0);
@@ -124,19 +126,23 @@ const WorkoutItem: React.FC<WorkoutItemProps> = ({ workout, planId, weekNumber, 
                         </Box>
                     ) : (
                         <Box sx={{ pt: 1 }}>
-                            {exercises.map((exercise) => (
-                                <WorkoutExerciseItem
-                                    key={exercise._id.toString()}
-                                    exercise={exercise}
-                                    planId={planId}
-                                    weekNumber={weekNumber}
-                                    onSetComplete={(exerciseIdFromItem, updatedProgress) =>
-                                        onSavedWorkoutExerciseSetComplete(workoutId, exerciseIdFromItem, updatedProgress)
-                                    }
-                                    selectedExercises={[]}
-                                    showSelectionMode={false}
-                                />
-                            ))}
+                            {exercises.map((exercise) => {
+                                const exerciseProps = {
+                                    exercise,
+                                    planId,
+                                    weekNumber,
+                                    onSetComplete: (exerciseIdFromItem: string, updatedProgress: WeeklyProgressBase) =>
+                                        onSavedWorkoutExerciseSetComplete(workoutId, exerciseIdFromItem, updatedProgress),
+                                    selectedExercises: [],
+                                    showSelectionMode: false
+                                };
+                                
+                                return viewMode === 'compact' ? (
+                                    <CompactWorkoutExerciseItem key={exercise._id.toString()} {...exerciseProps} />
+                                ) : (
+                                    <WorkoutExerciseItem key={exercise._id.toString()} {...exerciseProps} />
+                                );
+                            })}
                         </Box>
                     )}
                 </Box>
@@ -152,7 +158,8 @@ export const WorkoutTabContent: React.FC<WorkoutTabContentProps> = ({
     isWorkoutsLoading,
     toggleWorkoutExpanded,
     handleSavedWorkoutExerciseSetCompletionUpdate,
-    startActiveWorkout
+    startActiveWorkout,
+    viewMode = 'detailed'
 }) => {
     const { navigate } = useRouter();
 
@@ -230,6 +237,7 @@ export const WorkoutTabContent: React.FC<WorkoutTabContentProps> = ({
                             onSavedWorkoutExerciseSetComplete={handleSavedWorkoutExerciseSetCompletionUpdate}
                             onToggleExpand={toggleWorkoutExpanded}
                             startActiveWorkout={startActiveWorkout}
+                            viewMode={viewMode}
                         />
                     ))}
                 </Box>

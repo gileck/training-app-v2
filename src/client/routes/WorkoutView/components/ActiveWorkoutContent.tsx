@@ -24,6 +24,7 @@ interface ActiveWorkoutContentProps {
     onSaveActiveSession: (name: string) => Promise<void>; // New prop
     isSavingWorkout: boolean; // New prop
     saveError: string | null; // New prop
+    viewMode?: 'detailed' | 'compact'; // Accept but don't use for now - ActiveWorkout has its own design
 }
 
 export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
@@ -36,6 +37,7 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
     onSaveActiveSession,
     isSavingWorkout,
     saveError
+    // Note: viewMode is accepted as prop but not used - ActiveWorkout uses LargeExerciseCard
 }) => {
     const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
     const theme = useTheme();
@@ -164,6 +166,8 @@ export const ActiveWorkoutContent: React.FC<ActiveWorkoutContentProps> = ({
                 isSaving={isSavingWorkout}
             />
 
+            {/* Note: ActiveWorkout always uses LargeExerciseCard regardless of viewMode 
+                 because it has different interaction patterns (local callbacks vs API calls) */}
             {exercises.map((exercise) => (
                 <LargeExerciseCard
                     key={exercise._id.toString()}

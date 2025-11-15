@@ -2,23 +2,16 @@ import React from 'react';
 import {
     Box,
     Button,
-    alpha,
-    IconButton,
-    Tooltip
+    alpha
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import ViewCompactIcon from '@mui/icons-material/ViewCompact';
 
 import { ExerciseTabContentProps } from './types';
 import { WorkoutExerciseItem } from './WorkoutExerciseItem';
 import { CompactWorkoutExerciseItem } from './CompactWorkoutExerciseItem';
 import { WorkoutExerciseItemSkeleton } from './WorkoutExerciseItemSkeleton';
-import { useSettings } from '@/client/settings/SettingsContext';
-// const NEON_BLUE = '#3D5AFE'; // Removed as it's unused
-// const NEON_PINK = '#D500F9'; // Removed as it's unused
 
 export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
     planId,
@@ -31,17 +24,10 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
     isLoading,
     handleSetCompletionUpdate,
     handleExerciseSelect,
-    toggleShowCompleted
+    toggleShowCompleted,
+    viewMode = 'detailed'
 }) => {
     const theme = useTheme();
-    const { settings, updateSettings } = useSettings();
-    const viewMode = settings.exerciseViewMode || 'detailed';
-
-    const toggleViewMode = () => {
-        updateSettings({
-            exerciseViewMode: viewMode === 'detailed' ? 'compact' : 'detailed'
-        });
-    };
 
     if (isLoading) {
         return (
@@ -73,24 +59,6 @@ export const ExerciseTabContent: React.FC<ExerciseTabContentProps> = ({
 
     return (
         <Box>
-            {/* Actions */}
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                <Tooltip title={viewMode === 'detailed' ? 'Switch to Compact View' : 'Switch to Detailed View'}>
-                    <IconButton
-                        onClick={toggleViewMode}
-                        sx={{
-                            color: theme.palette.primary.main,
-                            bgcolor: alpha(theme.palette.primary.main, 0.08),
-                            '&:hover': {
-                                bgcolor: alpha(theme.palette.primary.main, 0.15)
-                            }
-                        }}
-                    >
-                        {viewMode === 'detailed' ? <ViewCompactIcon /> : <ViewListIcon />}
-                    </IconButton>
-                </Tooltip>
-            </Box>
-
             {/* Exercises list */}
             {activeExercises.length === 0 && completedExercises.length === 0 ? (
                 <></>

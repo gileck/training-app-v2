@@ -123,6 +123,7 @@ export interface ExerciseTabContentProps {
     handleSetCompletionUpdate: (exerciseId: string, updatedProgress: WeeklyProgressBase) => void;
     handleExerciseSelect: (exerciseId: string) => void;
     toggleShowCompleted: () => void;
+    viewMode?: 'detailed' | 'compact';
 }
 
 export interface WorkoutTabContentProps {
@@ -133,6 +134,7 @@ export interface WorkoutTabContentProps {
     toggleWorkoutExpanded: (workoutId: string) => void;
     handleSavedWorkoutExerciseSetCompletionUpdate: (workoutId: string, exerciseId: string, updatedProgress: WeeklyProgressBase) => void;
     startActiveWorkout: (exercises: WorkoutExercise[], name?: string) => void;
+    viewMode?: 'detailed' | 'compact';
 }
 
 export interface SelectedExercisesBarProps {

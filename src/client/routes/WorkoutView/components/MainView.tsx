@@ -1,7 +1,9 @@
 import React from 'react';
-import { Box, Tabs, Tab, Typography, Button, Alert, alpha } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Button, Alert, alpha, IconButton, Tooltip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import ViewCompactIcon from '@mui/icons-material/ViewCompact';
 import { useWorkoutView } from '../hooks/useWorkoutView';
 import { ExerciseTabContent } from './ExerciseTabContent';
 import { WorkoutTabContent } from './WorkoutTabContent';
@@ -10,12 +12,22 @@ import { PlanWeekHeader } from '@/client/components/PlanWeekHeader';
 import { PlanWeekHeaderSkeleton } from '@/client/components/PlanWeekHeaderSkeleton';
 import { SelectedExercisesBar } from './SelectedExercisesBar';
 import { useTrainingData } from '@/client/hooks/useTrainingData';
+import { useSettings } from '@/client/settings/SettingsContext';
 
 // Colors are now derived from the MUI theme to support light/dark modes
 
 // Main Component
 export const MainView: React.FC = () => {
     const theme = useTheme();
+    const { settings, updateSettings } = useSettings();
+    const viewMode = settings.exerciseViewMode || 'detailed';
+
+    const toggleViewMode = () => {
+        updateSettings({
+            exerciseViewMode: viewMode === 'detailed' ? 'compact' : 'detailed'
+        });
+    };
+
     const {
         planId,
         weekNumber,
@@ -172,19 +184,38 @@ export const MainView: React.FC = () => {
                 )
             )}
 
-            <Tabs
-                value={activeTab}
-                onChange={handleTabChange}
-                sx={{ '& .MuiTabs-indicator': { backgroundColor: theme.palette.primary.main } }}
-            >
-                <Tab label="Exercises" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === EXERCISES_TAB_INDEX ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.6), '&.Mui-selected': { color: theme.palette.primary.main } }} />
-                <Tab label="Workouts" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === WORKOUTS_TAB_INDEX ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.6), '&.Mui-selected': { color: theme.palette.primary.main } }} />
-                <Tab
-                    label="Active Workout"
-                    disabled={!activeWorkoutSession || activeWorkoutSession.length === 0}
-                    sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === ACTIVE_WORKOUT_TAB_INDEX ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.6), '&.Mui-selected': { color: theme.palette.primary.main } }}
-                />
-            </Tabs>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${alpha(theme.palette.text.primary, 0.12)}` }}>
+                <Tabs
+                    value={activeTab}
+                    onChange={handleTabChange}
+                    sx={{ '& .MuiTabs-indicator': { backgroundColor: theme.palette.primary.main } }}
+                >
+                    <Tab label="Exercises" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === EXERCISES_TAB_INDEX ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.6), '&.Mui-selected': { color: theme.palette.primary.main } }} />
+                    <Tab label="Workouts" sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === WORKOUTS_TAB_INDEX ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.6), '&.Mui-selected': { color: theme.palette.primary.main } }} />
+                    <Tab
+                        label="Active Workout"
+                        disabled={!activeWorkoutSession || activeWorkoutSession.length === 0}
+                        sx={{ textTransform: 'none', fontWeight: 'bold', color: activeTab === ACTIVE_WORKOUT_TAB_INDEX ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.6), '&.Mui-selected': { color: theme.palette.primary.main } }}
+                    />
+                </Tabs>
+
+                <Tooltip title={viewMode === 'detailed' ? 'Switch to Compact View' : 'Switch to Detailed View'}>
+                    <IconButton
+                        onClick={toggleViewMode}
+                        sx={{
+                            color: theme.palette.primary.main,
+                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            mr: 1,
+                            '&:hover': {
+                                bgcolor: alpha(theme.palette.primary.main, 0.15)
+                            }
+                        }}
+                        size="small"
+                    >
+                        {viewMode === 'detailed' ? <ViewCompactIcon /> : <ViewListIcon />}
+                    </IconButton>
+                </Tooltip>
+            </Box>
 
             {activeTab === EXERCISES_TAB_INDEX && (
                 <ExerciseTabContent
@@ -199,6 +230,7 @@ export const MainView: React.FC = () => {
                     handleSetCompletionUpdate={handleSetCompletionUpdate}
                     handleExerciseSelect={handleExerciseSelect}
                     toggleShowCompleted={toggleShowCompleted}
+                    viewMode={viewMode}
                 />
             )}
             {activeTab === WORKOUTS_TAB_INDEX && (
@@ -210,6 +242,7 @@ export const MainView: React.FC = () => {
                     toggleWorkoutExpanded={toggleWorkoutExpanded}
                     handleSavedWorkoutExerciseSetCompletionUpdate={handleSavedWorkoutExerciseSetCompletionUpdate}
                     startActiveWorkout={startActiveWorkout}
+                    viewMode={viewMode}
                 />
             )}
             {activeTab === ACTIVE_WORKOUT_TAB_INDEX && activeWorkoutSession && activeWorkoutSession.length > 0 && (
@@ -223,6 +256,7 @@ export const MainView: React.FC = () => {
                     onSaveActiveSession={handleSaveActiveSessionAsNewWorkout}
                     isSavingWorkout={isSavingWorkout}
                     saveError={saveError}
+                    viewMode={viewMode}
                 />
             )}
 
