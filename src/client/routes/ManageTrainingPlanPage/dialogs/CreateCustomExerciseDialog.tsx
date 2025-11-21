@@ -23,7 +23,9 @@ import {
     SelectChangeEvent,
     LinearProgress,
     Typography,
+    Link,
 } from '@mui/material';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { createExerciseDefinition } from '@/apis/exerciseDefinitions/client';
 import type { ExerciseDefinition } from '@/apis/exerciseDefinitions/types';
 
@@ -83,6 +85,32 @@ export const CreateCustomExerciseDialog: React.FC<CreateCustomExerciseDialogProp
     const [pasteHint, setPasteHint] = useState<boolean>(false);
     
     const dialogRef = useRef<HTMLDivElement>(null);
+
+    // Construct Shutterstock search URL dynamically based on exercise details
+    const getShutterstockSearchUrl = () => {
+        if (!name.trim()) {
+            return null; // Don't show link if no name entered yet
+        }
+        
+        // Convert name to URL-friendly format (lowercase, replace spaces with hyphens)
+        const searchName = name.trim().toLowerCase().replace(/\s+/g, '-');
+        
+        // Determine exercise category
+        let category = 'weight';
+        if (bodyWeight && isStatic) {
+            category = 'bodyweight-static';
+        } else if (bodyWeight) {
+            category = 'bodyweight';
+        } else if (isStatic) {
+            category = 'static';
+        }
+        
+        // Construct full URL
+        const searchTerm = `${searchName}-${category}`;
+        return `https://www.shutterstock.com/search/${encodeURIComponent(searchTerm)}?image_type=vector`;
+    };
+
+    const shutterstockUrl = getShutterstockSearchUrl();
 
     const handleSecondaryMusclesChange = (event: SelectChangeEvent<typeof secondaryMuscles>) => {
         const value = event.target.value;
@@ -479,6 +507,35 @@ export const CreateCustomExerciseDialog: React.FC<CreateCustomExerciseDialogProp
                             <Tab label="Image URL" value="url" disabled={isSubmitting} />
                             <Tab label="Upload Image" value="upload" disabled={isSubmitting} />
                         </Tabs>
+
+                        {shutterstockUrl && (
+                            <Box sx={{ mb: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                    💡 Need an image? Find vector illustrations:
+                                </Typography>
+                                <Link
+                                    href={shutterstockUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                        fontSize: '0.875rem',
+                                        textDecoration: 'none',
+                                        '&:hover': {
+                                            textDecoration: 'underline',
+                                        },
+                                    }}
+                                >
+                                    Search Shutterstock for &ldquo;{name}&rdquo; images
+                                    <OpenInNewIcon sx={{ fontSize: '1rem' }} />
+                                </Link>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}>
+                                    Take a screenshot and paste it here (Cmd+V)
+                                </Typography>
+                            </Box>
+                        )}
 
                         {imageTab === 'url' ? (
                             <TextField
