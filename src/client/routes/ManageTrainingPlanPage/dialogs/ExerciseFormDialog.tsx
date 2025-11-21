@@ -29,9 +29,11 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import AddIcon from '@mui/icons-material/Add';
 import { getAllExerciseDefinitionOptions } from '@/apis/exerciseDefinitions/client';
 import type { ExerciseDefinition, GetAllExerciseDefinitionsResponse } from '@/apis/exerciseDefinitions/types';
 import { GENERIC_IMAGE_PLACEHOLDER } from '../utils/constants';
+import { CreateCustomExerciseDialog } from './CreateCustomExerciseDialog';
 
 interface ExerciseBrowserDialogProps {
     open: boolean;
@@ -57,6 +59,7 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
     const [allDefinitions, setAllDefinitions] = useState<GetAllExerciseDefinitionsResponse>([]);
     const [isLoadingDefinitions, setIsLoadingDefinitions] = useState(false);
     const [fetchError, setFetchError] = useState<string | null>(null);
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
     const isSmallScreenForPagination = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
 
@@ -71,27 +74,30 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
         return ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Biceps', 'Triceps', 'Core', 'Full Body']; // Fallback
     }, [allDefinitions]);
 
+    const loadExerciseDefinitions = async (bypassCache = false) => {
+        setIsLoadingDefinitions(true);
+        setFetchError(null);
+        try {
+            const response = await getAllExerciseDefinitionOptions({ bypassCache });
+            if (response.data && Array.isArray(response.data)) {
+                setAllDefinitions(response.data);
+            } else {
+                console.error("Fetched data for definitions is not an array:", response.data);
+                throw new Error('Invalid data format for definitions');
+            }
+        } catch (err) {
+            console.error("Failed to fetch exercise definitions:", err);
+            setFetchError(err instanceof Error ? err.message : 'Failed to load definitions');
+            setAllDefinitions([]);
+            throw err; // Re-throw to allow caller to handle
+        } finally {
+            setIsLoadingDefinitions(false);
+        }
+    };
+
     useEffect(() => {
         if (open) {
-            setIsLoadingDefinitions(true);
-            setFetchError(null);
-            getAllExerciseDefinitionOptions()
-                .then(response => {
-                    if (response.data && Array.isArray(response.data)) {
-                        setAllDefinitions(response.data);
-                    } else {
-                        console.error("Fetched data for definitions is not an array:", response.data);
-                        throw new Error('Invalid data format for definitions');
-                    }
-                })
-                .catch(err => {
-                    console.error("Failed to fetch exercise definitions:", err);
-                    setFetchError(err instanceof Error ? err.message : 'Failed to load definitions');
-                    setAllDefinitions([]);
-                })
-                .finally(() => {
-                    setIsLoadingDefinitions(false);
-                });
+            loadExerciseDefinitions();
             setSearchTerm('');
             setSelectedMuscleGroup('All');
             setCurrentPage(1);
@@ -137,6 +143,18 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
         setCurrentPage(value);
     };
 
+    const handleExerciseCreated = async (definition: ExerciseDefinition) => {
+        // Refresh the exercise list from server (bypassing cache to get the latest data)
+        try {
+            await loadExerciseDefinitions(true); // Pass true to bypass cache
+        } catch (err) {
+            console.error("Failed to refresh exercise definitions after creation:", err);
+            // Continue anyway - we can still select the exercise
+        }
+        // Auto-select the newly created exercise
+        onExerciseSelect(definition);
+    };
+
     return (
         <Dialog
             open={open}
@@ -169,6 +187,18 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
 
             <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', pt: 2 }}>
                 {fetchError && <Alert severity="error" sx={{ mb: 2, flexShrink: 0 }}>{fetchError}</Alert>}
+
+                <Box sx={{ mb: 2, flexShrink: 0, px: { xs: 0, sm: 1 } }}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<AddIcon />}
+                        onClick={() => setIsCreateDialogOpen(true)}
+                        fullWidth
+                    >
+                        Create Custom Exercise
+                    </Button>
+                </Box>
 
                 <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center', flexShrink: 0, px: { xs: 0, sm: 1 } }}>
                     <TextField
@@ -246,6 +276,7 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
                                 {paginatedDefinitions.map(definition => {
                                     const defIdStr = definition._id.toString();
                                     const isInPlan = existingExerciseDefinitionIds.includes(defIdStr);
+                                    const isCustom = definition.userId != null;
                                     const tags = [definition.primaryMuscle, ...definition.secondaryMuscles].filter(Boolean).slice(0, 3);
                                     const imageUrl = definition.imageUrl;
 
@@ -271,6 +302,14 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
                                                         sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1, backgroundColor: 'white', borderRadius: '50%' }}
                                                     />
                                                 )}
+                                                {isCustom && (
+                                                    <Chip
+                                                        label="Custom"
+                                                        size="small"
+                                                        color="primary"
+                                                        sx={{ position: 'absolute', top: 8, left: 8, zIndex: 1 }}
+                                                    />
+                                                )}
                                                 <CardActionArea onClick={() => handleExerciseCardClick(definition)} sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                                                     <CardMedia
                                                         component="img"
@@ -278,7 +317,12 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
                                                         alt={definition.name}
                                                         sx={{ height: 140, objectFit: 'contain', p: 1, mt: 1 }}
                                                         onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                                                            (e.target as HTMLImageElement).src = GENERIC_IMAGE_PLACEHOLDER;
+                                                            const target = e.target as HTMLImageElement;
+                                                            // Only set placeholder if not already a data URL
+                                                            // Data URLs cannot fail, preventing infinite loops
+                                                            if (!target.src.startsWith('data:')) {
+                                                                target.src = GENERIC_IMAGE_PLACEHOLDER;
+                                                            }
                                                         }}
                                                     />
                                                     <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
@@ -332,6 +376,12 @@ export const ExerciseFormDialog: React.FC<ExerciseBrowserDialogProps> = ({
                     <Typography variant="body2" sx={{ color: 'text.secondary' }}>No results to paginate</Typography>
                 )}
             </Box>
+
+            <CreateCustomExerciseDialog
+                open={isCreateDialogOpen}
+                onClose={() => setIsCreateDialogOpen(false)}
+                onExerciseCreated={handleExerciseCreated}
+            />
         </Dialog>
     );
 }; 

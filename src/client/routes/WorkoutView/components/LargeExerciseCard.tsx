@@ -15,6 +15,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import Image from 'next/image';
 import { WorkoutExercise } from '@/client/types/workout';
 import { useTheme } from '@mui/material/styles';
+import { GENERIC_IMAGE_PLACEHOLDER } from '@/client/routes/ManageTrainingPlanPage/utils/constants';
 
 // Colors now derive from the MUI theme
 
@@ -103,7 +104,19 @@ export const LargeExerciseCard: React.FC<LargeExerciseCardProps> = ({
                     overflow: 'hidden',
                     bgcolor: alpha(accentColor, 0.03)
                 }}>
-                    <Image src={imageUrl} alt={name || 'Exercise'} fill style={{ objectFit: 'contain' }} onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-image.jpg'; }} />
+                    <Image 
+                        src={imageUrl} 
+                        alt={name || 'Exercise'} 
+                        fill 
+                        style={{ objectFit: 'contain' }} 
+                        onError={(e) => { 
+                            const target = e.target as HTMLImageElement;
+                            // Only set placeholder if not already a data URL to prevent infinite loops
+                            if (!target.src.startsWith('data:')) {
+                                target.src = GENERIC_IMAGE_PLACEHOLDER;
+                            }
+                        }} 
+                    />
                 </Box>
 
                 <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>

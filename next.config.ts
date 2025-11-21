@@ -150,6 +150,10 @@ const nextConfig: NextConfig = withPWA({
         protocol: 'https',
         hostname: 'zdllzsw6qffmlxhs.public.blob.vercel-storage.com',
       },
+      {
+        protocol: 'https',
+        hostname: '**.public.blob.vercel-storage.com',
+      },
     ],
   },
   webpack(config) {

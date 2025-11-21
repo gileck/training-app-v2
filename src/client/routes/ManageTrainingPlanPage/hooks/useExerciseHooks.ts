@@ -56,14 +56,14 @@ export const useExerciseHooks = (planId: string | undefined) => {
         updateExerciseState({ exercises: safeExercises, error: contextError });
     }, [exercises, contextError, updateExerciseState]);
 
-    const fetchExercisesTabData = useCallback(async () => {
+    const fetchExercisesTabData = useCallback(async (bypassCache = false) => {
         if (!planId) {
             updateExerciseState({ error: "Training Plan ID not found in URL parameters." });
             return Promise.reject("Training Plan ID not found");
         }
         updateExerciseState({ error: null });
         try {
-            const allDefinitionsResponse = await getAllExerciseDefinitionOptions();
+            const allDefinitionsResponse = await getAllExerciseDefinitionOptions({ bypassCache });
 
             if (allDefinitionsResponse.data && Array.isArray(allDefinitionsResponse.data)) {
                 const defsData = allDefinitionsResponse.data as ApiExerciseDefinitionMPE[];
@@ -183,14 +183,21 @@ export const useExerciseHooks = (planId: string | undefined) => {
         updateExerciseState({ isExerciseBrowserOpen: false });
     }, [updateExerciseState]);
 
-    const handleExerciseSelectFromBrowser = useCallback((definition: ApiExerciseDefinitionMPE) => {
+    const handleExerciseSelectFromBrowser = useCallback(async (definition: ApiExerciseDefinitionMPE) => {
+        // Refresh definitions to ensure we have the latest data (especially for newly created exercises)
+        // Use bypassCache to fetch fresh data from server
+        await fetchExercisesTabData(true).catch(err => {
+            console.error("Failed to refresh exercise definitions:", err);
+            // Continue anyway - the dialog can still open with the definition we have
+        });
+        
         updateExerciseState({
             selectedDefinitionForDetails: definition,
             exerciseBeingEdited: null,
             isExerciseDetailsDialogOpen: true,
             isExerciseBrowserOpen: false
         });
-    }, [updateExerciseState]);
+    }, [updateExerciseState, fetchExercisesTabData]);
 
     const handleDetailsDialogSave = useCallback(async (exerciseData: ExerciseBase) => {
         setExerciseState(prevState => {

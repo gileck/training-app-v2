@@ -15,4 +15,22 @@ export interface GetExerciseDefinitionByIdRequestParams {
 
 // Response includes the full definition details
 // Ensure the API returns fields consistent with ExerciseDefinitionBase + _id
-export type GetExerciseDefinitionByIdResponse = ExerciseDefinition | null; 
+export type GetExerciseDefinitionByIdResponse = ExerciseDefinition | null;
+
+// --- API Types for POST /api/exercise-definitions/create (Create Custom Exercise) --- //
+export interface CreateExerciseDefinitionRequest {
+    name: string;
+    imageUrl?: string;              // Optional: URL to an image
+    imageFile?: string;             // Optional: base64-encoded image file
+    imageFileName?: string;         // Optional: filename for the uploaded image
+    primaryMuscle: string;
+    secondaryMuscles: string[];
+    bodyWeight: boolean;
+    type: string;
+    static: boolean;
+}
+
+export type CreateExerciseDefinitionResponse = {
+    definition?: ExerciseDefinition;
+    error?: string;
+}; 

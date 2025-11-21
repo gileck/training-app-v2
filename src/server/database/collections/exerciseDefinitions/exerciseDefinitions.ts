@@ -42,12 +42,35 @@ export const findExerciseDefinitionById = async (
 
 /**
  * Get all exercise definitions as options (simplified format for selection lists)
+ * Includes global exercises (userId = null) and user-specific exercises
+ * @param userId - Optional user ID to include user-specific exercises
  * @returns Array of exercise definition options
  */
-export const getAllExerciseDefinitionOptions = async (): Promise<ExerciseDefinition[]> => {
+export const getAllExerciseDefinitionOptions = async (userId?: ObjectId | string | null): Promise<ExerciseDefinition[]> => {
   const collection = await getExerciseDefinitionsCollection();
-  const definitions = await collection.find({}).sort({ name: 1 }).toArray();
-  return definitions;
+  
+  // Build filter: include global exercises and user-specific exercises
+  if (userId) {
+    const userIdObj = typeof userId === 'string' ? new ObjectId(userId) : userId;
+    // Find exercises where userId is null (global) OR matches the user's ID
+    const definitions = await collection.find({
+      $or: [
+        { userId: null },
+        { userId: { $exists: false } }, // For backward compatibility with existing data
+        { userId: userIdObj }
+      ]
+    }).sort({ name: 1 }).toArray();
+    return definitions;
+  } else {
+    // If no userId provided, only return global exercises
+    const definitions = await collection.find({
+      $or: [
+        { userId: null },
+        { userId: { $exists: false } }
+      ]
+    }).sort({ name: 1 }).toArray();
+    return definitions;
+  }
 };
 
 /**
@@ -60,10 +83,31 @@ export const insertExerciseDefinition = async (
 ): Promise<ExerciseDefinition> => {
   const collection = await getExerciseDefinitionsCollection();
 
-  // Check if name already exists
-  const existingDefinition = await collection.findOne({ name: definition.name });
+  // Check if name already exists for this user's scope
+  // For global exercises (userId is null/undefined), check globally
+  // For user-specific exercises, check within that user's exercises
+  let existingDefinition;
+  
+  if (definition.userId) {
+    // User-specific exercise: check if name exists for this user
+    existingDefinition = await collection.findOne({ 
+      name: definition.name,
+      userId: definition.userId
+    });
+  } else {
+    // Global exercise: check if name exists in global scope
+    existingDefinition = await collection.findOne({
+      name: definition.name,
+      $or: [
+        { userId: null },
+        { userId: { $exists: false } }
+      ]
+    });
+  }
+  
   if (existingDefinition) {
-    throw new Error(`Exercise definition with name "${definition.name}" already exists`);
+    const scope = definition.userId ? 'your custom exercises' : 'global exercises';
+    throw new Error(`Exercise definition with name "${definition.name}" already exists in ${scope}`);
   }
 
   const result = await collection.insertOne(definition as ExerciseDefinition);

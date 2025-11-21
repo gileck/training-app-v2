@@ -8,3 +8,4 @@ export const name = "exerciseDefinitions";
 // --- API Names ---
 export const getAllOptionsApiName = `${name}/getAllOptions`;
 export const getByIdApiName = `${name}/getById`;
+export const createExerciseDefinitionApiName = `${name}/create`;

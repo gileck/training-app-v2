@@ -44,6 +44,7 @@ We primarily use referencing (storing ObjectIds) for relationships, but embeddin
 ```json
 {
   "_id": ObjectId(),
+  "userId": ObjectId(),            // Optional: null = global exercise, non-null = user-specific custom exercise
   "name": "String",                // Indexed, Unique (e.g., "Bench Press")
   "imageUrl": "String",            // Optional
   "primaryMuscle": "String",       // Primary muscle targeted

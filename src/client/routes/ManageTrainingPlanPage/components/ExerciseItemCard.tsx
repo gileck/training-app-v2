@@ -78,7 +78,11 @@ export const ExerciseItemCard: React.FC<ExerciseItemProps> = ({ exercise, defini
                             flexShrink: 0
                         }}
                         onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                            (e.target as HTMLImageElement).src = GENERIC_IMAGE_PLACEHOLDER;
+                            const target = e.target as HTMLImageElement;
+                            // Only set placeholder if not already a data URL to prevent infinite loops
+                            if (!target.src.startsWith('data:')) {
+                                target.src = GENERIC_IMAGE_PLACEHOLDER;
+                            }
                         }}
                     />
                     <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden', p: { xs: 1.5, sm: 2 } }}>

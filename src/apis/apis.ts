@@ -46,6 +46,7 @@ export const apiHandlers: ApiHandlers = {
   [exercisesServer.deleteExerciseApiName]: { process: exercisesServer.deleteExerciseFromPlan as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [exerciseDefinitionsServer.getAllOptionsApiName]: { process: exerciseDefinitionsServer.processGetAllOptions as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [exerciseDefinitionsServer.getByIdApiName]: { process: exerciseDefinitionsServer.processGetById as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [exerciseDefinitionsServer.createExerciseDefinitionApiName]: { process: exerciseDefinitionsServer.processCreateExerciseDefinition as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [weeklyProgressServer.getWeeklyProgressApiName]: { process: weeklyProgressServer.getWeeklyProgress as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [weeklyProgressServer.updateSetCompletionApiName]: { process: weeklyProgressServer.updateSetCompletion as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [weeklyProgressServer.addWeeklyNoteApiName]: { process: weeklyProgressServer.addWeeklyNote as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
