@@ -14,6 +14,7 @@ This rule documents the pattern for organizing complex React hooks in our codeba
 3. **Clear Dependencies**: Avoid circular dependencies by carefully structuring hook initialization
 4. **State Isolation**: Each hook manages its own internal state
 5. **Consistent API Pattern**: Use a consistent pattern for updating state and exposing functionality
+6. **🚨 NEVER READ STATE FROM CLOSURE**: ALWAYS use functional updates `setState(prev => ...)` - see State Management Rules below
 
 ## Implementation Pattern
 
@@ -35,8 +36,21 @@ Each hook should follow this pattern:
 - Use a single state object and partial updates pattern:
 ```typescript
 const [state, setState] = useState(getDefaultState());
+
+// ✅ CORRECT: Always use functional update
 const updateState = useCallback((partialState: Partial<State>) => {
   setState(prev => ({ ...prev, ...partialState }));
+}, []);
+
+// If updateState needs to accept a function updater too:
+const updateState = useCallback((
+  stateOrUpdater: Partial<State> | ((prev: State) => State)
+) => {
+  if (typeof stateOrUpdater === 'function') {
+    setState(stateOrUpdater);
+  } else {
+    setState(prev => ({ ...prev, stateOrUpdater }));
+  }
 }, []);
 ```
 
@@ -94,3 +108,244 @@ executeDeleteExercise: async () => {
 - Hook files should generally stay under 250 lines
 - If a hook file exceeds 300 lines, consider further splitting it
 - Main composition hooks should focus on coordination rather than implementation
+
+---
+
+## 🚨 CRITICAL: State Management Rules 🚨
+
+### ⛔ RULE #1: NEVER READ STATE FROM CLOSURE ⛔
+
+**This is the #1 source of bugs in React applications!**
+
+When writing hooks with `useState`, you MUST follow these rules:
+
+#### ❌ WRONG - Reading State from Closure:
+
+```typescript
+const useMyHook = () => {
+  const [state, setState] = useState({ items: [], count: 0 });
+  
+  const addItem = useCallback(async () => {
+    const item = await fetchItem();
+    
+    // ❌ WRONG: Reading 'state' from closure
+    const currentItems = state.items;  // ❌ STALE!
+    setState({
+      ...state,                        // ❌ STALE!
+      items: [...currentItems, item]   // ❌ Using stale value!
+    });
+  }, []); // 'state' not in dependencies = STALE FOREVER!
+  
+  return { state, addItem };
+};
+```
+
+**Why this causes bugs:**
+1. `state` is captured in closure when `useCallback` is created
+2. If `state` is NOT in dependency array, it NEVER updates
+3. You're reading a **frozen snapshot**, not **current state**
+4. **Parallel operations will overwrite each other's changes!**
+
+**Real bug from this codebase:**
+```typescript
+// Bug: Workouts disappeared after AI creation
+await Promise.all([
+  refreshExercises(planId),    // Reads stale state, writes exercises
+  refreshSavedWorkouts(planId) // Reads stale state, overwrites exercises!
+]);
+// Result: Last write wins, exercises lost!
+```
+
+#### ✅ CORRECT - Reading State from Callback Parameter:
+
+```typescript
+const useMyHook = () => {
+  const [state, setState] = useState({ items: [], count: 0 });
+  
+  const addItem = useCallback(async () => {
+    const item = await fetchItem();
+    
+    // ✅ CORRECT: Reading from 'prevState' callback parameter
+    setState(prevState => ({
+      ...prevState,                           // ✅ CURRENT!
+      items: [...prevState.items, item]       // ✅ CURRENT!
+    }));
+  }, []); // No 'state' dependency needed!
+  
+  return { state, addItem };
+};
+```
+
+**Why this works:**
+1. `prevState` is passed by React at **execution time**
+2. React guarantees `prevState` is the **current state**
+3. No closure issues - reading from **source of truth**
+4. **Parallel operations are safe - each sees the latest state!**
+
+### 🔥 The Golden Rules for Hooks 🔥
+
+**EVERY TIME you write state updates in a hook:**
+
+1. ✅ **ALWAYS use functional update**: `setState(prev => ...)`
+2. ❌ **NEVER read state outside setState**: No `const x = state.y`
+3. ❌ **NEVER spread state object**: No `{ ...state, ... }`
+4. ✅ **ALL state reads inside callback**: Only use `prevState.someValue`
+
+### 📋 Hook Code Review Checklist
+
+Before committing ANY hook with state:
+
+- [ ] ✅ All `setState` calls use functional form: `setState(prev => ...)`
+- [ ] ✅ No state variables read outside setState callbacks
+- [ ] ✅ No spreading of state: `{ ...state }` → `{ ...prev }`
+- [ ] ✅ All nested state reads use `prevState`: `prevState.nested.value`
+- [ ] ✅ Parallel operations use functional updates
+- [ ] ✅ Dependency arrays don't include state (unless necessary)
+- [ ] ✅ Helper functions that update state accept callback updaters
+
+### 🎯 Pattern Examples for This Codebase
+
+#### Pattern 1: Single State Update
+
+```typescript
+// ❌ WRONG
+const loadData = useCallback(async (planId: string) => {
+  const data = await fetch();
+  updateState({ 
+    planData: { 
+      ...state.planData,  // ❌ Closure!
+      [planId]: data 
+    } 
+  });
+}, [updateState]);
+
+// ✅ CORRECT
+const loadData = useCallback(async (planId: string) => {
+  const data = await fetch();
+  updateState(prevState => ({
+    planData: {
+      ...prevState.planData,  // ✅ Callback param!
+      [planId]: data
+    }
+  }));
+}, [updateState]);
+```
+
+#### Pattern 2: Nested State Update
+
+```typescript
+// ❌ WRONG
+const updateExercises = useCallback(async (planId: string) => {
+  const exercises = await fetch();
+  const currentPlan = state.planData[planId];  // ❌ Closure!
+  updateState({
+    planData: {
+      ...state.planData,      // ❌ Closure!
+      [planId]: {
+        ...currentPlan,       // ❌ Closure!
+        exercises
+      }
+    }
+  });
+}, [updateState]);
+
+// ✅ CORRECT
+const updateExercises = useCallback(async (planId: string) => {
+  const exercises = await fetch();
+  updateState(prevState => ({
+    planData: {
+      ...prevState.planData,                    // ✅ Callback param!
+      [planId]: {
+        ...prevState.planData[planId],          // ✅ Callback param!
+        exercises
+      }
+    }
+  }));
+}, [updateState]);
+```
+
+#### Pattern 3: Helper Function That Accepts Updater
+
+```typescript
+// ✅ CORRECT: updateState that accepts both object and function
+const updateState = useCallback((
+  stateOrUpdater: Partial<State> | ((prev: State) => State)
+) => {
+  if (typeof stateOrUpdater === 'function') {
+    setState(stateOrUpdater);
+  } else {
+    setState(prev => ({ ...prev, stateOrUpdater }));
+  }
+}, []);
+
+// Usage:
+const refresh = useCallback(async (planId: string) => {
+  const data = await fetch();
+  
+  // Pass function updater to ensure no closure issues
+  updateState(prevState => ({
+    planData: {
+      ...prevState.planData,
+      [planId]: data
+    }
+  }));
+}, [updateState]);
+```
+
+### 🐛 Real Bugs Fixed in This Codebase
+
+**Bug #1: AI Chat Messages Not Persisting**
+```typescript
+// ❌ Bug: Reading messages from closure
+setMessages(prev => [...prev, newMessage]);
+await saveConversation(messages); // ❌ 'messages' is stale!
+
+// ✅ Fix: Capture after state update
+let finalMessages: ChatMessage[] = [];
+setMessages(prev => {
+  finalMessages = [...prev, newMessage];
+  return finalMessages;
+});
+await saveConversation(finalMessages); // ✅ Current!
+```
+
+**Bug #2: Workouts Disappeared After AI Creation**
+```typescript
+// ❌ Bug: Both read stale state
+const refreshExercises = () => {
+  const current = state.planData[id];  // ❌ Stale!
+  updateState({ planData: { ...state.planData, [id]: { ...current, exercises } }});
+};
+
+const refreshWorkouts = () => {
+  const current = state.planData[id];  // ❌ Stale!
+  updateState({ planData: { ...state.planData, [id]: { ...current, workouts } }});
+};
+
+// ✅ Fix: Both use functional updates
+const refreshExercises = () => {
+  updateState(prev => ({
+    planData: { ...prev.planData, [id]: { ...prev.planData[id], exercises } }
+  }));
+};
+
+const refreshWorkouts = () => {
+  updateState(prev => ({
+    planData: { ...prev.planData, [id]: { ...prev.planData[id], workouts } }
+  }));
+};
+```
+
+### 💡 Summary: One Simple Rule
+
+**Replace this pattern:**
+```typescript
+setState({ ...state, newValue })
+```
+
+**With this pattern:**
+```typescript
+setState(prev => ({ ...prev, newValue }))
+```
+
+**Remember:** `state` = closure variable (can be stale). `prevState` = function parameter (always current)!
