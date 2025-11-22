@@ -121,11 +121,20 @@ export const useSavedWorkouts = (planId: string) => {
     // Auto-load plan data if not loaded
     // Only check when planId changes, not when state.planData changes (causes unnecessary re-checks)
     React.useEffect(() => {
-        if (planId && !state.planData[planId]?.isLoaded && !state.planData[planId]?.isLoading) {
+        const shouldLoad = planId && !state.planData[planId]?.isLoaded && !state.planData[planId]?.isLoading;
+        console.log('[useSavedWorkouts] useEffect running:', {
+            planId,
+            shouldLoad,
+            isLoaded: state.planData[planId]?.isLoaded,
+            isLoading: state.planData[planId]?.isLoading,
+            stackTrace: new Error().stack
+        });
+        
+        if (shouldLoad) {
             console.log('[useSavedWorkouts] Triggering loadPlanData for planId:', planId);
-            loadPlanData(planId); // Triggers server fetch for fresh data
+            loadPlanData(planId);
         }
-    }, [planId, loadPlanData]);  // ← Removed state.planData from dependencies!
+    }, [planId, loadPlanData]);
 
     const planData = state.planData[planId] || { savedWorkouts: [], isLoaded: false, isLoading: false };
     
