@@ -17,6 +17,7 @@ import {
   Badge,
   Tooltip,
   Fab,
+  useTheme,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -63,10 +64,13 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
   onUndoAction,
   actionHistory = [],
 }) => {
+  const theme = useTheme();
   const [inputMessage, setInputMessage] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const isDark = theme.palette.mode === 'dark';
 
   // Count pending actions for badge
   const pendingCount = messages
@@ -157,7 +161,10 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
             zIndex: 1300,
             borderRadius: 3,
             overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            boxShadow: isDark 
+              ? '0 8px 32px rgba(0,0,0,0.6)' 
+              : '0 8px 32px rgba(0,0,0,0.12)',
+            bgcolor: isDark ? 'grey.900' : 'background.paper',
           }}
         >
           {/* Chat Header */}
@@ -219,7 +226,12 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
           </Box>
 
           {/* Chat Content */}
-          <Box sx={{ flexGrow: 1, overflow: 'auto', bgcolor: 'grey.50', p: 2 }}>
+          <Box sx={{ 
+            flexGrow: 1, 
+            overflow: 'auto', 
+            bgcolor: isDark ? 'grey.900' : 'grey.50', 
+            p: 2 
+          }}>
             {!showHistory ? (
               <>
                 {messages.length === 0 && (
@@ -292,11 +304,15 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
                       <Box sx={{ flexGrow: 1 }}>
                         <Box
                           sx={{
-                            bgcolor: message.role === 'user' ? 'primary.main' : 'white',
-                            color: message.role === 'user' ? 'white' : 'text.primary',
+                            bgcolor: message.role === 'user' 
+                              ? 'primary.main' 
+                              : isDark ? 'grey.800' : 'white',
+                            color: message.role === 'user' 
+                              ? 'white' 
+                              : 'text.primary',
                             p: 1.5,
                             borderRadius: 2,
-                            boxShadow: 1,
+                            boxShadow: isDark ? 2 : 1,
                           }}
                         >
                           <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
@@ -365,7 +381,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
           <Divider />
 
           {/* Input Area */}
-          <Box sx={{ p: 2, bgcolor: 'white' }}>
+          <Box sx={{ p: 2, bgcolor: isDark ? 'grey.900' : 'white' }}>
             {/* Model Selector */}
             <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
@@ -417,7 +433,8 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
                     background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
                   },
                   '&:disabled': {
-                    background: 'grey.300',
+                    background: isDark ? 'grey.800' : 'grey.300',
+                    color: isDark ? 'grey.600' : 'grey.500',
                   },
                 }}
               >
