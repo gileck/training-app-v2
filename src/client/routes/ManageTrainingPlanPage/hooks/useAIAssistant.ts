@@ -335,8 +335,10 @@ export const useAIAssistant = ({
             return finalMessages;
           });
 
-          // Trigger data refresh
-          onActionExecuted?.();
+          // Trigger data refresh and await completion
+          if (onActionExecuted) {
+            await onActionExecuted();
+          }
 
           // Save conversation with system message
           await saveConversation(finalMessages);
@@ -377,8 +379,10 @@ export const useAIAssistant = ({
             }
           });
 
-          // Trigger data refresh once after all actions
-          onActionExecuted?.();
+          // Trigger data refresh once after all actions and await completion
+          if (onActionExecuted) {
+            await onActionExecuted();
+          }
 
           // Add system message with summary and update messages
           const successCount = result.data.successCount;
