@@ -1,0 +1,368 @@
+# React Frequent Bugs - Prevention Guide
+
+This document outlines common React bugs and patterns to avoid them, based on real issues encountered in the project.
+
+---
+
+## 1. Stale State Closure in Callbacks
+
+### ❌ WRONG - Referencing State Directly in Callbacks
+
+```typescript
+const [messages, setMessages] = useState<Message[]>([]);
+
+const confirmAction = useCallback(async () => {
+  // Update state
+  setMessages(prev => prev.map(msg => updateMsg(msg)));
+  
+  // BUG: 'messages' here is STALE - still points to old state!
+  const updatedMessages = [...messages, newMessage];
+  await saveToDatabase(updatedMessages); // Saves OLD state + new message
+}, [messages]); // Even with dependency, closure captures old value
+```
+
+**Why it fails:**
+- `messages` in the callback refers to the value when the callback was created
+- `setMessages` updates state asynchronously, but doesn't update the `messages` variable
+- Any code after `setMessages` that references `messages` gets the OLD value
+
+### ✅ CORRECT - Use Functional setState Pattern
+
+```typescript
+const [messages, setMessages] = useState<Message[]>([]);
+
+const confirmAction = useCallback(async () => {
+  let finalMessages: Message[] = [];
+  
+  setMessages(prev => {
+    // Work with 'prev' which is guaranteed to be current state
+    const updated = prev.map(msg => updateMsg(msg));
+    const withNewMessage = [...updated, newMessage];
+    
+    // Capture the final state in outer variable
+    finalMessages = withNewMessage;
+    
+    return withNewMessage;
+  });
+  
+  // Now use captured state
+  await saveToDatabase(finalMessages); // Saves CURRENT state
+}, [saveToDatabase]);
+```
+
+**Key principles:**
+1. Never reference state variables directly after calling setState
+2. Use functional setState: `setState(prev => ...)`
+3. Capture the new state in a variable inside the setState callback
+4. Use the captured variable for subsequent operations
+
+---
+
+## 2. Multiple setState Calls Creating Race Conditions
+
+### ❌ WRONG - Separate setState Calls
+
+```typescript
+const updateData = useCallback(async () => {
+  // Multiple setState calls
+  setMessages(prev => prev.map(msg => updateMsg(msg)));
+  
+  // This might use stale state from first call
+  setMessages(prev => [...prev, systemMessage]);
+  
+  // Which state do we save?
+  await saveConversation(messages); // BUG: Stale state!
+}, [messages]);
+```
+
+**Problems:**
+- Multiple setState calls don't compose well
+- Each call queues an update, but they may not execute in order
+- Hard to capture the final state for external operations
+
+### ✅ CORRECT - Single setState with All Updates
+
+```typescript
+const updateData = useCallback(async () => {
+  let finalMessages: Message[] = [];
+  
+  setMessages(prev => {
+    // Perform ALL updates in a single setState
+    const updated = prev.map(msg => updateMsg(msg));
+    const withSystemMsg = [...updated, systemMessage];
+    
+    finalMessages = withSystemMsg;
+    return withSystemMsg;
+  });
+  
+  await saveConversation(finalMessages);
+}, [saveConversation]);
+```
+
+**Benefits:**
+- Single atomic state update
+- Clear capture of final state
+- No race conditions
+- Easier to reason about
+
+---
+
+## 3. Forgetting to Persist State After Updates
+
+### ❌ WRONG - Update State Without Persistence
+
+```typescript
+const confirmAction = useCallback(async () => {
+  const systemMessage = { role: 'system', content: 'Done!' };
+  
+  // Update local state
+  setMessages(prev => [...prev, systemMessage]);
+  
+  // BUG: Never saved to database!
+  // User loses this message on refresh
+}, []);
+```
+
+**Problem:**
+- State only exists in memory
+- Page refresh = data loss
+- Inconsistent state between client and server
+
+### ✅ CORRECT - Always Persist Critical State
+
+```typescript
+const confirmAction = useCallback(async () => {
+  let finalMessages: Message[] = [];
+  
+  setMessages(prev => {
+    const systemMessage = { role: 'system', content: 'Done!' };
+    finalMessages = [...prev, systemMessage];
+    return finalMessages;
+  });
+  
+  // IMPORTANT: Persist to database
+  await saveConversation(finalMessages);
+}, [saveConversation]);
+```
+
+**Pattern to follow:**
+1. Update local state (for immediate UI feedback)
+2. Capture the final state
+3. Persist to database/server
+4. Handle errors appropriately
+
+---
+
+## 4. Missing Dependencies in useCallback/useEffect
+
+### ❌ WRONG - Stale Closures Due to Missing Dependencies
+
+```typescript
+const saveData = useCallback(async (data: Data[]) => {
+  // Uses currentUserId from closure
+  await api.save(currentUserId, data);
+}, []); // BUG: Missing currentUserId dependency
+
+const processAction = useCallback(async () => {
+  let finalData: Data[] = [];
+  setData(prev => {
+    finalData = [...prev, newItem];
+    return finalData;
+  });
+  
+  await saveData(finalData);
+}, [saveData]); // This depends on saveData, but saveData is stale!
+```
+
+**Problem:**
+- `saveData` captures `currentUserId` from when it was created
+- If `currentUserId` changes, `saveData` still uses the old value
+- `processAction` depends on `saveData`, perpetuating the stale closure
+
+### ✅ CORRECT - Include All Dependencies
+
+```typescript
+const saveData = useCallback(async (data: Data[]) => {
+  await api.save(currentUserId, data);
+}, [currentUserId]); // Include ALL external dependencies
+
+const processAction = useCallback(async () => {
+  let finalData: Data[] = [];
+  setData(prev => {
+    finalData = [...prev, newItem];
+    return finalData;
+  });
+  
+  await saveData(finalData);
+}, [saveData]); // Now saveData is always current
+```
+
+**Rules:**
+- Always include dependencies in useCallback/useEffect arrays
+- Use ESLint's `react-hooks/exhaustive-deps` rule
+- If you intentionally want stale values, use useRef instead
+
+---
+
+## 5. Not Handling Async State Updates
+
+### ❌ WRONG - Assuming Immediate State Updates
+
+```typescript
+const addMessage = () => {
+  setMessages(prev => [...prev, newMessage]);
+  
+  // BUG: State hasn't updated yet!
+  console.log(messages.length); // Old length
+  saveToDatabase(messages); // Old state
+};
+```
+
+**Problem:**
+- setState is asynchronous
+- State doesn't update immediately after calling setState
+- Any code after setState sees the old state
+
+### ✅ CORRECT - Use Captured State or useEffect
+
+**Option 1: Capture state (for immediate operations)**
+```typescript
+const addMessage = () => {
+  let finalMessages: Message[] = [];
+  
+  setMessages(prev => {
+    finalMessages = [...prev, newMessage];
+    return finalMessages;
+  });
+  
+  // Use captured state
+  console.log(finalMessages.length); // Correct length
+  saveToDatabase(finalMessages); // Current state
+};
+```
+
+**Option 2: useEffect (for derived operations)**
+```typescript
+const addMessage = () => {
+  setMessages(prev => [...prev, newMessage]);
+};
+
+useEffect(() => {
+  // This runs AFTER state updates
+  saveToDatabase(messages);
+}, [messages]);
+```
+
+---
+
+## Quick Checklist for State Management
+
+When writing React state updates, always ask:
+
+- [ ] Am I using functional setState (`setState(prev => ...)`)?
+- [ ] Am I capturing the new state if I need it immediately?
+- [ ] Am I avoiding direct references to state after setState?
+- [ ] Do I need to persist this state change?
+- [ ] Are all dependencies included in useCallback/useEffect?
+- [ ] Am I combining multiple state updates into one when possible?
+- [ ] Am I handling errors in async operations?
+
+---
+
+## Common Patterns Summary
+
+### Pattern 1: Update State and Use Immediately
+```typescript
+const operation = useCallback(async () => {
+  let finalState: Type[] = [];
+  
+  setState(prev => {
+    const updated = prev.map(transform);
+    const final = [...updated, newItem];
+    finalState = final;
+    return final;
+  });
+  
+  await persistToDatabase(finalState);
+}, [persistToDatabase]);
+```
+
+### Pattern 2: Update Multiple Related States
+```typescript
+const operation = useCallback(async () => {
+  let finalMessages: Message[] = [];
+  
+  // Update related state first
+  setActionHistory(prev => prev.map(updateAction));
+  
+  // Then update main state with all changes
+  setMessages(prev => {
+    const updated = prev.map(updateMsg);
+    const final = [...updated, systemMsg];
+    finalMessages = final;
+    return final;
+  });
+  
+  await persist(finalMessages);
+}, [persist]);
+```
+
+### Pattern 3: Conditional State Updates
+```typescript
+const operation = useCallback(async (condition: boolean) => {
+  let finalState: Type[] = [];
+  
+  setState(prev => {
+    let updated = prev;
+    
+    if (condition) {
+      updated = prev.map(transform);
+    }
+    
+    const final = [...updated, newItem];
+    finalState = final;
+    return final;
+  });
+  
+  await save(finalState);
+}, [save]);
+```
+
+---
+
+## Real-World Example from This Project
+
+**Bug:** System messages from AI actions (confirm, undo) were not persisting after page refresh.
+
+**Root Cause:**
+```typescript
+// WRONG
+setMessages(prev => prev.map(updateAction));
+const updatedMessages = [...messages, systemMessage]; // Stale!
+await saveConversation(updatedMessages);
+```
+
+**Fix:**
+```typescript
+// CORRECT
+let finalMessages: ChatMessage[] = [];
+setMessages(prev => {
+  const updated = prev.map(updateAction);
+  const final = [...updated, systemMessage];
+  finalMessages = final;
+  return final;
+});
+await saveConversation(finalMessages);
+```
+
+---
+
+## Additional Resources
+
+- [React Hooks FAQ - Stale Closures](https://react.dev/learn/you-might-not-need-an-effect)
+- [Why is setState asynchronous?](https://github.com/facebook/react/issues/11527)
+- ESLint Rule: `react-hooks/exhaustive-deps`
+
+---
+
+**Last Updated:** Based on bug fix from AI chat persistence issue (2024)
