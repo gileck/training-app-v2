@@ -43,29 +43,15 @@ export const useSavedWorkoutHooks = (
     }, [state.planData, updateState, updateStateAndSave]);
 
     const refreshSavedWorkouts = useCallback(async (planId: string) => {
-        const callId = Math.random().toString(36).substr(2, 9);
-        console.log(`[refreshSavedWorkouts][${callId}] Starting refresh for planId:`, planId);
-        console.log(`[refreshSavedWorkouts][${callId}] Call stack:`, new Error().stack);
         try {
             const response = await getSavedWorkouts({ trainingPlanId: planId });
             const savedWorkouts = response.data || [];
-            
-            console.log(`[refreshSavedWorkouts][${callId}] Received workouts from API:`, {
-                count: savedWorkouts.length,
-                workouts: savedWorkouts.map(w => ({ id: w._id, name: w.name }))
-            });
 
             // Use functional update to avoid stale state closure
             updateStateAndSave((prevState: TrainingDataState): TrainingDataState => {
                 const currentPlanData = prevState.planData[planId];
-                console.log(`[refreshSavedWorkouts][${callId}] Current plan data before update:`, {
-                    hasData: !!currentPlanData,
-                    currentWorkoutCount: currentPlanData?.savedWorkouts?.length || 0,
-                    isLoaded: currentPlanData?.isLoaded,
-                    fullPlanData: currentPlanData
-                });
                 
-                const newState = {
+                return {
                     ...prevState,
                     planData: {
                         ...prevState.planData,
@@ -77,18 +63,8 @@ export const useSavedWorkoutHooks = (
                         }
                     }
                 };
-                
-                console.log(`[refreshSavedWorkouts][${callId}] New plan data after update:`, {
-                    newWorkoutCount: newState.planData[planId]?.savedWorkouts?.length || 0,
-                    workoutNames: newState.planData[planId]?.savedWorkouts?.map((w: SavedWorkout) => w.name) || []
-                });
-                
-                return newState;
             });
-            
-            console.log(`[refreshSavedWorkouts][${callId}] State updated successfully`);
         } catch (error) {
-            console.error(`[refreshSavedWorkouts][${callId}] Error:`, error);
             updateState({
                 error: error instanceof Error ? error.message : 'Failed to refresh saved workouts'
             });

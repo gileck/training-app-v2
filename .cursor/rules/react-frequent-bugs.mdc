@@ -255,6 +255,149 @@ useEffect(() => {
 
 ---
 
+## 6. Race Condition in Parallel State Updates
+
+### ❌ WRONG - Reading State Outside Functional Updates in Parallel Operations
+
+```typescript
+const refreshExercises = useCallback(async (planId: string) => {
+  const response = await getExercises({ trainingPlanId: planId });
+  const exercises = response.data || [];
+  
+  // BUG: Reading state OUTSIDE the updater function
+  const currentPlanData = state.planData[planId];
+  updateStateAndSave({
+    planData: {
+      ...state.planData,
+      [planId]: {
+        ...currentPlanData,  // This is stale if another update runs in parallel!
+        exercises,
+        isLoaded: true
+      }
+    }
+  });
+}, [state.planData, updateStateAndSave]);
+
+const refreshSavedWorkouts = useCallback(async (planId: string) => {
+  const response = await getSavedWorkouts({ trainingPlanId: planId });
+  const savedWorkouts = response.data || [];
+  
+  // BUG: Also reading state OUTSIDE the updater function
+  const currentPlanData = state.planData[planId];
+  updateStateAndSave({
+    planData: {
+      ...state.planData,
+      [planId]: {
+        ...currentPlanData,  // This is also stale!
+        savedWorkouts,
+        isLoaded: true
+      }
+    }
+  });
+}, [state.planData, updateStateAndSave]);
+
+// When called in parallel:
+await Promise.all([
+  refreshExercises(planId),    // Reads state at T0: {exercises: [], savedWorkouts: []}
+  refreshSavedWorkouts(planId) // Also reads state at T0: {exercises: [], savedWorkouts: []}
+]);
+
+// Result: Last write wins, one update overwrites the other!
+// If refreshExercises finishes last, savedWorkouts becomes [] again!
+```
+
+**Why it fails:**
+- Both functions read `state.planData[planId]` at the SAME TIME (T0)
+- Both see the same old state before either update completes
+- API calls complete at different times (T1, T2)
+- `refreshSavedWorkouts` updates: `{exercises: [...], savedWorkouts: [1,2,3]}` ✅
+- `refreshExercises` updates with OLD state from T0: `{exercises: [...], savedWorkouts: []}` ❌
+- Last write wins, so workouts disappear!
+
+### ✅ CORRECT - Use Functional Updates for All Parallel Operations
+
+```typescript
+const refreshExercises = useCallback(async (planId: string) => {
+  const response = await getExercises({ trainingPlanId: planId });
+  const exercises = response.data || [];
+  
+  // Use functional update to read CURRENT state at update time
+  updateStateAndSave((prevState: State): State => {
+    const currentPlanData = prevState.planData[planId];
+    return {
+      ...prevState,
+      planData: {
+        ...prevState.planData,
+        [planId]: {
+          ...currentPlanData,  // Now reads CURRENT state, not stale!
+          exercises,
+          isLoaded: true
+        }
+      }
+    };
+  });
+}, [updateStateAndSave]); // No state.planData dependency needed!
+
+const refreshSavedWorkouts = useCallback(async (planId: string) => {
+  const response = await getSavedWorkouts({ trainingPlanId: planId });
+  const savedWorkouts = response.data || [];
+  
+  // Also use functional update
+  updateStateAndSave((prevState: State): State => {
+    const currentPlanData = prevState.planData[planId];
+    return {
+      ...prevState,
+      planData: {
+        ...prevState.planData,
+        [planId]: {
+          ...currentPlanData,  // Also reads CURRENT state!
+          savedWorkouts,
+          isLoaded: true
+        }
+      }
+    };
+  });
+}, [updateStateAndSave]); // No state.planData dependency needed!
+
+// When called in parallel:
+await Promise.all([
+  refreshExercises(planId),
+  refreshSavedWorkouts(planId)
+]);
+
+// Both updates properly merge their changes!
+// Order doesn't matter - both see each other's updates
+```
+
+**Key principles:**
+1. **Always use functional updates** when operations might run in parallel
+2. **Never read shared state outside** the updater function
+3. **Remove state from dependencies** to prevent unnecessary re-creation of callbacks
+4. Functional updates guarantee you see the latest state at update time
+
+**Real-World Example:**
+```typescript
+// Parallel data refresh after AI actions
+const handleActionExecuted = useCallback(async () => {
+  if (planId) {
+    await Promise.all([
+      refreshExercises(planId),      // Updates exercises
+      refreshSavedWorkouts(planId)   // Updates savedWorkouts
+    ]);
+    // Both updates must use functional setState to avoid race condition!
+  }
+}, [planId, refreshExercises, refreshSavedWorkouts]);
+```
+
+**Symptoms of this bug:**
+- UI briefly shows updated data, then reverts to old data
+- Data "disappears" after successful operations
+- Inconsistent state after parallel operations
+- Works fine when operations run sequentially
+- Page refresh shows correct data (from server)
+
+---
+
 ## Quick Checklist for State Management
 
 When writing React state updates, always ask:
@@ -265,6 +408,8 @@ When writing React state updates, always ask:
 - [ ] Do I need to persist this state change?
 - [ ] Are all dependencies included in useCallback/useEffect?
 - [ ] Am I combining multiple state updates into one when possible?
+- [ ] **Could this function run in parallel with other state updates?**
+- [ ] **Am I reading state inside or outside the updater function?**
 - [ ] Am I handling errors in async operations?
 
 ---
@@ -330,7 +475,9 @@ const operation = useCallback(async (condition: boolean) => {
 
 ---
 
-## Real-World Example from This Project
+## Real-World Examples from This Project
+
+### Example 1: AI Chat Persistence Bug
 
 **Bug:** System messages from AI actions (confirm, undo) were not persisting after page refresh.
 
@@ -355,6 +502,62 @@ setMessages(prev => {
 await saveConversation(finalMessages);
 ```
 
+### Example 2: Parallel Refresh Race Condition
+
+**Bug:** Workouts created by AI appeared briefly then disappeared. Refresh fixed it.
+
+**Root Cause:**
+```typescript
+// WRONG - Both functions read stale state
+const refreshExercises = async (planId) => {
+  const exercises = await fetchExercises();
+  const currentData = state.planData[planId]; // Stale!
+  updateState({
+    planData: { ...state.planData, [planId]: { ...currentData, exercises } }
+  });
+};
+
+const refreshSavedWorkouts = async (planId) => {
+  const workouts = await fetchWorkouts();
+  const currentData = state.planData[planId]; // Also stale!
+  updateState({
+    planData: { ...state.planData, [planId]: { ...currentData, savedWorkouts: workouts } }
+  });
+};
+
+// Called in parallel - race condition!
+await Promise.all([refreshExercises(planId), refreshSavedWorkouts(planId)]);
+```
+
+**Fix:**
+```typescript
+// CORRECT - Both use functional updates
+const refreshExercises = async (planId) => {
+  const exercises = await fetchExercises();
+  updateState(prevState => ({
+    ...prevState,
+    planData: {
+      ...prevState.planData,
+      [planId]: { ...prevState.planData[planId], exercises }
+    }
+  }));
+};
+
+const refreshSavedWorkouts = async (planId) => {
+  const workouts = await fetchWorkouts();
+  updateState(prevState => ({
+    ...prevState,
+    planData: {
+      ...prevState.planData,
+      [planId]: { ...prevState.planData[planId], savedWorkouts: workouts }
+    }
+  }));
+};
+
+// Now both updates properly merge!
+await Promise.all([refreshExercises(planId), refreshSavedWorkouts(planId)]);
+```
+
 ---
 
 ## Additional Resources
@@ -365,4 +568,7 @@ await saveConversation(finalMessages);
 
 ---
 
-**Last Updated:** Based on bug fix from AI chat persistence issue (2024)
+**Last Updated:** Based on bug fixes from:
+- AI chat persistence issue (stale closure)
+- Workout auto-update bug (parallel refresh race condition)
+(2024)
