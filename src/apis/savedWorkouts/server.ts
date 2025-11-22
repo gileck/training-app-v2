@@ -85,8 +85,25 @@ export const getAllSavedWorkouts = async (
         ? { planId: trainingPlanIdObj }
         : undefined;
 
+    console.log('[getAllSavedWorkouts] Fetching workouts:', {
+        userId: userId,
+        trainingPlanId: params.trainingPlanId,
+        filter: filter ? { planId: filter.planId?.toString() } : 'none'
+    });
+
     try {
         const workoutDocs = await savedWorkouts.findSavedWorkoutsForUser(userIdObj, filter);
+        
+        console.log('[getAllSavedWorkouts] Workouts found:', {
+            count: workoutDocs.length,
+            workouts: workoutDocs.map(w => ({
+                id: w._id.toString(),
+                name: w.name,
+                planId: w.planId.toString(),
+                exerciseCount: w.exercises.length
+            }))
+        });
+
         return workoutDocs.map(mapToApiSavedWorkout);
     } catch (error) {
         console.error("Error fetching saved workouts:", error);
@@ -193,6 +210,13 @@ export const createSavedWorkout = async (
         throw new Error("Invalid Training Plan ID format");
     }
 
+    console.log('[createSavedWorkout] Creating workout:', {
+        name: params.name,
+        trainingPlanId: params.trainingPlanId,
+        userId: context.userId,
+        exerciseIds: params.exerciseIds
+    });
+
     try {
         const userIdObj = new ObjectId(context.userId);
         const trainingPlanIdObj = new ObjectId(params.trainingPlanId);
@@ -234,6 +258,14 @@ export const createSavedWorkout = async (
 
         // Use the database layer to create the saved workout
         const createdWorkout = await savedWorkouts.insertSavedWorkout(newWorkout);
+
+        console.log('[createSavedWorkout] Workout created successfully:', {
+            workoutId: createdWorkout._id.toString(),
+            name: createdWorkout.name,
+            planId: createdWorkout.planId.toString(),
+            userId: createdWorkout.userId.toString(),
+            exerciseCount: createdWorkout.exercises.length
+        });
 
         // Map back to API format
         return mapToApiSavedWorkout(createdWorkout);

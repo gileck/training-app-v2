@@ -33,7 +33,8 @@ export const getAllSavedWorkouts = async (
 ): Promise<CacheResult<SavedWorkout[]>> => {
     return apiClient.call<SavedWorkout[], GetAllSavedWorkoutsRequest>(
         getAllApiName,
-        params // Pass the params object which may contain trainingPlanId
+        params, // Pass the params object which may contain trainingPlanId
+        { bypassCache: true } // Bypass cache to ensure we get fresh data
     );
 };
 
