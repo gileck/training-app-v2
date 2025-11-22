@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as trainingPlanAI from '@/apis/trainingPlanAI/client';
 import { GEMINI_MODELS } from '@/server/ai/models';
-import type { ChatMessage, ActionHistoryItem } from '@/apis/trainingPlanAI/types';
+import type { ChatMessage, ActionHistoryItem, Conversation } from '@/apis/trainingPlanAI/types';
 
 const DEFAULT_MODEL_ID = GEMINI_MODELS[0].id; // Default to first Gemini model
 
@@ -16,6 +16,8 @@ interface UseAIAssistantReturn {
   isProcessing: boolean;
   error: string | null;
   selectedModel: string;
+  currentConversationId: string | null;
+  conversations: Conversation[];
   setSelectedModel: (modelId: string) => void;
   sendMessage: (message: string) => Promise<void>;
   confirmAction: (actionId: string) => Promise<void>;
@@ -23,10 +25,14 @@ interface UseAIAssistantReturn {
   rejectAction: (actionId: string) => Promise<void>;
   undoAction: (actionId: string) => Promise<void>;
   clearError: () => void;
+  createNewConversation: () => Promise<void>;
+  loadConversation: (conversationId: string) => Promise<void>;
+  archiveConversation: (conversationId: string) => Promise<void>;
+  deleteConversation: (conversationId: string) => Promise<void>;
 }
 
 /**
- * Hook to manage AI assistant interactions
+ * Hook to manage AI assistant interactions with conversation persistence
  */
 export const useAIAssistant = ({
   planId,
@@ -37,14 +43,19 @@ export const useAIAssistant = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL_ID);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
-  // Load action history when planId changes
+  // Load conversations and action history when planId changes
   useEffect(() => {
     if (planId) {
       loadActionHistory();
+      loadConversations();
     } else {
       setActionHistory([]);
       setMessages([]);
+      setCurrentConversationId(null);
+      loadConversations(); // Load user-level conversations even without a plan
     }
   }, [planId]);
 
@@ -61,6 +72,148 @@ export const useAIAssistant = ({
     }
   }, [planId]);
 
+  const loadConversations = useCallback(async () => {
+    try {
+      const result = await trainingPlanAI.listConversations({ 
+        planId: planId || undefined,
+        status: 'active'
+      });
+      if (result.data?.conversations) {
+        setConversations(result.data.conversations);
+      }
+    } catch (err) {
+      console.error('Error loading conversations:', err);
+    }
+  }, [planId]);
+
+  const createNewConversation = useCallback(async () => {
+    try {
+      const result = await trainingPlanAI.createConversation({
+        planId: planId || undefined,
+        title: 'New Conversation',
+      });
+
+      if (result.data?.conversation) {
+        setCurrentConversationId(result.data.conversation._id);
+        setMessages([]);
+        setConversations((prev) => [result.data!.conversation, ...prev]);
+      }
+    } catch (err) {
+      console.error('Error creating conversation:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create conversation');
+    }
+  }, [planId]);
+
+  const loadConversation = useCallback(async (conversationId: string) => {
+    try {
+      const result = await trainingPlanAI.getConversation({ conversationId });
+      
+      if (result.data?.conversation) {
+        setCurrentConversationId(conversationId);
+        setMessages(result.data.conversation.messages);
+      }
+    } catch (err) {
+      console.error('Error loading conversation:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load conversation');
+    }
+  }, []);
+
+  const archiveConversation = useCallback(async (conversationId: string) => {
+    try {
+      await trainingPlanAI.updateConversation({
+        conversationId,
+        status: 'archived',
+      });
+
+      setConversations((prev) => prev.filter((c) => c._id !== conversationId));
+      
+      if (currentConversationId === conversationId) {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+    } catch (err) {
+      console.error('Error archiving conversation:', err);
+      setError(err instanceof Error ? err.message : 'Failed to archive conversation');
+    }
+  }, [currentConversationId]);
+
+  const deleteConversation = useCallback(async (conversationId: string) => {
+    try {
+      await trainingPlanAI.deleteConversation({ conversationId });
+
+      setConversations((prev) => prev.filter((c) => c._id !== conversationId));
+      
+      if (currentConversationId === conversationId) {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+    } catch (err) {
+      console.error('Error deleting conversation:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete conversation');
+    }
+  }, [currentConversationId]);
+
+  // Save conversation after each message exchange
+  const saveConversation = useCallback(
+    async (updatedMessages: ChatMessage[]) => {
+      if (!currentConversationId) {
+        // Create new conversation on first message
+        try {
+          const firstUserMessage = updatedMessages.find((m) => m.role === 'user');
+          const title = firstUserMessage?.content.slice(0, 50) || 'New Conversation';
+
+          const result = await trainingPlanAI.createConversation({
+            planId: planId || undefined,
+            title,
+          });
+
+          if (result.data?.conversation) {
+            setCurrentConversationId(result.data.conversation._id);
+            setConversations((prev) => [result.data!.conversation, ...prev]);
+            
+            // Update conversation with messages
+            await trainingPlanAI.updateConversation({
+              conversationId: result.data.conversation._id,
+              messages: updatedMessages,
+            });
+          }
+        } catch (err) {
+          console.error('Error creating conversation:', err);
+        }
+      } else {
+        // Update existing conversation
+        try {
+          await trainingPlanAI.updateConversation({
+            conversationId: currentConversationId,
+            messages: updatedMessages,
+          });
+
+          // Update conversation title if it's the first message
+          if (updatedMessages.length === 2) { // User + AI response
+            const firstUserMessage = updatedMessages.find((m) => m.role === 'user');
+            if (firstUserMessage) {
+              const title = firstUserMessage.content.slice(0, 50);
+              await trainingPlanAI.updateConversation({
+                conversationId: currentConversationId,
+                title,
+              });
+
+              // Update local conversations list
+              setConversations((prev) =>
+                prev.map((c) =>
+                  c._id === currentConversationId ? { ...c, title } : c
+                )
+              );
+            }
+          }
+        } catch (err) {
+          console.error('Error updating conversation:', err);
+        }
+      }
+    },
+    [currentConversationId, planId]
+  );
+
   const sendMessage = useCallback(
     async (messageText: string) => {
       if (!messageText.trim()) return;
@@ -75,7 +228,8 @@ export const useAIAssistant = ({
         content: messageText,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, userMessage]);
+      const updatedMessages = [...messages, userMessage];
+      setMessages(updatedMessages);
 
       try {
         // Send message to AI
@@ -100,7 +254,11 @@ export const useAIAssistant = ({
             timestamp: new Date(),
             actions: result.data.actions,
           };
-          setMessages((prev) => [...prev, aiMessage]);
+          const finalMessages = [...updatedMessages, aiMessage];
+          setMessages(finalMessages);
+
+          // Save conversation
+          await saveConversation(finalMessages);
 
           // Update action history with new pending actions
           if (result.data.actions && result.data.actions.length > 0) {
@@ -114,7 +272,7 @@ export const useAIAssistant = ({
         setIsProcessing(false);
       }
     },
-    [planId, messages, selectedModel]
+    [planId, messages, selectedModel, saveConversation]
   );
 
   const confirmAction = useCallback(
@@ -342,6 +500,8 @@ export const useAIAssistant = ({
     isProcessing,
     error,
     selectedModel,
+    currentConversationId,
+    conversations,
     setSelectedModel,
     sendMessage,
     confirmAction,
@@ -349,6 +509,10 @@ export const useAIAssistant = ({
     rejectAction,
     undoAction,
     clearError,
+    createNewConversation,
+    loadConversation,
+    archiveConversation,
+    deleteConversation,
   };
 };
 

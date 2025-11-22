@@ -138,12 +138,18 @@ export const ManageTrainingPlanPage: React.FC = () => {
                 isProcessing={aiAssistant.isProcessing}
                 error={aiAssistant.error}
                 selectedModel={aiAssistant.selectedModel}
+                currentConversationId={aiAssistant.currentConversationId}
+                conversations={aiAssistant.conversations}
                 onModelChange={aiAssistant.setSelectedModel}
                 onSendMessage={aiAssistant.sendMessage}
                 onConfirmAction={aiAssistant.confirmAction}
                 onConfirmMultipleActions={aiAssistant.confirmMultipleActions}
                 onRejectAction={aiAssistant.rejectAction}
                 onUndoAction={aiAssistant.undoAction}
+                onCreateNewConversation={aiAssistant.createNewConversation}
+                onLoadConversation={aiAssistant.loadConversation}
+                onArchiveConversation={aiAssistant.archiveConversation}
+                onDeleteConversation={aiAssistant.deleteConversation}
                 actionHistory={aiAssistant.actionHistory}
             />
         </Box>

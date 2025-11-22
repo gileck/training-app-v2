@@ -116,6 +116,7 @@ export interface UpdateConversationRequest {
   conversationId: string;
   title?: string;
   status?: 'active' | 'archived';
+  messages?: ChatMessage[];
 }
 
 export interface DeleteConversationRequest {

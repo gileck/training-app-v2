@@ -17,7 +17,8 @@ export async function updateConversation(
       conversationId: params.conversationId,
       userId,
       title: params.title,
-      status: params.status
+      status: params.status,
+      messages: params.messages
     });
 
     if (!conversation) {

@@ -14,7 +14,7 @@ export interface AIConversation {
 
 export interface ConversationMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   actionIds?: string[]; // References to aiActionHistory._id
   timestamp: Date;
@@ -32,6 +32,7 @@ export interface UpdateConversationParams {
   userId: string;
   title?: string;
   status?: 'active' | 'archived';
+  messages?: ConversationMessage[];
 }
 
 export interface AddMessageParams {

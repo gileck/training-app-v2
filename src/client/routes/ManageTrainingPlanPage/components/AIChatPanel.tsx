@@ -18,6 +18,9 @@ import {
   Tooltip,
   Fab,
   useTheme,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -26,12 +29,16 @@ import {
   DoneAll as ApproveAllIcon,
   History as HistoryIcon,
   Chat as ChatIcon,
+  Add as AddIcon,
+  MoreVert as MoreVertIcon,
+  Delete as DeleteIcon,
+  Archive as ArchiveIcon,
 } from '@mui/icons-material';
 import { AIActionCard } from './AIActionCard';
 import { AIActionHistory } from './AIActionHistory';
 import { AIChatIcon } from '@/client/components/AIChatIcon';
 import { getAllModels } from '@/server/ai/models';
-import type { ChatMessage } from '@/apis/trainingPlanAI/types';
+import type { ChatMessage, Conversation } from '@/apis/trainingPlanAI/types';
 
 const AVAILABLE_MODELS = getAllModels();
 
@@ -41,12 +48,18 @@ interface AIChatPanelProps {
   isProcessing: boolean;
   error: string | null;
   selectedModel: string;
+  currentConversationId: string | null;
+  conversations: Conversation[];
   onModelChange: (modelId: string) => void;
   onSendMessage: (message: string) => void;
   onConfirmAction: (actionId: string) => void;
   onConfirmMultipleActions: (actionIds: string[]) => void;
   onRejectAction: (actionId: string) => void;
   onUndoAction: (actionId: string) => void;
+  onCreateNewConversation: () => void;
+  onLoadConversation: (conversationId: string) => void;
+  onArchiveConversation: (conversationId: string) => void;
+  onDeleteConversation: (conversationId: string) => void;
   actionHistory: ChatMessage['actions'];
 }
 
@@ -56,18 +69,25 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
   isProcessing,
   error,
   selectedModel,
+  currentConversationId,
+  conversations,
   onModelChange,
   onSendMessage,
   onConfirmAction,
   onConfirmMultipleActions,
   onRejectAction,
   onUndoAction,
+  onCreateNewConversation,
+  onLoadConversation,
+  onArchiveConversation,
+  onDeleteConversation,
   actionHistory = [],
 }) => {
   const theme = useTheme();
   const [inputMessage, setInputMessage] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [conversationMenuAnchor, setConversationMenuAnchor] = useState<null | HTMLElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isDark = theme.palette.mode === 'dark';
@@ -204,6 +224,15 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
             </Stack>
 
             <Stack direction="row" spacing={0.5}>
+              <Tooltip title="Conversations">
+                <IconButton
+                  size="small"
+                  onClick={(e) => setConversationMenuAnchor(e.currentTarget)}
+                  sx={{ color: 'white' }}
+                >
+                  <MoreVertIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
               <Tooltip title={showHistory ? 'Show Chat' : 'Show History'}>
                 <IconButton
                   size="small"
@@ -444,6 +473,97 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
           </Box>
         </Paper>
       </Fade>
+
+      {/* Conversations Menu */}
+      <Menu
+        anchorEl={conversationMenuAnchor}
+        open={Boolean(conversationMenuAnchor)}
+        onClose={() => setConversationMenuAnchor(null)}
+        PaperProps={{
+          sx: {
+            width: 300,
+            maxHeight: 400,
+            mt: 1,
+          },
+        }}
+      >
+        <MenuItem onClick={() => {
+          onCreateNewConversation();
+          setConversationMenuAnchor(null);
+        }}>
+          <ListItemIcon>
+            <AddIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>New Conversation</ListItemText>
+        </MenuItem>
+        <Divider />
+        {conversations.length === 0 ? (
+          <MenuItem disabled>
+            <ListItemText secondary="No saved conversations" />
+          </MenuItem>
+        ) : (
+          conversations.map((conv) => (
+            <MenuItem
+              key={conv._id}
+              selected={conv._id === currentConversationId}
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                '&:hover .conversation-actions': {
+                  opacity: 1,
+                },
+              }}
+            >
+              <Box
+                sx={{ flexGrow: 1, overflow: 'hidden' }}
+                onClick={() => {
+                  onLoadConversation(conv._id);
+                  setConversationMenuAnchor(null);
+                }}
+              >
+                <Typography variant="body2" noWrap>
+                  {conv.title}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {new Date(conv.lastMessageAt).toLocaleDateString()} •{' '}
+                  {conv.messages.length} messages
+                </Typography>
+              </Box>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                className="conversation-actions"
+                sx={{ opacity: 0, transition: 'opacity 0.2s' }}
+              >
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onArchiveConversation(conv._id);
+                    setConversationMenuAnchor(null);
+                  }}
+                  title="Archive"
+                >
+                  <ArchiveIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteConversation(conv._id);
+                    setConversationMenuAnchor(null);
+                  }}
+                  title="Delete"
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            </MenuItem>
+          ))
+        )}
+      </Menu>
     </>
   );
 };

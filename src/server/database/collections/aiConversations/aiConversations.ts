@@ -113,7 +113,7 @@ export async function addMessageToConversation(params: AddMessageParams): Promis
 }
 
 /**
- * Update conversation metadata (title, status)
+ * Update conversation metadata (title, status) and optionally messages
  */
 export async function updateConversation(params: UpdateConversationParams): Promise<AIConversation | null> {
   const collection = await getCollection();
@@ -128,6 +128,11 @@ export async function updateConversation(params: UpdateConversationParams): Prom
   
   if (params.status !== undefined) {
     updates.status = params.status;
+  }
+  
+  if (params.messages !== undefined) {
+    updates.messages = params.messages;
+    updates.lastMessageAt = new Date();
   }
   
   const result = await collection.findOneAndUpdate(
