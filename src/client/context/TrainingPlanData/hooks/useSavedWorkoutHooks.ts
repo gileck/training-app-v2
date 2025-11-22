@@ -11,7 +11,7 @@ import {
 export const useSavedWorkoutHooks = (
     state: TrainingDataState,
     updateState: (newState: Partial<TrainingDataState>) => void,
-    updateStateAndSave: (newState: Partial<TrainingDataState>) => void
+    updateStateAndSave: (newStateOrUpdater: Partial<TrainingDataState> | ((prev: TrainingDataState) => TrainingDataState)) => void
 ) => {
     const loadSavedWorkouts = useCallback(async (planId: string) => {
         const existing = state.planData[planId];
@@ -53,23 +53,27 @@ export const useSavedWorkoutHooks = (
                 workouts: savedWorkouts.map(w => ({ id: w._id, name: w.name }))
             });
 
-            const currentPlanData = state.planData[planId];
-            console.log('[refreshSavedWorkouts] Current plan data before update:', {
-                hasData: !!currentPlanData,
-                currentWorkoutCount: currentPlanData?.savedWorkouts?.length || 0,
-                isLoaded: currentPlanData?.isLoaded
-            });
-            
-            updateStateAndSave({
-                planData: {
-                    ...state.planData,
-                    [planId]: {
-                        ...currentPlanData,
-                        savedWorkouts,
-                        isLoaded: true,
-                        isLoading: false
+            // Use functional update to avoid stale state closure
+            updateStateAndSave((prevState: TrainingDataState): TrainingDataState => {
+                const currentPlanData = prevState.planData[planId];
+                console.log('[refreshSavedWorkouts] Current plan data before update:', {
+                    hasData: !!currentPlanData,
+                    currentWorkoutCount: currentPlanData?.savedWorkouts?.length || 0,
+                    isLoaded: currentPlanData?.isLoaded
+                });
+                
+                return {
+                    ...prevState,
+                    planData: {
+                        ...prevState.planData,
+                        [planId]: {
+                            ...currentPlanData,
+                            savedWorkouts,
+                            isLoaded: true,
+                            isLoading: false
+                        }
                     }
-                }
+                };
             });
             
             console.log('[refreshSavedWorkouts] State updated successfully');
@@ -79,7 +83,7 @@ export const useSavedWorkoutHooks = (
                 error: error instanceof Error ? error.message : 'Failed to refresh saved workouts'
             });
         }
-    }, [state.planData, updateState, updateStateAndSave]);
+    }, [updateState, updateStateAndSave]);
 
     /**
      * Create a new saved workout and persist it to the server and localStorage.

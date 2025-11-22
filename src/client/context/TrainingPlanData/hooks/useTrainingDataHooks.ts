@@ -34,9 +34,9 @@ export const useTrainingDataHooks = () => {
     const { notification, showNotification, closeNotification } = useNotificationHooks();
     const { saveToLocalStorage, loadFromLocalStorage } = useStorageHooks();
 
-    const updateStateAndSave = useCallback((newState: Partial<TrainingDataState>) => {
+    const updateStateAndSave = useCallback((newStateOrUpdater: Partial<TrainingDataState> | ((prev: TrainingDataState) => TrainingDataState)) => {
         setState(prev => {
-            const updated = { ...prev, ...newState };
+            const updated = typeof newStateOrUpdater === 'function' ? newStateOrUpdater(prev) : { ...prev, ...newStateOrUpdater };
             saveToLocalStorage(updated);
             return updated;
         });
