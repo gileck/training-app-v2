@@ -7,6 +7,10 @@ import type { ChatContext, AIAction } from '@/apis/trainingPlanAI/types';
 interface AIPromptResponse {
   message: string;
   actions: AIAction[];
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+  };
 }
 
 /**
@@ -32,7 +36,7 @@ export class TrainingPlanAssistant {
     const prompt = this.buildPrompt(userMessage, context);
     
     try {
-      const response = await this.adapter.processPromptToJSON<AIPromptResponse>(
+      const response = await this.adapter.processPromptToJSON<Omit<AIPromptResponse, 'usage'>>(
         prompt,
         'trainingPlanAI.processUserMessage'
       );
@@ -42,7 +46,13 @@ export class TrainingPlanAssistant {
         throw new Error('Invalid AI response structure');
       }
 
-      return response.result;
+      return {
+        ...response.result,
+        usage: {
+          inputTokens: response.usage.promptTokens,
+          outputTokens: response.usage.completionTokens,
+        },
+      };
     } catch (error) {
       console.error('Error processing AI message:', error);
       throw new Error('Failed to process message. Please try rephrasing your request.');

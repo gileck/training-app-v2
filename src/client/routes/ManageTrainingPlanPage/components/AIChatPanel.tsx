@@ -416,6 +416,20 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
                           <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                             {message.content}
                           </Typography>
+                          {message.usage && message.role === 'assistant' && (
+                            <Box 
+                              sx={{ 
+                                mt: 1, 
+                                pt: 1, 
+                                borderTop: 1, 
+                                borderColor: 'divider',
+                              }}
+                            >
+                              <Typography variant="caption" color="text.secondary">
+                                💰 ${message.usage.totalCost.toFixed(6)}
+                              </Typography>
+                            </Box>
+                          )}
                         </Box>
                       </Box>
                     </Stack>

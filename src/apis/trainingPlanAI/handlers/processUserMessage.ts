@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { TrainingPlanAssistant } from '@/server/ai/trainingPlanAssistant';
 import { aiActionHistory } from '@/server/database/collections';
+import { getPricePer1K } from '@/server/ai/price';
 import type { ApiHandlerContext } from '@/apis/types';
 import type { ProcessUserMessageRequest, ProcessUserMessageResponse, ActionHistoryItem } from '../types';
 import { getChatContext } from './getChatContext';
@@ -43,9 +44,26 @@ export const processUserMessage = async (
       actionHistoryItems.push(mapToActionHistoryItem(historyEntry));
     }
 
+    // Calculate costs
+    let usage;
+    if (aiResponse.usage && params.modelId) {
+      const { inputTokens, outputTokens } = aiResponse.usage;
+      const prices = getPricePer1K(params.modelId, inputTokens + outputTokens);
+      const inputCost = (inputTokens / 1000) * prices.inputCost;
+      const outputCost = (outputTokens / 1000) * prices.outputCost;
+      usage = {
+        inputTokens,
+        outputTokens,
+        inputCost,
+        outputCost,
+        totalCost: inputCost + outputCost,
+      };
+    }
+
     return {
       message: aiResponse.message,
       actions: actionHistoryItems,
+      usage,
     };
   } catch (error) {
     console.error('Error processing user message:', error);

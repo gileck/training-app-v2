@@ -260,6 +260,7 @@ export const useAIAssistant = ({
             content: result.data.message,
             timestamp: new Date(),
             actions: result.data.actions,
+            usage: result.data.usage,
           };
           const finalMessages = [...updatedMessages, aiMessage];
           setMessages(finalMessages);

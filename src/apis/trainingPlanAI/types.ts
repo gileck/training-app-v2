@@ -18,6 +18,13 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   actions?: ActionHistoryItem[]; // Actions associated with this message
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+    inputCost: number;
+    outputCost: number;
+    totalCost: number;
+  };
 }
 
 /**
@@ -128,6 +135,13 @@ export interface DeleteConversationRequest {
 export interface ProcessUserMessageResponse {
   message: string; // AI's response message
   actions: ActionHistoryItem[]; // Suggested actions
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+    inputCost: number;
+    outputCost: number;
+    totalCost: number;
+  };
   error?: string;
 }
 
