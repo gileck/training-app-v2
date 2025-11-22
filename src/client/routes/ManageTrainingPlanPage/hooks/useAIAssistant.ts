@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as trainingPlanAI from '@/apis/trainingPlanAI/client';
 import { GEMINI_MODELS } from '@/server/ai/models';
-import type { ChatMessage, ActionHistoryItem, Conversation } from '@/apis/trainingPlanAI/types';
+import type { ChatMessage, ActionHistoryItem, Conversation, SuggestedAction } from '@/apis/trainingPlanAI/types';
 
 const DEFAULT_MODEL_ID = GEMINI_MODELS[0].id; // Default to first Gemini model
 
@@ -18,6 +18,8 @@ interface UseAIAssistantReturn {
   selectedModel: string;
   currentConversationId: string | null;
   conversations: Conversation[];
+  suggestedActions: SuggestedAction[];
+  examplePrompts: string[];
   setSelectedModel: (modelId: string) => void;
   sendMessage: (message: string) => Promise<void>;
   confirmAction: (actionId: string) => Promise<void>;
@@ -29,6 +31,7 @@ interface UseAIAssistantReturn {
   loadConversation: (conversationId: string) => Promise<void>;
   archiveConversation: (conversationId: string) => Promise<void>;
   deleteConversation: (conversationId: string) => Promise<void>;
+  loadSuggestedActions: () => Promise<void>;
 }
 
 /**
@@ -45,17 +48,21 @@ export const useAIAssistant = ({
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL_ID);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
+  const [examplePrompts, setExamplePrompts] = useState<string[]>([]);
 
   // Load conversations and action history when planId changes
   useEffect(() => {
     if (planId) {
       loadActionHistory();
       loadConversations();
+      loadSuggestedActions();
     } else {
       setActionHistory([]);
       setMessages([]);
       setCurrentConversationId(null);
       loadConversations(); // Load user-level conversations even without a plan
+      loadSuggestedActions(); // Load plan creation suggestions
     }
   }, [planId]);
 
@@ -490,6 +497,20 @@ export const useAIAssistant = ({
     [onActionExecuted]
   );
 
+  const loadSuggestedActions = useCallback(async () => {
+    try {
+      const result = await trainingPlanAI.getSuggestedActions({
+        planId: planId || undefined,
+      });
+      if (result.data) {
+        setSuggestedActions(result.data.suggestions || []);
+        setExamplePrompts(result.data.examplePrompts || []);
+      }
+    } catch (err) {
+      console.error('Error loading suggested actions:', err);
+    }
+  }, [planId]);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -502,6 +523,8 @@ export const useAIAssistant = ({
     selectedModel,
     currentConversationId,
     conversations,
+    suggestedActions,
+    examplePrompts,
     setSelectedModel,
     sendMessage,
     confirmAction,
@@ -513,6 +536,7 @@ export const useAIAssistant = ({
     loadConversation,
     archiveConversation,
     deleteConversation,
+    loadSuggestedActions,
   };
 };
 

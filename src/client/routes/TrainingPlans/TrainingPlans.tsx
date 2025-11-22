@@ -258,6 +258,8 @@ export const TrainingPlans: React.FC = () => {
                 selectedModel={aiAssistant.selectedModel}
                 currentConversationId={aiAssistant.currentConversationId}
                 conversations={aiAssistant.conversations}
+                suggestedActions={aiAssistant.suggestedActions}
+                examplePrompts={aiAssistant.examplePrompts}
                 onModelChange={aiAssistant.setSelectedModel}
                 onSendMessage={aiAssistant.sendMessage}
                 onConfirmAction={aiAssistant.confirmAction}

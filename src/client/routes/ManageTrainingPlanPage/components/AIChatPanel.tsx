@@ -38,7 +38,7 @@ import { AIActionCard } from './AIActionCard';
 import { AIActionHistory } from './AIActionHistory';
 import { AIChatIcon } from '@/client/components/AIChatIcon';
 import { getAllModels } from '@/server/ai/models';
-import type { ChatMessage, Conversation } from '@/apis/trainingPlanAI/types';
+import type { ChatMessage, Conversation, SuggestedAction } from '@/apis/trainingPlanAI/types';
 
 const AVAILABLE_MODELS = getAllModels();
 
@@ -50,6 +50,8 @@ interface AIChatPanelProps {
   selectedModel: string;
   currentConversationId: string | null;
   conversations: Conversation[];
+  suggestedActions: SuggestedAction[];
+  examplePrompts: string[];
   onModelChange: (modelId: string) => void;
   onSendMessage: (message: string) => void;
   onConfirmAction: (actionId: string) => void;
@@ -71,6 +73,8 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
   selectedModel,
   currentConversationId,
   conversations,
+  suggestedActions,
+  examplePrompts,
   onModelChange,
   onSendMessage,
   onConfirmAction,
@@ -264,35 +268,100 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
             {!showHistory ? (
               <>
                 {messages.length === 0 && (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <Box
-                      sx={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mx: 'auto',
-                        mb: 2,
-                      }}
-                    >
-                      <AIChatIcon sx={{ fontSize: 40, color: 'white' }} />
+                  <Box sx={{ py: 2 }}>
+                    <Box sx={{ textAlign: 'center', mb: 3 }}>
+                      <Box
+                        sx={{
+                          width: 64,
+                          height: 64,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mx: 'auto',
+                          mb: 2,
+                        }}
+                      >
+                        <AIChatIcon sx={{ fontSize: 40, color: 'white' }} />
+                      </Box>
+                      <Typography variant="h6" color="text.primary" gutterBottom>
+                        AI Training Assistant
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        {planId 
+                          ? 'Ask me to help manage your training plan!'
+                          : 'Let me help you create a training plan!'}
+                      </Typography>
                     </Box>
-                    <Typography variant="h6" color="text.primary" gutterBottom>
-                      AI Training Assistant
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      {planId 
-                        ? 'Ask me to help manage your training plan!'
-                        : 'Let me help you create a training plan!'}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                      {planId 
-                        ? 'Try: "Add bench press 3x10" or "Create a push day workout"'
-                        : 'Try: "Create a 4-week beginner plan"'}
-                    </Typography>
+
+                    {/* Suggested Actions */}
+                    {suggestedActions.length > 0 && (
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                          Quick Actions
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          {suggestedActions.slice(0, 6).map((action) => (
+                            <Button
+                              key={action.id}
+                              variant="outlined"
+                              size="small"
+                              onClick={() => onSendMessage(action.prompt)}
+                              disabled={isProcessing}
+                              sx={{
+                                borderRadius: 3,
+                                textTransform: 'none',
+                                mb: 1,
+                                borderColor: isDark ? 'grey.700' : 'grey.300',
+                                '&:hover': {
+                                  borderColor: 'primary.main',
+                                  background: isDark ? 'rgba(102, 126, 234, 0.1)' : 'rgba(102, 126, 234, 0.05)',
+                                },
+                              }}
+                            >
+                              <Typography component="span" sx={{ mr: 0.5 }}>
+                                {action.icon}
+                              </Typography>
+                              {action.label}
+                            </Button>
+                          ))}
+                        </Stack>
+                      </Box>
+                    )}
+
+                    {/* Example Prompts */}
+                    {examplePrompts.length > 0 && (
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                          Example Prompts
+                        </Typography>
+                        <Stack spacing={1}>
+                          {examplePrompts.slice(0, 4).map((prompt, index) => (
+                            <Paper
+                              key={index}
+                              variant="outlined"
+                              sx={{
+                                p: 1.5,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                borderColor: isDark ? 'grey.800' : 'grey.200',
+                                '&:hover': {
+                                  borderColor: 'primary.main',
+                                  bgcolor: isDark ? 'rgba(102, 126, 234, 0.05)' : 'rgba(102, 126, 234, 0.02)',
+                                  transform: 'translateX(4px)',
+                                },
+                              }}
+                              onClick={() => !isProcessing && onSendMessage(prompt)}
+                            >
+                              <Typography variant="body2" color="text.primary">
+                                &ldquo;{prompt}&rdquo;
+                              </Typography>
+                            </Paper>
+                          ))}
+                        </Stack>
+                      </Box>
+                    )}
                   </Box>
                 )}
 
