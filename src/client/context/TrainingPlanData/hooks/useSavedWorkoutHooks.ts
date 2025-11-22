@@ -61,10 +61,11 @@ export const useSavedWorkoutHooks = (
                 console.log(`[refreshSavedWorkouts][${callId}] Current plan data before update:`, {
                     hasData: !!currentPlanData,
                     currentWorkoutCount: currentPlanData?.savedWorkouts?.length || 0,
-                    isLoaded: currentPlanData?.isLoaded
+                    isLoaded: currentPlanData?.isLoaded,
+                    fullPlanData: currentPlanData
                 });
                 
-                return {
+                const newState = {
                     ...prevState,
                     planData: {
                         ...prevState.planData,
@@ -76,6 +77,13 @@ export const useSavedWorkoutHooks = (
                         }
                     }
                 };
+                
+                console.log(`[refreshSavedWorkouts][${callId}] New plan data after update:`, {
+                    newWorkoutCount: newState.planData[planId]?.savedWorkouts?.length || 0,
+                    workoutNames: newState.planData[planId]?.savedWorkouts?.map((w: SavedWorkout) => w.name) || []
+                });
+                
+                return newState;
             });
             
             console.log(`[refreshSavedWorkouts][${callId}] State updated successfully`);
