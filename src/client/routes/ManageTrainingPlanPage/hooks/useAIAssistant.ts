@@ -51,6 +51,20 @@ export const useAIAssistant = ({
   const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
   const [examplePrompts, setExamplePrompts] = useState<string[]>([]);
 
+  const loadConversation = useCallback(async (conversationId: string) => {
+    try {
+      const result = await trainingPlanAI.getConversation({ conversationId });
+      
+      if (result.data?.conversation) {
+        setCurrentConversationId(conversationId);
+        setMessages(result.data.conversation.messages);
+      }
+    } catch (err) {
+      console.error('Error loading conversation:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load conversation');
+    }
+  }, []);
+
   // Load conversations and action history when planId changes
   useEffect(() => {
     if (planId) {
@@ -65,6 +79,17 @@ export const useAIAssistant = ({
       loadSuggestedActions(); // Load plan creation suggestions
     }
   }, [planId]);
+
+  // Auto-load most recent conversation when conversations are loaded
+  useEffect(() => {
+    if (conversations.length > 0 && !currentConversationId && messages.length === 0) {
+      // Load the most recent conversation (first in the list, sorted by lastMessageAt)
+      const mostRecent = conversations[0];
+      if (mostRecent) {
+        loadConversation(mostRecent._id);
+      }
+    }
+  }, [conversations, currentConversationId, messages.length, loadConversation]);
 
   const loadActionHistory = useCallback(async () => {
     if (!planId) return;
@@ -110,20 +135,6 @@ export const useAIAssistant = ({
       setError(err instanceof Error ? err.message : 'Failed to create conversation');
     }
   }, [planId]);
-
-  const loadConversation = useCallback(async (conversationId: string) => {
-    try {
-      const result = await trainingPlanAI.getConversation({ conversationId });
-      
-      if (result.data?.conversation) {
-        setCurrentConversationId(conversationId);
-        setMessages(result.data.conversation.messages);
-      }
-    } catch (err) {
-      console.error('Error loading conversation:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load conversation');
-    }
-  }, []);
 
   const archiveConversation = useCallback(async (conversationId: string) => {
     try {

@@ -55,10 +55,42 @@ export async function captureStateForUndo(
         return undefined;
       }
 
+      // createPlan: No state to capture (it's a creation)
+      case 'createPlan': {
+        // No previous state to capture for a new plan
+        return undefined;
+      }
+
       // addExercise: No state to capture (it's a creation)
       case 'addExercise': {
         // No previous state to capture for a new exercise
         return undefined;
+      }
+
+      // createWorkout: No state to capture (it's a creation)
+      case 'createWorkout': {
+        // No previous state to capture for a new workout
+        return undefined;
+      }
+
+      // addExerciseToWorkout: No state to capture (it's a creation)
+      case 'addExerciseToWorkout': {
+        // No previous state to capture when adding an exercise to a workout
+        return undefined;
+      }
+
+      // setActivePlan: Capture which plan was previously active
+      case 'setActivePlan': {
+        // Find currently active plan (if any)
+        const allPlans = await trainingPlans.findTrainingPlansForUser(userId);
+        const currentlyActivePlan = allPlans.find(p => p.isActive);
+        if (currentlyActivePlan) {
+          return {
+            previousActivePlanId: currentlyActivePlan._id.toString(),
+          };
+        }
+        // No previously active plan
+        return { previousActivePlanId: null };
       }
 
       case 'updateExercise': {

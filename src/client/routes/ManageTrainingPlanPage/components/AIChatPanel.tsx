@@ -228,6 +228,15 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
             </Stack>
 
             <Stack direction="row" spacing={0.5}>
+              <Tooltip title="New Conversation">
+                <IconButton
+                  size="small"
+                  onClick={onCreateNewConversation}
+                  sx={{ color: 'white' }}
+                >
+                  <AddIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
               <Tooltip title="Conversations">
                 <IconButton
                   size="small"
