@@ -313,31 +313,33 @@ export const useAIAssistant = ({
             prev.map((a) => (a._id === actionId ? result.data!.action : a))
           );
 
-          // Update action in messages
-          setMessages((prev) =>
-            prev.map((msg) => ({
+          // Update action in messages and add system message
+          let finalMessages: ChatMessage[] = [];
+          setMessages((prev) => {
+            const updatedMessages = prev.map((msg) => ({
               ...msg,
               actions: msg.actions?.map((a) =>
                 a._id === actionId ? result.data!.action : a
               ),
-            }))
-          );
+            }));
+
+            // Add system message
+            const systemMessage: ChatMessage = {
+              id: `system-${Date.now()}`,
+              role: 'system',
+              content: result.data!.message || 'Action executed successfully',
+              timestamp: new Date(),
+            };
+            
+            finalMessages = [...updatedMessages, systemMessage];
+            return finalMessages;
+          });
 
           // Trigger data refresh
           onActionExecuted?.();
 
-          // Add system message
-          const systemMessage: ChatMessage = {
-            id: `system-${Date.now()}`,
-            role: 'system',
-            content: result.data.message || 'Action executed successfully',
-            timestamp: new Date(),
-          };
-          const updatedMessages = [...messages, systemMessage];
-          setMessages(updatedMessages);
-
           // Save conversation with system message
-          await saveConversation(updatedMessages);
+          await saveConversation(finalMessages);
         }
       } catch (err) {
         console.error('Error confirming action:', err);
@@ -346,7 +348,7 @@ export const useAIAssistant = ({
         setIsProcessing(false);
       }
     },
-    [onActionExecuted]
+    [onActionExecuted, saveConversation]
   );
 
   const confirmMultipleActions = useCallback(
@@ -366,21 +368,11 @@ export const useAIAssistant = ({
 
         // Update all actions in history and messages
         if (result.data.results && result.data.results.length > 0) {
+          // Update action in history for all results
           result.data.results.forEach((actionResult) => {
             if (actionResult.success && actionResult.action) {
-              // Update action in history
               setActionHistory((prev) =>
                 prev.map((a) => (a._id === actionResult.action._id ? actionResult.action : a))
-              );
-
-              // Update action in messages
-              setMessages((prev) =>
-                prev.map((msg) => ({
-                  ...msg,
-                  actions: msg.actions?.map((a) =>
-                    a._id === actionResult.action._id ? actionResult.action : a
-                  ),
-                }))
               );
             }
           });
@@ -388,7 +380,7 @@ export const useAIAssistant = ({
           // Trigger data refresh once after all actions
           onActionExecuted?.();
 
-          // Add system message with summary
+          // Add system message with summary and update messages
           const successCount = result.data.successCount;
           const failureCount = result.data.failureCount;
           let summaryMessage = '';
@@ -403,17 +395,30 @@ export const useAIAssistant = ({
             }
           }
 
-          const systemMessage: ChatMessage = {
-            id: `system-${Date.now()}`,
-            role: 'system',
-            content: summaryMessage,
-            timestamp: new Date(),
-          };
-          const updatedMessages = [...messages, systemMessage];
-          setMessages(updatedMessages);
+          let finalMessages: ChatMessage[] = [];
+          setMessages((prev) => {
+            // Update all actions in messages
+            const updatedMessages = prev.map((msg) => ({
+              ...msg,
+              actions: msg.actions?.map((a) => {
+                const updated = result.data.results.find(r => r.action._id === a._id);
+                return updated ? updated.action : a;
+              }),
+            }));
+
+            const systemMessage: ChatMessage = {
+              id: `system-${Date.now()}`,
+              role: 'system',
+              content: summaryMessage,
+              timestamp: new Date(),
+            };
+            
+            finalMessages = [...updatedMessages, systemMessage];
+            return finalMessages;
+          });
 
           // Save conversation with system message
-          await saveConversation(updatedMessages);
+          await saveConversation(finalMessages);
 
           if (failureCount > 0) {
             setError(`${failureCount} action(s) failed to execute`);
@@ -426,7 +431,7 @@ export const useAIAssistant = ({
         setIsProcessing(false);
       }
     },
-    [onActionExecuted]
+    [onActionExecuted, saveConversation]
   );
 
   const rejectAction = useCallback(async (actionId: string) => {
@@ -485,31 +490,33 @@ export const useAIAssistant = ({
             prev.map((a) => (a._id === actionId ? result.data!.action : a))
           );
 
-          // Update action in messages
-          setMessages((prev) =>
-            prev.map((msg) => ({
+          // Update action in messages and add system message
+          let finalMessages: ChatMessage[] = [];
+          setMessages((prev) => {
+            const updatedMessages = prev.map((msg) => ({
               ...msg,
               actions: msg.actions?.map((a) =>
                 a._id === actionId ? result.data!.action : a
               ),
-            }))
-          );
+            }));
+
+            // Add system message
+            const systemMessage: ChatMessage = {
+              id: `system-${Date.now()}`,
+              role: 'system',
+              content: result.data!.message || 'Action undone successfully',
+              timestamp: new Date(),
+            };
+            
+            finalMessages = [...updatedMessages, systemMessage];
+            return finalMessages;
+          });
 
           // Trigger data refresh
           onActionExecuted?.();
 
-          // Add system message
-          const systemMessage: ChatMessage = {
-            id: `system-${Date.now()}`,
-            role: 'system',
-            content: result.data.message || 'Action undone successfully',
-            timestamp: new Date(),
-          };
-          const updatedMessages = [...messages, systemMessage];
-          setMessages(updatedMessages);
-
           // Save conversation with system message
-          await saveConversation(updatedMessages);
+          await saveConversation(finalMessages);
         }
       } catch (err) {
         console.error('Error undoing action:', err);
@@ -518,7 +525,7 @@ export const useAIAssistant = ({
         setIsProcessing(false);
       }
     },
-    [onActionExecuted]
+    [onActionExecuted, saveConversation]
   );
 
   const loadSuggestedActions = useCallback(async () => {
