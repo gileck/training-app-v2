@@ -39,6 +39,7 @@ interface AIChatPanelProps {
   onModelChange: (modelId: string) => void;
   onSendMessage: (message: string) => void;
   onConfirmAction: (actionId: string) => void;
+  onConfirmMultipleActions: (actionIds: string[]) => void;
   onRejectAction: (actionId: string) => void;
   onUndoAction: (actionId: string) => void;
   actionHistory: ChatMessage['actions'];
@@ -53,6 +54,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
   onModelChange,
   onSendMessage,
   onConfirmAction,
+  onConfirmMultipleActions,
   onRejectAction,
   onUndoAction,
   actionHistory = [],
@@ -93,11 +95,11 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
       .flatMap(msg => msg.actions || [])
       .filter(action => action.status === 'pending');
     
-    // Confirm all pending actions sequentially
-    pendingActions.forEach(action => {
-      onConfirmAction(action._id);
-    });
-  }, [messages, onConfirmAction]);
+    if (pendingActions.length > 0) {
+      // Use the batch API to confirm all actions in parallel with proper state management
+      onConfirmMultipleActions(pendingActions.map(action => action._id));
+    }
+  }, [messages, onConfirmMultipleActions]);
 
   return (
     <Paper

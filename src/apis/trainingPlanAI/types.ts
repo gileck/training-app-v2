@@ -83,6 +83,10 @@ export interface UndoActionRequest {
   actionId: string;
 }
 
+export interface ConfirmMultipleActionsRequest {
+  actionIds: string[];
+}
+
 export interface GetActionHistoryRequest {
   planId?: string;
   limit?: number;
@@ -90,6 +94,32 @@ export interface GetActionHistoryRequest {
 
 export interface GetChatContextRequest {
   planId?: string;
+}
+
+export interface CreateConversationRequest {
+  planId?: string;
+  title?: string;
+  initialMessage?: string;
+}
+
+export interface GetConversationRequest {
+  conversationId: string;
+}
+
+export interface ListConversationsRequest {
+  planId?: string;
+  status?: 'active' | 'archived';
+  limit?: number;
+}
+
+export interface UpdateConversationRequest {
+  conversationId: string;
+  title?: string;
+  status?: 'active' | 'archived';
+}
+
+export interface DeleteConversationRequest {
+  conversationId: string;
 }
 
 // Response types
@@ -120,6 +150,13 @@ export interface UndoActionResponse {
   error?: string;
 }
 
+export interface ConfirmMultipleActionsResponse {
+  results: ConfirmActionResponse[];
+  successCount: number;
+  failureCount: number;
+  errors: Array<{ actionId: string; error: string }>;
+}
+
 export interface GetActionHistoryResponse {
   actions: ActionHistoryItem[];
   error?: string;
@@ -127,6 +164,61 @@ export interface GetActionHistoryResponse {
 
 export interface GetChatContextResponse {
   context: ChatContext;
+  error?: string;
+}
+
+export interface Conversation {
+  _id: string;
+  planId?: string;
+  title: string;
+  messages: ChatMessage[];
+  status: 'active' | 'archived';
+  lastMessageAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateConversationResponse {
+  conversation: Conversation;
+  error?: string;
+}
+
+export interface GetConversationResponse {
+  conversation: Conversation | null;
+  error?: string;
+}
+
+export interface ListConversationsResponse {
+  conversations: Conversation[];
+  error?: string;
+}
+
+export interface UpdateConversationResponse {
+  conversation: Conversation | null;
+  success: boolean;
+  error?: string;
+}
+
+export interface DeleteConversationResponse {
+  success: boolean;
+  error?: string;
+}
+
+export interface SuggestedAction {
+  id: string;
+  label: string;
+  prompt: string;
+  icon?: string;
+  category: 'plan' | 'exercise' | 'workout' | 'general';
+}
+
+export interface GetSuggestedActionsRequest {
+  planId?: string;
+}
+
+export interface GetSuggestedActionsResponse {
+  suggestions: SuggestedAction[];
+  examplePrompts: string[];
   error?: string;
 }
 

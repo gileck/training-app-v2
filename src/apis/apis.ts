@@ -68,8 +68,15 @@ export const apiHandlers: ApiHandlers = {
   [savedWorkoutsRenameApiName]: { process: savedWorkoutsServer.renameSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [trainingPlanAIServer.processUserMessageApiName]: { process: trainingPlanAIServer.processUserMessage as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [trainingPlanAIServer.confirmActionApiName]: { process: trainingPlanAIServer.confirmAction as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.confirmMultipleActionsApiName]: { process: trainingPlanAIServer.confirmMultipleActions as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [trainingPlanAIServer.rejectActionApiName]: { process: trainingPlanAIServer.rejectAction as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [trainingPlanAIServer.undoActionApiName]: { process: trainingPlanAIServer.undoAction as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [trainingPlanAIServer.getActionHistoryApiName]: { process: trainingPlanAIServer.getActionHistory as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
-  [trainingPlanAIServer.getChatContextApiName]: { process: trainingPlanAIServer.getChatContext as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> }
+  [trainingPlanAIServer.getChatContextApiName]: { process: trainingPlanAIServer.getChatContext as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.createConversationApiName]: { process: trainingPlanAIServer.createConversation as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.getConversationApiName]: { process: trainingPlanAIServer.getConversation as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.listConversationsApiName]: { process: trainingPlanAIServer.listConversations as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.updateConversationApiName]: { process: trainingPlanAIServer.updateConversation as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.deleteConversationApiName]: { process: trainingPlanAIServer.deleteConversation as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.getSuggestedActionsApiName]: { process: trainingPlanAIServer.getSuggestedActions as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> }
 };

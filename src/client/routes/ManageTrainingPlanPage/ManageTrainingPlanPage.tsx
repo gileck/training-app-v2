@@ -141,6 +141,7 @@ export const ManageTrainingPlanPage: React.FC = () => {
                 onModelChange={aiAssistant.setSelectedModel}
                 onSendMessage={aiAssistant.sendMessage}
                 onConfirmAction={aiAssistant.confirmAction}
+                onConfirmMultipleActions={aiAssistant.confirmMultipleActions}
                 onRejectAction={aiAssistant.rejectAction}
                 onUndoAction={aiAssistant.undoAction}
                 actionHistory={aiAssistant.actionHistory}

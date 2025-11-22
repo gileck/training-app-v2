@@ -19,6 +19,7 @@ interface UseAIAssistantReturn {
   setSelectedModel: (modelId: string) => void;
   sendMessage: (message: string) => Promise<void>;
   confirmAction: (actionId: string) => Promise<void>;
+  confirmMultipleActions: (actionIds: string[]) => Promise<void>;
   rejectAction: (actionId: string) => Promise<void>;
   undoAction: (actionId: string) => Promise<void>;
   clearError: () => void;
@@ -167,6 +168,82 @@ export const useAIAssistant = ({
     [onActionExecuted]
   );
 
+  const confirmMultipleActions = useCallback(
+    async (actionIds: string[]) => {
+      if (actionIds.length === 0) return;
+
+      setIsProcessing(true);
+      setError(null);
+
+      try {
+        const result = await trainingPlanAI.confirmMultipleActions({ actionIds });
+
+        if (!result.data) {
+          setError('Failed to confirm actions');
+          return;
+        }
+
+        // Update all actions in history and messages
+        if (result.data.results && result.data.results.length > 0) {
+          result.data.results.forEach((actionResult) => {
+            if (actionResult.success && actionResult.action) {
+              // Update action in history
+              setActionHistory((prev) =>
+                prev.map((a) => (a._id === actionResult.action._id ? actionResult.action : a))
+              );
+
+              // Update action in messages
+              setMessages((prev) =>
+                prev.map((msg) => ({
+                  ...msg,
+                  actions: msg.actions?.map((a) =>
+                    a._id === actionResult.action._id ? actionResult.action : a
+                  ),
+                }))
+              );
+            }
+          });
+
+          // Trigger data refresh once after all actions
+          onActionExecuted?.();
+
+          // Add system message with summary
+          const successCount = result.data.successCount;
+          const failureCount = result.data.failureCount;
+          let summaryMessage = '';
+          
+          if (failureCount === 0) {
+            summaryMessage = `Successfully executed all ${successCount} actions`;
+          } else {
+            summaryMessage = `Executed ${successCount} actions successfully. ${failureCount} failed.`;
+            if (result.data.errors && result.data.errors.length > 0) {
+              const errorDetails = result.data.errors.map(e => `- ${e.error}`).join('\n');
+              summaryMessage += `\n\nErrors:\n${errorDetails}`;
+            }
+          }
+
+          const systemMessage: ChatMessage = {
+            id: `system-${Date.now()}`,
+            role: 'system',
+            content: summaryMessage,
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, systemMessage]);
+
+          if (failureCount > 0) {
+            setError(`${failureCount} action(s) failed to execute`);
+          }
+        }
+      } catch (err) {
+        console.error('Error confirming multiple actions:', err);
+        setError(err instanceof Error ? err.message : 'Failed to confirm actions');
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [onActionExecuted]
+  );
+
   const rejectAction = useCallback(async (actionId: string) => {
     setIsProcessing(true);
     setError(null);
@@ -268,6 +345,7 @@ export const useAIAssistant = ({
     setSelectedModel,
     sendMessage,
     confirmAction,
+    confirmMultipleActions,
     rejectAction,
     undoAction,
     clearError,

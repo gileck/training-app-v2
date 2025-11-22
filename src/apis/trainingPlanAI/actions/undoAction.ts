@@ -7,17 +7,23 @@ import type { ActionType } from '@/server/database/collections/aiActionHistory/t
 
 /**
  * Undo a previously confirmed action
+ * 
+ * @param actionType - The type of action to undo
+ * @param originalState - The state before the action (for updates/deletes)
+ * @param resultData - The result of the action execution (for creations)
+ * @param context - API handler context
  */
 export async function undoActionExecution(
   actionType: ActionType,
   originalState: Record<string, unknown>,
+  resultData: Record<string, unknown>,
   context: ApiHandlerContext
 ): Promise<{ success: boolean; error?: string }> {
   try {
     switch (actionType) {
       case 'createPlan': {
-        // Delete the created plan
-        const planId = originalState.planId as string;
+        // Delete the created plan using resultData
+        const planId = resultData.planId as string;
         if (planId) {
           await trainingPlansServer.deleteTrainingPlan({ planId }, context);
         }
@@ -43,8 +49,7 @@ export async function undoActionExecution(
       }
 
       case 'createCustomExercise': {
-        // Delete the created custom exercise definition
-        const resultData = originalState as Record<string, unknown>;
+        // Delete the created custom exercise definition using resultData
         const definitionId = resultData.definitionId as string | undefined;
         if (definitionId) {
           await exerciseDefinitions.deleteExerciseDefinition(definitionId);
@@ -53,8 +58,7 @@ export async function undoActionExecution(
       }
 
       case 'addExercise': {
-        // Delete the added exercise
-        const resultData = originalState as Record<string, unknown>;
+        // Delete the added exercise using resultData
         const exerciseId = resultData.exerciseId as string | undefined;
         const trainingPlanId = resultData.trainingPlanId as string | undefined;
         if (exerciseId && trainingPlanId) {
@@ -115,8 +119,7 @@ export async function undoActionExecution(
       }
 
       case 'createWorkout': {
-        // Delete the created workout
-        const resultData = originalState as Record<string, unknown>;
+        // Delete the created workout using resultData
         const workoutId = resultData.workoutId as string | undefined;
         if (workoutId) {
           await savedWorkoutsServer.deleteSavedWorkout({ workoutId }, context);

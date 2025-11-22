@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { aiActionHistory } from '@/server/database/collections';
 import type { ApiHandlerContext } from '@/apis/types';
+import type { ActionType } from '@/server/database/collections/aiActionHistory/types';
 import type { UndoActionRequest, UndoActionResponse, ActionHistoryItem } from '../types';
 import { mapToActionHistoryItem } from '../utils/mappers';
 import { undoActionExecution } from '../actions/undoAction';
@@ -32,7 +33,12 @@ export const undoAction = async (
       };
     }
 
-    if (!action.originalState) {
+    // For creation actions (addExercise, createWorkout, createPlan, createCustomExercise),
+    // we use resultData to know what was created. For update/delete actions, we use originalState.
+    const creationActions: ActionType[] = ['createPlan', 'addExercise', 'createWorkout', 'createCustomExercise'];
+    const isCreationAction = creationActions.includes(action.actionType);
+    
+    if (!isCreationAction && !action.originalState) {
       return {
         success: false,
         action: mapToActionHistoryItem(action),
@@ -40,8 +46,21 @@ export const undoAction = async (
       };
     }
 
-    // Undo the action
-    const undoResult = await undoActionExecution(action.actionType, action.originalState, context);
+    if (isCreationAction && !action.resultData) {
+      return {
+        success: false,
+        action: mapToActionHistoryItem(action),
+        error: 'No result data available for undo',
+      };
+    }
+
+    // Undo the action - pass both originalState and resultData
+    const undoResult = await undoActionExecution(
+      action.actionType,
+      action.originalState || {},
+      action.resultData || {},
+      context
+    );
 
     if (!undoResult.success) {
       return {
