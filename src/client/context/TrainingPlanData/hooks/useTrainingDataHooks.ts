@@ -37,6 +37,23 @@ export const useTrainingDataHooks = () => {
     const updateStateAndSave = useCallback((newStateOrUpdater: Partial<TrainingDataState> | ((prev: TrainingDataState) => TrainingDataState)) => {
         setState(prev => {
             const updated = typeof newStateOrUpdater === 'function' ? newStateOrUpdater(prev) : { ...prev, ...newStateOrUpdater };
+            
+            // Log when savedWorkouts are being updated
+            if (updated.planData) {
+                Object.keys(updated.planData).forEach(planId => {
+                    const oldCount = prev.planData[planId]?.savedWorkouts?.length || 0;
+                    const newCount = updated.planData[planId]?.savedWorkouts?.length || 0;
+                    if (oldCount !== newCount) {
+                        console.log('[updateStateAndSave] Workout count changed:', {
+                            planId,
+                            oldCount,
+                            newCount,
+                            stackTrace: new Error().stack
+                        });
+                    }
+                });
+            }
+            
             saveToLocalStorage(updated);
             return updated;
         });
