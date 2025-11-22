@@ -122,9 +122,17 @@ export const useSavedWorkouts = (planId: string) => {
         if (planId && !state.planData[planId]?.isLoaded && !state.planData[planId]?.isLoading) {
             loadPlanData(planId); // Triggers server fetch for fresh data
         }
-    }, [planId, loadPlanData]);
+    }, [planId, state.planData, loadPlanData]);
 
     const planData = state.planData[planId] || { savedWorkouts: [], isLoaded: false, isLoading: false };
+    
+    // Debug logging
+    console.log('[useSavedWorkouts] Hook re-rendered:', {
+        planId,
+        workoutCount: planData.savedWorkouts.length,
+        workoutNames: planData.savedWorkouts.map((w: SavedWorkout) => w.name),
+        isLoaded: planData.isLoaded
+    });
 
     return {
         savedWorkouts: planData.savedWorkouts,
