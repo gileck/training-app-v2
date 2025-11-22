@@ -79,7 +79,7 @@ export const ManageTrainingPlanPage: React.FC = () => {
     }
 
     return (
-        <Box sx={{ p: { xs: 1, sm: 2 }, pb: { xs: 10, sm: 10 } }}>
+        <Box sx={{ p: { xs: 1, sm: 2 } }}>
             {/* Page Header */}
             <PageHeader
                 planName={planDetails?.name ?? ''}

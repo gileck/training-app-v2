@@ -6,7 +6,6 @@ import {
   Button,
   Typography,
   IconButton,
-  Collapse,
   Stack,
   CircularProgress,
   Divider,
@@ -14,14 +13,19 @@ import {
   Select,
   MenuItem,
   FormControl,
+  Fade,
+  Badge,
+  Tooltip,
+  Fab,
 } from '@mui/material';
 import {
   Send as SendIcon,
-  ExpandMore,
-  ExpandLess,
+  Close as CloseIcon,
   SmartToy as AIIcon,
   Person as PersonIcon,
   DoneAll as ApproveAllIcon,
+  History as HistoryIcon,
+  Chat as ChatIcon,
 } from '@mui/icons-material';
 import { AIActionCard } from './AIActionCard';
 import { AIActionHistory } from './AIActionHistory';
@@ -60,16 +64,21 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
   actionHistory = [],
 }) => {
   const [inputMessage, setInputMessage] = useState('');
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Count pending actions for badge
+  const pendingCount = messages
+    .flatMap(msg => msg.actions || [])
+    .filter(action => action.status === 'pending').length;
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (isExpanded) {
+    if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isExpanded]);
+  }, [messages, isOpen]);
 
   const handleSend = useCallback(() => {
     if (inputMessage.trim() && !isProcessing) {
@@ -90,100 +99,158 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
 
   // Handler for "Approve All" button
   const handleApproveAll = useCallback(() => {
-    // Get all pending actions from current messages
     const pendingActions = messages
       .flatMap(msg => msg.actions || [])
       .filter(action => action.status === 'pending');
     
     if (pendingActions.length > 0) {
-      // Use the batch API to confirm all actions in parallel with proper state management
       onConfirmMultipleActions(pendingActions.map(action => action._id));
     }
   }, [messages, onConfirmMultipleActions]);
 
   return (
-    <Paper
-      elevation={3}
-      sx={{
-        position: 'fixed',
-        bottom: { xs: 56, sm: 0 }, // Add space for bottom navbar on mobile
-        left: 0,
-        right: 0,
-        zIndex: 1000,
-        borderRadius: '16px 16px 0 0',
-        maxWidth: 1200,
-        mx: 'auto',
-      }}
-    >
-      {/* Header */}
-      <Box
-        sx={{
-          p: 2,
-          bgcolor: 'primary.main',
-          color: 'primary.contrastText',
-          cursor: 'pointer',
-          borderRadius: '16px 16px 0 0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <Stack direction="row" spacing={1} alignItems="center">
-          <AIIcon sx={{ fontSize: 28 }} />
-          <Box>
-            <Typography variant="h6" sx={{ lineHeight: 1.2 }}>
-              AI Training Plan Assistant
-            </Typography>
-            {!planId && (
-              <Typography variant="caption" sx={{ opacity: 0.7, fontSize: '0.7rem' }}>
-                Create plans from scratch
-              </Typography>
-            )}
+    <>
+      {/* Floating Chat Button */}
+      <Tooltip title="AI Assistant" placement="left">
+        <Badge
+          badgeContent={pendingCount}
+          color="error"
+          overlap="circular"
+          sx={{
+            position: 'fixed',
+            bottom: { xs: 80, sm: 24 },
+            right: { xs: 16, sm: 24 },
+            zIndex: 1300,
+          }}
+        >
+          <Fab
+            color="primary"
+            onClick={() => setIsOpen(!isOpen)}
+            sx={{
+              width: 60,
+              height: 60,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                boxShadow: '0 6px 24px rgba(102, 126, 234, 0.6)',
+              },
+            }}
+          >
+            <AIIcon sx={{ fontSize: 32 }} />
+          </Fab>
+        </Badge>
+      </Tooltip>
+
+      {/* Floating Chat Widget */}
+      <Fade in={isOpen}>
+        <Paper
+          elevation={8}
+          sx={{
+            position: 'fixed',
+            bottom: { xs: 150, sm: 100 },
+            right: { xs: 16, sm: 24 },
+            width: { xs: 'calc(100vw - 32px)', sm: 400, md: 450 },
+            maxHeight: { xs: 'calc(100vh - 220px)', sm: 600 },
+            display: isOpen ? 'flex' : 'none',
+            flexDirection: 'column',
+            zIndex: 1300,
+            borderRadius: 3,
+            overflow: 'hidden',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          }}
+        >
+          {/* Chat Header */}
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              p: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  background: 'rgba(255,255,255,0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backdropFilter: 'blur(10px)',
+                }}
+              >
+                <AIIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                  AI Assistant
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
+                  {planId ? 'Training Plan Helper' : 'Create Plans from Scratch'}
+                </Typography>
+              </Box>
+            </Stack>
+
+            <Stack direction="row" spacing={0.5}>
+              <Tooltip title={showHistory ? 'Show Chat' : 'Show History'}>
+                <IconButton
+                  size="small"
+                  onClick={() => setShowHistory(!showHistory)}
+                  sx={{ color: 'white' }}
+                >
+                  {showHistory ? <ChatIcon fontSize="small" /> : <HistoryIcon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Close">
+                <IconButton
+                  size="small"
+                  onClick={() => setIsOpen(false)}
+                  sx={{ color: 'white' }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
           </Box>
-        </Stack>
 
-        <IconButton color="inherit" size="small">
-          {isExpanded ? <ExpandMore /> : <ExpandLess />}
-        </IconButton>
-      </Box>
-
-      {/* Chat Content */}
-      <Collapse in={isExpanded}>
-        <Box sx={{ height: 500, display: 'flex', flexDirection: 'column' }}>
-          {/* Tabs for Chat and History */}
-          <Stack direction="row" spacing={1} sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>
-            <Button
-              variant={!showHistory ? 'contained' : 'text'}
-              size="small"
-              onClick={() => setShowHistory(false)}
-            >
-              Chat
-            </Button>
-            <Button
-              variant={showHistory ? 'contained' : 'text'}
-              size="small"
-              onClick={() => setShowHistory(true)}
-            >
-              History ({actionHistory.length})
-            </Button>
-          </Stack>
-
-          {/* Messages or History */}
-          <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
+          {/* Chat Content */}
+          <Box sx={{ flexGrow: 1, overflow: 'auto', bgcolor: 'grey.50', p: 2 }}>
             {!showHistory ? (
               <>
                 {messages.length === 0 && (
                   <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <AIIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                    <Typography variant="body1" color="text.secondary">
-                      Ask me to help manage your training plan!
+                    <Box
+                      sx={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
+                    >
+                      <AIIcon sx={{ fontSize: 36, color: 'white' }} />
+                    </Box>
+                    <Typography variant="h6" color="text.primary" gutterBottom>
+                      AI Training Assistant
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                       {planId 
-                        ? 'For example: "Add bench press 3 sets of 10 reps" or "Create a new workout called Push Day"'
-                        : 'For example: "Create a new training plan called Summer Workout for 8 weeks" or "Add a plan for strength training"'
-                      }
+                        ? 'Ask me to help manage your training plan!'
+                        : 'Let me help you create a training plan!'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {planId 
+                        ? 'Try: "Add bench press 3x10" or "Create a push day workout"'
+                        : 'Try: "Create a 4-week beginner plan"'}
                     </Typography>
                   </Box>
                 )}
@@ -192,43 +259,68 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
                   <Box key={message.id} sx={{ mb: 2 }}>
                     <Stack direction="row" spacing={1} alignItems="flex-start" mb={1}>
                       {message.role === 'user' ? (
-                        <PersonIcon color="action" />
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            bgcolor: 'primary.main',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <PersonIcon sx={{ fontSize: 20, color: 'white' }} />
+                        </Box>
                       ) : (
-                        <AIIcon color="primary" />
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <AIIcon sx={{ fontSize: 20, color: 'white' }} />
+                        </Box>
                       )}
                       <Box sx={{ flexGrow: 1 }}>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          display="block"
+                        <Box
+                          sx={{
+                            bgcolor: message.role === 'user' ? 'primary.main' : 'white',
+                            color: message.role === 'user' ? 'white' : 'text.primary',
+                            p: 1.5,
+                            borderRadius: 2,
+                            boxShadow: 1,
+                          }}
                         >
-                          {message.role === 'user' ? 'You' : 'AI Assistant'} •{' '}
-                          {new Date(message.timestamp).toLocaleTimeString()}
-                        </Typography>
-                        <Typography variant="body1" sx={{ mt: 0.5 }}>
-                          {message.content}
-                        </Typography>
+                          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                            {message.content}
+                          </Typography>
+                        </Box>
                       </Box>
                     </Stack>
 
                     {message.actions && message.actions.length > 0 && (
-                      <Box sx={{ ml: 4, mt: 1 }}>
-                        {/* Show "Approve All" button if there are multiple pending actions */}
+                      <Box sx={{ ml: 5, mt: 1 }}>
                         {message.actions.filter(a => a.status === 'pending').length > 1 && (
-                          <Box sx={{ mb: 2 }}>
-                            <Button
-                              variant="contained"
-                              color="success"
-                              size="small"
-                              startIcon={<ApproveAllIcon />}
-                              onClick={handleApproveAll}
-                              disabled={isProcessing}
-                            >
-                              Approve All ({message.actions.filter(a => a.status === 'pending').length})
-                            </Button>
-                          </Box>
+                          <Button
+                            variant="contained"
+                            color="success"
+                            size="small"
+                            startIcon={<ApproveAllIcon />}
+                            onClick={handleApproveAll}
+                            disabled={isProcessing}
+                            sx={{ mb: 1 }}
+                          >
+                            Approve All ({message.actions.filter(a => a.status === 'pending').length})
+                          </Button>
                         )}
-                        
                         {message.actions.map((action) => (
                           <AIActionCard
                             key={action._id}
@@ -245,7 +337,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
                 ))}
 
                 {isProcessing && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 2 }}>
                     <CircularProgress size={20} />
                     <Typography variant="body2" color="text.secondary">
                       AI is thinking...
@@ -273,13 +365,13 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
           <Divider />
 
           {/* Input Area */}
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: 2, bgcolor: 'white' }}>
             {/* Model Selector */}
             <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
                 Model:
               </Typography>
-              <FormControl size="small" sx={{ minWidth: 200, flexGrow: 1, maxWidth: 400 }}>
+              <FormControl size="small" sx={{ minWidth: 180, flexGrow: 1 }}>
                 <Select
                   value={selectedModel}
                   onChange={(e) => onModelChange(e.target.value)}
@@ -314,19 +406,27 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
                 multiline
                 maxRows={3}
               />
-              <Button
-                variant="contained"
+              <IconButton
+                color="primary"
                 onClick={handleSend}
                 disabled={!inputMessage.trim() || isProcessing}
-                endIcon={<SendIcon />}
+                sx={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                  },
+                  '&:disabled': {
+                    background: 'grey.300',
+                  },
+                }}
               >
-                Send
-              </Button>
+                <SendIcon />
+              </IconButton>
             </Stack>
           </Box>
-        </Box>
-      </Collapse>
-    </Paper>
+        </Paper>
+      </Fade>
+    </>
   );
 };
-

@@ -115,7 +115,7 @@ export const TrainingPlans: React.FC = () => {
     }
 
     return (
-        <Box sx={{ p: { xs: 1, sm: 2, md: 3 }, pb: { xs: 10, sm: 2 } }}>
+        <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
             <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={1}
