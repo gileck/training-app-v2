@@ -71,10 +71,19 @@ export const useTrainingDataHooks = () => {
      * See: docs/data-caching-and-persistence.md for complete flow diagram
      */
     const loadTrainingPlans = useCallback(async () => {
+        console.log('[loadTrainingPlans] Starting, stack trace:', new Error().stack);
         updateState({ error: null });
 
         // STEP 1: Load cached data for instant UI
         const cachedData = loadFromLocalStorage();
+        console.log('[loadTrainingPlans] Loaded from cache:', {
+            hasCache: !!cachedData,
+            cachedWorkouts: cachedData?.planData ? Object.keys(cachedData.planData).map(planId => ({
+                planId,
+                workoutCount: cachedData.planData[planId]?.savedWorkouts?.length || 0
+            })) : []
+        });
+        
         if (cachedData) {
             // CRITICAL: Mark all planData as not loaded to ensure fresh fetch from server
             // This prevents hooks from skipping the server request (they check isLoaded flag)
