@@ -14,6 +14,10 @@ The AI Training Plan Assistant is a chat-based interface that allows users to ma
 - **Multi-Model Support**: Choose between Gemini 2.5 and GPT-4o models
 - **Batch Operations**: "Approve All" button for confirming multiple actions at once
 - **Custom Exercise Creation**: Automatically creates custom exercises if not in built-in library
+- **Conversation Persistence**: Save and resume chat conversations across sessions
+- **Suggested Actions**: Context-aware quick action buttons for common tasks
+- **Example Prompts**: Clickable example prompts to guide users
+- **Floating Chat Widget**: Modern floating chat interface in bottom-right corner
 
 ### Supported Actions
 
@@ -40,7 +44,7 @@ The AI Training Plan Assistant is a chat-based interface that allows users to ma
 
 ### Database Layer
 
-**Collection**: `aiActionHistory`
+**Collection 1**: `aiActionHistory`
 - Stores all AI actions with status tracking
 - Captures original state for undo operations
 - Includes result data after execution
@@ -63,6 +67,34 @@ The AI Training Plan Assistant is a chat-based interface that allows users to ma
 }
 ```
 
+**Collection 2**: `aiConversations`
+- Stores chat conversations with messages
+- Supports multiple conversations per user/plan
+- Tracks conversation metadata
+
+**Schema**:
+```typescript
+{
+  _id: ObjectId
+  userId: ObjectId
+  planId?: ObjectId  // Optional for general conversations
+  title: string  // Auto-generated from first message
+  messages: ConversationMessage[]
+  status: 'active' | 'archived'
+  lastMessageAt: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface ConversationMessage {
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  actionIds?: string[]  // References to aiActionHistory
+  timestamp: Date
+}
+```
+
 ### API Layer
 
 **Module**: `src/apis/trainingPlanAI/`
@@ -70,10 +102,17 @@ The AI Training Plan Assistant is a chat-based interface that allows users to ma
 **Endpoints**:
 - `processUserMessage`: Accepts user message, returns structured actions
 - `confirmAction`: Executes a confirmed action
+- `confirmMultipleActions`: Batch execution of multiple actions in parallel
 - `rejectAction`: Marks an action as rejected
 - `undoAction`: Reverts a previously confirmed action
 - `getActionHistory`: Retrieves action history for a plan
 - `getChatContext`: Provides context for AI processing
+- `createConversation`: Creates a new conversation
+- `getConversation`: Retrieves a specific conversation
+- `listConversations`: Lists conversations for user/plan
+- `updateConversation`: Updates conversation (title, status, messages)
+- `deleteConversation`: Deletes a conversation
+- `getSuggestedActions`: Generates context-aware action suggestions
 
 **File Structure**:
 ```
@@ -85,10 +124,17 @@ trainingPlanAI/
 ├── handlers/         # Individual API handlers
 │   ├── processUserMessage.ts
 │   ├── confirmAction.ts
+│   ├── confirmMultipleActions.ts  # NEW: Batch operations
 │   ├── rejectAction.ts
 │   ├── undoAction.ts
 │   ├── getActionHistory.ts
-│   └── getChatContext.ts
+│   ├── getChatContext.ts
+│   ├── createConversation.ts      # NEW: Conversation persistence
+│   ├── getConversation.ts         # NEW
+│   ├── listConversations.ts       # NEW
+│   ├── updateConversation.ts      # NEW
+│   ├── deleteConversation.ts      # NEW
+│   └── getSuggestedActions.ts     # NEW: Context-aware suggestions
 ├── actions/          # Core business logic
 │   ├── captureState.ts    # Captures state before action
 │   ├── executeAction.ts   # Executes actions
@@ -119,22 +165,32 @@ Uses `AIModelAdapter` to convert natural language to structured JSON:
 #### Components
 
 **`AIChatPanel.tsx`**
-- Main chat interface
+- Floating chat widget in bottom-right corner
+- Custom AI icon with gradient styling
 - Shows messages, action cards, and history
 - Model selector in input area
-- Starts collapsed by default
+- Conversation management menu
+- Suggested actions and example prompts
+- Dark mode support
+- Badge showing pending action count
 
 **`AIActionCard.tsx`**
 - Displays individual action with description
 - Confirm/Reject buttons with icons
 - Status indicators (pending/confirmed/rejected/undone)
 - Undo button for reversible actions
+- Uses names instead of IDs in descriptions
 
 **`AIActionHistory.tsx`**
 - Lists all historical actions
 - Grouped by status
 - Shows timestamps
 - Provides undo capability
+
+**`AIChatIcon.tsx`**
+- Custom vector icon for AI chat
+- Gradient styling with sparkle effects
+- Reusable across the application
 
 #### Hook
 
@@ -144,6 +200,10 @@ Uses `AIModelAdapter` to convert natural language to structured JSON:
 - Processes action confirmation/rejection/undo
 - Maintains chat history and action history
 - Triggers data refresh after action execution
+- Manages conversation persistence (create, load, save, delete)
+- Loads suggested actions based on context
+- Supports batch action confirmation
+- Provides example prompts for guidance
 
 ## Data Flow
 
@@ -211,14 +271,21 @@ Refresh functions always fetch from server regardless of cache state.
 ### Batch Operations
 - "Approve All" button appears when 2+ pending actions exist
 - Shows count of pending actions
-- Confirms all pending actions sequentially
+- Executes all pending actions in parallel using `Promise.all`
+- Aggregates success/failure results
+- Shows summary with error details if any fail
 - Uses DoneAll icon for visual clarity
+- Single data refresh after all actions complete
 
 ### Responsive Design
-- Chat panel fixed at bottom
+- Floating chat widget positioned in bottom-right corner
+- Fab button with badge showing pending action count
 - Adjusts for mobile bottom navigation (56px offset)
+- Chat panel max height responsive to viewport
+- Width adapts from mobile (calc(100vw - 32px)) to desktop (450px)
 - Model selector responsive width (200px - 400px)
-- Collapsible interface to save space
+- Collapsible interface via Fab button
+- Smooth fade transitions when opening/closing
 
 ### Status Indicators
 - Color-coded borders on action cards
@@ -275,13 +342,138 @@ When AI detects an exercise not in available definitions:
 - `handleActionExecuted` refreshes plan list
 - Guides users to create plans from scratch
 
+## Phase 1: Enhanced Features
+
+### Conversation Persistence
+
+Conversations are automatically saved to the database and can be resumed later.
+
+**Key Features**:
+- Auto-creates conversation on first message
+- Title auto-generated from first user message (first 50 characters)
+- Messages saved after each exchange
+- Multiple conversations per user/plan
+- Conversation menu accessible via "More" button in header
+- List shows title, date, and message count
+- Archive or delete conversations
+- Switch between conversations without losing context
+
+**Implementation**:
+- `createConversation`: Creates new conversation
+- `updateConversation`: Saves messages and metadata
+- `listConversations`: Retrieves active conversations
+- `loadConversation`: Restores previous conversation
+- Conversations scoped by user and optionally by plan
+
+### Suggested Actions
+
+Context-aware action buttons that suggest common operations.
+
+**Generation Logic**:
+- Analyzes current plan state (exercise count, workout count, muscle balance)
+- Different suggestions for plan creation vs management
+- Adapts based on what's missing or needed
+
+**Suggestion Categories**:
+1. **Plan Creation** (no plan):
+   - Beginner Plan: "Create a 4-week beginner full-body training plan"
+   - Push/Pull/Legs: "Create an 8-week push/pull/legs split"
+   - Cardio Plan: "Create a 6-week cardio plan for fat loss"
+
+2. **Exercise Management**:
+   - Add Compound Exercises (0 exercises)
+   - Add Accessories (< 5 exercises)
+   - Progressive Overload (increase weights by 5%)
+   - Add Upper Body (if missing)
+   - Add Lower Body (if missing)
+   - Add Cardio sessions
+
+3. **Workout Organization**:
+   - Create Workout Split (when exercises > 2, workouts = 0)
+
+4. **General**:
+   - Deload Week (reduce weights by 30%)
+
+**UI Display**:
+- Shows up to 6 quick action buttons
+- Emoji icons for visual identification
+- Grouped in "Quick Actions" section
+- One-click to send prompt
+- Updates when plan state changes
+
+### Example Prompts
+
+Clickable prompt cards that demonstrate AI capabilities.
+
+**Characteristics**:
+- 4-5 example prompts per context
+- Context-specific (different for plan creation vs management)
+- Displayed as interactive cards with hover effects
+- Shows in empty state below suggested actions
+- One-click to send to AI
+
+**Examples**:
+- "Create a 4-week strength training plan"
+- "Add 3 sets of 12 reps bench press"
+- "Show me exercises for chest and triceps"
+- "Create a leg day workout"
+- "Increase all weights by 5%"
+
+### Batch Action Execution
+
+Parallel execution of multiple AI actions with proper error handling.
+
+**Features**:
+- `confirmMultipleActions` API endpoint
+- Uses `Promise.all` for concurrent execution
+- Aggregates success and failure results
+- Single data refresh after all actions
+- Error aggregation with detailed messages
+- Shows summary: "Executed X actions, Y failed"
+
+**Benefits**:
+- Faster than sequential execution
+- Proper `isProcessing` state management
+- No race conditions
+- Better error reporting
+- Improved UX for multi-action operations
+
+### Floating Chat Widget
+
+Modern floating chat interface with custom branding.
+
+**Design**:
+- Fab button in bottom-right corner
+- Custom AI icon with gradient (blue to teal)
+- Sparkle effects on icon
+- Badge shows pending action count
+- Gradient header with glassmorphic effect
+- Dark mode support throughout
+
+**Behavior**:
+- Starts collapsed (doesn't auto-open)
+- Smooth fade transitions
+- Toggle via Fab button
+- Chat/History toggle in header
+- Conversation menu via "More" button
+
+**Styling**:
+- Purple gradient theme (667eea → 764ba2)
+- Consistent with app design system
+- Responsive positioning
+- Box shadow and elevation
+- Hover effects on interactive elements
+
 ## Performance Considerations
 
-- Actions executed sequentially (not parallel) for safety
+- Actions in batch operations executed in parallel for better performance
 - State capture happens before execution (small overhead)
-- Chat history stored in component state (not persisted)
+- Conversations stored in database (persisted across sessions)
+- Chat history loaded from database on mount
+- Suggested actions cached and reloaded only when plan changes
 - Action history paginated (default 50 items)
 - DB indexes on userId and planId for fast queries
+- Optimistic UI updates for better perceived performance
 
 ## Security
 
@@ -295,12 +487,15 @@ When AI detects an exercise not in available definitions:
 
 Potential improvements:
 - Voice input for messages
-- Suggested actions based on plan state
 - Bulk undo (undo last N actions)
 - Action scheduling (execute later)
 - Action templates (save common requests)
 - Multi-language support
 - Export chat history
+- Conversation search and filtering
+- Smart conversation suggestions based on plan progress
+- AI-powered workout recommendations
+- Integration with fitness tracking devices
 
 ## Troubleshooting
 
