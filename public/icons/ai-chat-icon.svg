@@ -2,13 +2,13 @@
   <!-- Main rounded square frame with gradient -->
   <defs>
     <linearGradient id="frameGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#5BA3D9;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#50C9C3;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#6BA4EE;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#7DB8E6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#70D9D3;stop-opacity:1" />
     </linearGradient>
     <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#50C9C3;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#7BDBD4;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#70D9D3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9DE8E0;stop-opacity:1" />
     </linearGradient>
   </defs>
   
@@ -37,7 +37,7 @@
              L 22 30
              M 15.5 26 L 20.5 26" 
           fill="none" 
-          stroke="#4A90E2" 
+          stroke="#6BA4EE" 
           stroke-width="3"
           stroke-linecap="round"
           stroke-linejoin="round"/>
@@ -45,7 +45,7 @@
     <!-- Letter I -->
     <path d="M 28 18 L 28 30" 
           fill="none" 
-          stroke="#5BA3D9" 
+          stroke="#7DB8E6" 
           stroke-width="3"
           stroke-linecap="round"/>
   </g>
@@ -82,7 +82,7 @@
   
   <!-- Tiny sparkle (bottom right) -->
   <g transform="translate(38, 16)">
-    <circle cx="0" cy="0" r="1.5" fill="#7BDBD4" opacity="0.7"/>
+    <circle cx="0" cy="0" r="1.5" fill="#9DE8E0" opacity="0.7"/>
   </g>
 </svg>
 

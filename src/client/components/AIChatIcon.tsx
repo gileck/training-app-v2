@@ -6,13 +6,13 @@ export const AIChatIcon: React.FC<SvgIconProps> = (props) => {
     <SvgIcon {...props} viewBox="0 0 48 48">
       <defs>
         <linearGradient id="frameGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#4A90E2', stopOpacity: 1 }} />
-          <stop offset="50%" style={{ stopColor: '#5BA3D9', stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: '#50C9C3', stopOpacity: 1 }} />
+          <stop offset="0%" style={{ stopColor: '#6BA4EE', stopOpacity: 1 }} />
+          <stop offset="50%" style={{ stopColor: '#7DB8E6', stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: '#70D9D3', stopOpacity: 1 }} />
         </linearGradient>
         <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#50C9C3', stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: '#7BDBD4', stopOpacity: 1 }} />
+          <stop offset="0%" style={{ stopColor: '#70D9D3', stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: '#9DE8E0', stopOpacity: 1 }} />
         </linearGradient>
       </defs>
       
@@ -32,7 +32,7 @@ export const AIChatIcon: React.FC<SvgIconProps> = (props) => {
         <path 
           d="M 14 30 L 18 18 L 22 30 M 15.5 26 L 20.5 26" 
           fill="none" 
-          stroke="#4A90E2" 
+          stroke="#6BA4EE" 
           strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -42,7 +42,7 @@ export const AIChatIcon: React.FC<SvgIconProps> = (props) => {
         <path 
           d="M 28 18 L 28 30" 
           fill="none" 
-          stroke="#5BA3D9" 
+          stroke="#7DB8E6" 
           strokeWidth="3"
           strokeLinecap="round"
         />
@@ -68,7 +68,7 @@ export const AIChatIcon: React.FC<SvgIconProps> = (props) => {
       
       {/* Tiny sparkle (bottom right) */}
       <g transform="translate(38, 16)">
-        <circle cx="0" cy="0" r="1.5" fill="#7BDBD4" opacity="0.7"/>
+        <circle cx="0" cy="0" r="1.5" fill="#9DE8E0" opacity="0.7"/>
       </g>
     </SvgIcon>
   );
