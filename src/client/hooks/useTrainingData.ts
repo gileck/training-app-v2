@@ -39,11 +39,12 @@ export const useExercises = (planId: string) => {
     const { state, loadPlanData, loadExercises, createExercise, updateExercise, deleteExercise } = useTrainingData();
 
     // Auto-load plan data if not loaded (but not during initial loading)
+    // Only trigger when planId changes, not when state updates
     React.useEffect(() => {
         if (planId && !state.isInitialLoading && !state.planData[planId]?.isLoaded && !state.planData[planId]?.isLoading) {
             loadPlanData(planId);
         }
-    }, [planId, state.isInitialLoading, state.planData[planId]?.isLoaded, state.planData[planId]?.isLoading]);
+    }, [planId, loadPlanData]);  // ← Removed state dependencies!
 
     const planData = state.planData[planId] || { exercises: [], isLoaded: false, isLoading: false };
 
@@ -67,11 +68,12 @@ export const useWeeklyProgress = (planId: string, weekNumber: number) => {
     const { state, loadPlanData, loadWeeklyProgress, updateSetCompletion } = useTrainingData();
 
     // Auto-load plan data if not loaded (but not during initial loading)
+    // Only trigger when planId changes, not when state updates
     React.useEffect(() => {
         if (planId && !state.isInitialLoading && !state.planData[planId]?.isLoaded && !state.planData[planId]?.isLoading) {
             loadPlanData(planId);
         }
-    }, [planId, state.isInitialLoading, state.planData[planId]?.isLoaded, state.planData[planId]?.isLoading]);
+    }, [planId, loadPlanData]);  // ← Removed state dependencies!
 
     const planData = state.planData[planId] || { weeklyProgress: {}, isLoaded: false, isLoading: false };
 
@@ -117,12 +119,13 @@ export const useSavedWorkouts = (planId: string) => {
     const { state, loadPlanData, loadSavedWorkouts, createSavedWorkout, updateSavedWorkout, deleteSavedWorkout } = useTrainingData();
 
     // Auto-load plan data if not loaded
-    // This is where the cache fix is critical - cached data must be marked as isLoaded: false
+    // Only check when planId changes, not when state.planData changes (causes unnecessary re-checks)
     React.useEffect(() => {
         if (planId && !state.planData[planId]?.isLoaded && !state.planData[planId]?.isLoading) {
+            console.log('[useSavedWorkouts] Triggering loadPlanData for planId:', planId);
             loadPlanData(planId); // Triggers server fetch for fresh data
         }
-    }, [planId, state.planData, loadPlanData]);
+    }, [planId, loadPlanData]);  // ← Removed state.planData from dependencies!
 
     const planData = state.planData[planId] || { savedWorkouts: [], isLoaded: false, isLoading: false };
     
