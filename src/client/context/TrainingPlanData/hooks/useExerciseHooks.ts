@@ -11,31 +11,35 @@ import {
 export const useExerciseHooks = (
     state: TrainingDataState,
     updateState: (newState: Partial<TrainingDataState>) => void,
-    updateStateAndSave: (newState: Partial<TrainingDataState>) => void
+    updateStateAndSave: (newStateOrUpdater: Partial<TrainingDataState> | ((prev: TrainingDataState) => TrainingDataState)) => void
 ) => {
     const refreshExercises = useCallback(async (planId: string) => {
         try {
             const response = await getExercises({ trainingPlanId: planId });
             const exercises = response.data || [];
 
-            const currentPlanData = state.planData[planId];
-            updateStateAndSave({
-                planData: {
-                    ...state.planData,
-                    [planId]: {
-                        ...currentPlanData,
-                        exercises,
-                        isLoaded: true,
-                        isLoading: false
+            // Use functional update to avoid race condition with parallel refreshSavedWorkouts
+            updateStateAndSave((prevState: TrainingDataState): TrainingDataState => {
+                const currentPlanData = prevState.planData[planId];
+                return {
+                    ...prevState,
+                    planData: {
+                        ...prevState.planData,
+                        [planId]: {
+                            ...currentPlanData,
+                            exercises,
+                            isLoaded: true,
+                            isLoading: false
+                        }
                     }
-                }
+                };
             });
         } catch (error) {
             updateState({
                 error: error instanceof Error ? error.message : 'Failed to refresh exercises'
             });
         }
-    }, [state.planData, updateState, updateStateAndSave]);
+    }, [updateState, updateStateAndSave]);
     const loadExercises = useCallback(async (planId: string) => {
         const existing = state.planData[planId];
         if (existing?.isLoaded) {
