@@ -333,7 +333,11 @@ export const useAIAssistant = ({
             content: result.data.message || 'Action executed successfully',
             timestamp: new Date(),
           };
-          setMessages((prev) => [...prev, systemMessage]);
+          const updatedMessages = [...messages, systemMessage];
+          setMessages(updatedMessages);
+
+          // Save conversation with system message
+          await saveConversation(updatedMessages);
         }
       } catch (err) {
         console.error('Error confirming action:', err);
@@ -405,7 +409,11 @@ export const useAIAssistant = ({
             content: summaryMessage,
             timestamp: new Date(),
           };
-          setMessages((prev) => [...prev, systemMessage]);
+          const updatedMessages = [...messages, systemMessage];
+          setMessages(updatedMessages);
+
+          // Save conversation with system message
+          await saveConversation(updatedMessages);
 
           if (failureCount > 0) {
             setError(`${failureCount} action(s) failed to execute`);
@@ -497,7 +505,11 @@ export const useAIAssistant = ({
             content: result.data.message || 'Action undone successfully',
             timestamp: new Date(),
           };
-          setMessages((prev) => [...prev, systemMessage]);
+          const updatedMessages = [...messages, systemMessage];
+          setMessages(updatedMessages);
+
+          // Save conversation with system message
+          await saveConversation(updatedMessages);
         }
       } catch (err) {
         console.error('Error undoing action:', err);
