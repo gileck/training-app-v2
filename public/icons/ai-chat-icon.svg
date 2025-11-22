@@ -1,0 +1,88 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main rounded square frame with gradient -->
+  <defs>
+    <linearGradient id="frameGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#5BA3D9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#50C9C3;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#50C9C3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7BDBD4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded square frame -->
+  <path d="M 8 4 
+           L 36 4 
+           Q 44 4 44 12
+           L 44 36
+           Q 44 44 36 44
+           L 12 44
+           Q 4 44 4 36
+           L 4 12
+           Q 4 4 12 4
+           Z" 
+        fill="none" 
+        stroke="url(#frameGradient)" 
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+  
+  <!-- AI Text -->
+  <g>
+    <!-- Letter A -->
+    <path d="M 14 30 
+             L 18 18 
+             L 22 30
+             M 15.5 26 L 20.5 26" 
+          fill="none" 
+          stroke="#4A90E2" 
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    
+    <!-- Letter I -->
+    <path d="M 28 18 L 28 30" 
+          fill="none" 
+          stroke="#5BA3D9" 
+          stroke-width="3"
+          stroke-linecap="round"/>
+  </g>
+  
+  <!-- Large sparkle/star (top right) -->
+  <g transform="translate(34, 10)">
+    <path d="M 0 -6 
+             L 1 -1 
+             L 6 0 
+             L 1 1 
+             L 0 6 
+             L -1 1 
+             L -6 0 
+             L -1 -1 
+             Z" 
+          fill="url(#sparkleGradient)" 
+          opacity="0.9"/>
+  </g>
+  
+  <!-- Small sparkle/star (top right corner) -->
+  <g transform="translate(42, 6)">
+    <path d="M 0 -3 
+             L 0.5 -0.5 
+             L 3 0 
+             L 0.5 0.5 
+             L 0 3 
+             L -0.5 0.5 
+             L -3 0 
+             L -0.5 -0.5 
+             Z" 
+          fill="url(#sparkleGradient)" 
+          opacity="0.8"/>
+  </g>
+  
+  <!-- Tiny sparkle (bottom right) -->
+  <g transform="translate(38, 16)">
+    <circle cx="0" cy="0" r="1.5" fill="#7BDBD4" opacity="0.7"/>
+  </g>
+</svg>
+

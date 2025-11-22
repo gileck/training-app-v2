@@ -22,7 +22,6 @@ import {
 import {
   Send as SendIcon,
   Close as CloseIcon,
-  SmartToy as AIIcon,
   Person as PersonIcon,
   DoneAll as ApproveAllIcon,
   History as HistoryIcon,
@@ -30,6 +29,7 @@ import {
 } from '@mui/icons-material';
 import { AIActionCard } from './AIActionCard';
 import { AIActionHistory } from './AIActionHistory';
+import { AIChatIcon } from '@/client/components/AIChatIcon';
 import { getAllModels } from '@/server/ai/models';
 import type { ChatMessage } from '@/apis/trainingPlanAI/types';
 
@@ -141,7 +141,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
               },
             }}
           >
-            <AIIcon sx={{ fontSize: 32 }} />
+            <AIChatIcon sx={{ fontSize: 36 }} />
           </Fab>
         </Badge>
       </Tooltip>
@@ -191,7 +191,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
                   backdropFilter: 'blur(10px)',
                 }}
               >
-                <AIIcon sx={{ fontSize: 24 }} />
+                <AIChatIcon sx={{ fontSize: 28 }} />
               </Box>
               <Box>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
@@ -249,7 +249,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
                         mb: 2,
                       }}
                     >
-                      <AIIcon sx={{ fontSize: 36, color: 'white' }} />
+                      <AIChatIcon sx={{ fontSize: 40, color: 'white' }} />
                     </Box>
                     <Typography variant="h6" color="text.primary" gutterBottom>
                       AI Training Assistant
@@ -298,7 +298,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
                             flexShrink: 0,
                           }}
                         >
-                          <AIIcon sx={{ fontSize: 20, color: 'white' }} />
+                          <AIChatIcon sx={{ fontSize: 22, color: 'white' }} />
                         </Box>
                       )}
                       <Box sx={{ flexGrow: 1 }}>
