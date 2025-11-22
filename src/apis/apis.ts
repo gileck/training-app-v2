@@ -11,6 +11,7 @@ import * as weeklyProgressServer from "./weeklyProgress/server";
 import * as progressViewServer from "./progressView/server";
 import * as exerciseHistoryServer from './exerciseHistory/server';
 import * as exerciseActivityLogServer from './exerciseActivityLog/server';
+import * as trainingPlanAIServer from './trainingPlanAI/server';
 import {
   getAllApiName as savedWorkoutsGetAllApiName,
   createApiName as savedWorkoutsCreateApiName,
@@ -64,5 +65,11 @@ export const apiHandlers: ApiHandlers = {
   [savedWorkoutsGetDetailsApiName]: { process: savedWorkoutsServer.getSavedWorkoutDetails as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [savedWorkoutsAddExerciseApiName]: { process: savedWorkoutsServer.addExerciseToSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
   [savedWorkoutsRemoveExerciseApiName]: { process: savedWorkoutsServer.removeExerciseFromSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
-  [savedWorkoutsRenameApiName]: { process: savedWorkoutsServer.renameSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> }
+  [savedWorkoutsRenameApiName]: { process: savedWorkoutsServer.renameSavedWorkout as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.processUserMessageApiName]: { process: trainingPlanAIServer.processUserMessage as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.confirmActionApiName]: { process: trainingPlanAIServer.confirmAction as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.rejectActionApiName]: { process: trainingPlanAIServer.rejectAction as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.undoActionApiName]: { process: trainingPlanAIServer.undoAction as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.getActionHistoryApiName]: { process: trainingPlanAIServer.getActionHistory as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> },
+  [trainingPlanAIServer.getChatContextApiName]: { process: trainingPlanAIServer.getChatContext as unknown as (params: unknown, context: ApiHandlerContext) => Promise<unknown> }
 };

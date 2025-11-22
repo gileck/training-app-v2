@@ -6,4 +6,5 @@ export * as exerciseDefinitions from './exerciseDefinitions';
 export * as exerciseActivityLog from './exerciseActivityLog';
 export * as weeklyProgress from './weeklyProgress';
 export * as savedWorkouts from './savedWorkouts';
+export * as aiActionHistory from './aiActionHistory';
 

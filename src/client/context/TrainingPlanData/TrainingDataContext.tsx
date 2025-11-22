@@ -46,6 +46,7 @@ interface TrainingDataContextType {
     // Plan data loading - loads on-demand and caches
     loadPlanData: (planId: string) => Promise<void>;
     loadExercises: (planId: string) => Promise<void>;
+    refreshExercises: (planId: string) => Promise<void>; // Force refresh bypassing cache
     createExercise: (planId: string, exercise: AddExerciseRequest) => Promise<void>;
     updateExercise: (planId: string, exerciseId: string, updates: UpdateExerciseRequest) => Promise<void>;
     deleteExercise: (planId: string, exerciseId: string) => Promise<void>;
@@ -54,6 +55,7 @@ interface TrainingDataContextType {
     updateSetCompletion: (planId: string, weekNumber: number, exerciseId: string, setsIncrement: number, totalSetsForExercise: number, completeAll?: boolean) => Promise<WeeklyProgressBase>;
 
     loadSavedWorkouts: (planId: string) => Promise<void>;
+    refreshSavedWorkouts: (planId: string) => Promise<void>; // Force refresh bypassing cache
     createSavedWorkout: (planId: string, workout: CreateSavedWorkoutRequest) => Promise<void>;
     updateSavedWorkout: (planId: string, workoutId: string, updates: Partial<SavedWorkout>) => Promise<void>;
     deleteSavedWorkout: (planId: string, workoutId: string) => Promise<void>;

@@ -10,6 +10,8 @@ import { useRouter } from '@/client/router';
 import AddTrainingPlanDialog from '@/client/components/AddTrainingPlanDialog';
 import { ConfirmationDialog } from '@/client/components/ConfirmationDialog';
 import { TrainingPlan } from '@/common/types/training';
+import { AIChatPanel } from '../ManageTrainingPlanPage/components/AIChatPanel';
+import { useAIAssistant } from '../ManageTrainingPlanPage/hooks/useAIAssistant';
 
 const formatDate = (date: Date | string | undefined): string => {
     if (!date) return 'N/A';
@@ -23,6 +25,7 @@ export const TrainingPlans: React.FC = () => {
         trainingPlans,
         isLoading,
         error,
+        loadTrainingPlans,
         deleteTrainingPlan,
         duplicateTrainingPlan,
         setActiveTrainingPlan
@@ -39,6 +42,18 @@ export const TrainingPlans: React.FC = () => {
         open: false,
         planId: '',
         planName: ''
+    });
+
+    // Callback to refresh training plans after AI action execution
+    const handleActionExecuted = useCallback(async () => {
+        // Explicitly refresh the training plans list
+        await loadTrainingPlans();
+    }, [loadTrainingPlans]);
+
+    // AI Assistant hook - no planId since we're at the list level
+    const aiAssistant = useAIAssistant({
+        planId: undefined,
+        onActionExecuted: handleActionExecuted,
     });
 
     const handleDelete = useCallback(async (planId: string, planName: string) => {
@@ -100,7 +115,7 @@ export const TrainingPlans: React.FC = () => {
     }
 
     return (
-        <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+        <Box sx={{ p: { xs: 1, sm: 2, md: 3 }, pb: { xs: 10, sm: 2 } }}>
             <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={1}
@@ -232,6 +247,21 @@ export const TrainingPlans: React.FC = () => {
                 onConfirm={handleDeleteConfirm}
                 onCancel={handleDeleteCancel}
                 severity="error"
+            />
+
+            {/* AI Chat Panel */}
+            <AIChatPanel
+                planId={undefined}
+                messages={aiAssistant.messages}
+                isProcessing={aiAssistant.isProcessing}
+                error={aiAssistant.error}
+                selectedModel={aiAssistant.selectedModel}
+                onModelChange={aiAssistant.setSelectedModel}
+                onSendMessage={aiAssistant.sendMessage}
+                onConfirmAction={aiAssistant.confirmAction}
+                onRejectAction={aiAssistant.rejectAction}
+                onUndoAction={aiAssistant.undoAction}
+                actionHistory={aiAssistant.actionHistory}
             />
         </Box>
     );

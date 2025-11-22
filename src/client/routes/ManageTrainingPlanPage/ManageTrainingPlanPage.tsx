@@ -1,16 +1,19 @@
 import React from 'react';
 import { Box, Tabs, Tab, useTheme, useMediaQuery } from '@mui/material';
-
+import { useTrainingData } from '@/client/hooks/useTrainingData';
 import { useManageTrainingPlanPage } from './hooks/useManageTrainingPlanPage';
+import { useAIAssistant } from './hooks/useAIAssistant';
 import { ExercisesTab } from './components/ExercisesTab';
 import { WorkoutsTab } from './components/WorkoutsTab';
 import { DialogsSection } from './components/DialogsSection';
 import { ErrorView } from './components/ErrorView';
 import { PageHeader } from './components/PageHeader';
+import { AIChatPanel } from './components/AIChatPanel';
 
 export const ManageTrainingPlanPage: React.FC = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const { refreshExercises, refreshSavedWorkouts } = useTrainingData();
 
     const {
         planId,
@@ -20,7 +23,7 @@ export const ManageTrainingPlanPage: React.FC = () => {
         exerciseHooks,
         workoutHooks,
         definitionsMapMPE,
-        existingExerciseDefinitionIdsInPlan
+        existingExerciseDefinitionIdsInPlan,
     } = useManageTrainingPlanPage();
 
     const { navigate } = router;
@@ -28,6 +31,27 @@ export const ManageTrainingPlanPage: React.FC = () => {
     const { exercises } = exerciseHooks;
     const { planDetails } = planData;
     const combinedError = error || exerciseHooks.error || planData.error;
+
+    // Callback to refresh data after AI action execution
+    const handleActionExecuted = React.useCallback(async () => {
+        // Use refresh functions that bypass cache
+        if (planId) {
+            try {
+                await Promise.all([
+                    refreshExercises(planId),
+                    refreshSavedWorkouts(planId)
+                ]);
+            } catch (err) {
+                console.error('Error reloading data after AI action:', err);
+            }
+        }
+    }, [planId, refreshExercises, refreshSavedWorkouts]);
+
+    // AI Assistant hook
+    const aiAssistant = useAIAssistant({
+        planId,
+        onActionExecuted: handleActionExecuted,
+    });
 
     // Handle error states
     if (!planId && !isPageLoading && currentTab === 0) {
@@ -55,7 +79,7 @@ export const ManageTrainingPlanPage: React.FC = () => {
     }
 
     return (
-        <Box sx={{ p: { xs: 1, sm: 2 } }}>
+        <Box sx={{ p: { xs: 1, sm: 2 }, pb: { xs: 10, sm: 10 } }}>
             {/* Page Header */}
             <PageHeader
                 planName={planDetails?.name ?? ''}
@@ -105,6 +129,21 @@ export const ManageTrainingPlanPage: React.FC = () => {
                 workoutHooks={workoutHooks}
                 planDetails={planDetails}
                 isPageLoading={isPageLoading}
+            />
+
+            {/* AI Chat Panel */}
+            <AIChatPanel
+                planId={planId}
+                messages={aiAssistant.messages}
+                isProcessing={aiAssistant.isProcessing}
+                error={aiAssistant.error}
+                selectedModel={aiAssistant.selectedModel}
+                onModelChange={aiAssistant.setSelectedModel}
+                onSendMessage={aiAssistant.sendMessage}
+                onConfirmAction={aiAssistant.confirmAction}
+                onRejectAction={aiAssistant.rejectAction}
+                onUndoAction={aiAssistant.undoAction}
+                actionHistory={aiAssistant.actionHistory}
             />
         </Box>
     );

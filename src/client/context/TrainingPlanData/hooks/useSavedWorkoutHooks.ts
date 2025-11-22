@@ -42,6 +42,30 @@ export const useSavedWorkoutHooks = (
         }
     }, [state.planData, updateState, updateStateAndSave]);
 
+    const refreshSavedWorkouts = useCallback(async (planId: string) => {
+        try {
+            const response = await getSavedWorkouts({ trainingPlanId: planId });
+            const savedWorkouts = response.data || [];
+
+            const currentPlanData = state.planData[planId];
+            updateStateAndSave({
+                planData: {
+                    ...state.planData,
+                    [planId]: {
+                        ...currentPlanData,
+                        savedWorkouts,
+                        isLoaded: true,
+                        isLoading: false
+                    }
+                }
+            });
+        } catch (error) {
+            updateState({
+                error: error instanceof Error ? error.message : 'Failed to refresh saved workouts'
+            });
+        }
+    }, [state.planData, updateState, updateStateAndSave]);
+
     /**
      * Create a new saved workout and persist it to the server and localStorage.
      * 
@@ -176,6 +200,7 @@ export const useSavedWorkoutHooks = (
 
     return {
         loadSavedWorkouts,
+        refreshSavedWorkouts,
         createSavedWorkout,
         updateSavedWorkout,
         deleteSavedWorkout

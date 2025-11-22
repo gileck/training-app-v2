@@ -148,6 +148,36 @@ We primarily use referencing (storing ObjectIds) for relationships, but embeddin
     2. Find or create the `exerciseActivityLog` document for that `userId`, `exerciseId`, and `date`. Use an upsert operation with an increment (`$inc`) on `setsCompleted`.
 - **Consistency:** To ensure data consistency between `weeklyProgress` and `exerciseActivityLog`, these two write operations should ideally be performed within a **multi-document transaction** if your database supports it.
 
+### 8. `aiActionHistory`
+(Stores all AI-suggested actions with status tracking and undo capability)
+
+```json
+{
+  "_id": ObjectId(),
+  "userId": ObjectId(),       // Reference to users._id, Indexed
+  "planId": ObjectId(),       // Reference to trainingPlans._id, Indexed, Optional for plan creation
+  "actionType": "String",     // Type of action (e.g., "createPlan", "addExercise", "updateExercise")
+  "actionData": "Object",     // Action parameters (flexible structure)
+  "description": "String",    // Human-readable description
+  "status": "String",         // "pending", "confirmed", "rejected", "undone", "failed"
+  "originalState": "Object",  // Optional, captured state before execution for undo
+  "resultData": "Object",     // Optional, result after execution (e.g., created IDs, error messages)
+  "errorMessage": "String",   // Optional, error if action failed
+  "createdAt": "Date",
+  "updatedAt": "Date"
+}
+```
+*Indexes:* 
+- A compound index on (`userId`, `planId`) for fetching action history for a specific plan.
+- An index on `userId` for fetching all actions for a user.
+- An index on `status` for filtering by action status.
+
+*Supported Action Types:*
+- **Training Plan**: `createPlan`, `updatePlan`, `deletePlan`, `setActivePlan`
+- **Exercise**: `addExercise`, `updateExercise`, `deleteExercise`
+- **Exercise Definition**: `createCustomExercise`
+- **Workout**: `createWorkout`, `renameWorkout`, `deleteWorkout`, `addExerciseToWorkout`, `removeExerciseFromWorkout`
+
 *Notes:*
 - `ObjectId` is the typical unique ID type in MongoDB.
 - Types shown are conceptual (String, Number, Boolean, Date, Array, ObjectId). Specific implementation might vary slightly.
